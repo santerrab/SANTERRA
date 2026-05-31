@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SANTERRA">
@@ -702,7 +702,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getFirestore,collection,doc,addDoc,updateDoc,deleteDoc,
+  getFirestore,collection,doc,addDoc,updateDoc,deleteDoc,setDoc,
   onSnapshot,query,orderBy,serverTimestamp,getDoc,getDocs,writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -748,6 +748,7 @@ const CATS_BASE=[
 
 async function autoSetup(){
   try{
+    // Crear categorías base si no existen
     const snap=await getDocs(collection(db,'categorias'));
     if(snap.empty){
       const batch=writeBatch(db);
@@ -755,16 +756,51 @@ async function autoSetup(){
       await batch.commit();
       toast('✓ 10 categorías creadas automáticamente');
     }
+    // Crear doc de config si no existe
+    const cfgSnap=await getDoc(doc(db,'config','app'));
+    if(!cfgSnap.exists()){
+      await setDoc(doc(db,'config','app'),{
+        pinE:'1234',pinB:null,
+        c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra',
+        creadoEn:serverTimestamp()
+      });
+    }
   }catch(e){
     if(e.code==='permission-denied')toast('⚠️ Verifica reglas de Firestore','warn');
+    else console.warn('autoSetup:',e.message);
   }
 }
 
-// ── LS / CONFIG ──────────────────────────────────────────────────────────────
-const LS={g:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},s:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
-const gPE=()=>LS.g('pe')||'1234';
-const gPB=()=>LS.g('pb')||null;
-const gN=()=>LS.g('nms')||{c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra'};
+// ── CONFIG GLOBAL (Firestore) ─────────────────────────────────────────────────
+// PINs y nombres de área se guardan en Firestore/config/app
+// para que sean iguales en TODOS los dispositivos.
+let _cfg={pinE:'1234',pinB:null,c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra'};
+let uCfg=null;
+
+function startCfgListener(){
+  uCfg=onSnapshot(doc(db,'config','app'),snap=>{
+    if(snap.exists()){
+      const d=snap.data();
+      _cfg={
+        pinE:d.pinE||'1234',
+        pinB:d.pinB||null,
+        c1:d.c1||'Desayuno',
+        c2:d.c2||'Postres',
+        c3:d.c3||'Buffet',
+        c4:d.c4||'Barra',
+      };
+      // Actualizar etiquetas de áreas en el login en tiempo real
+      ['c1','c2','c3','c4'].forEach(k=>{
+        const el=document.getElementById('lbl-'+k);
+        if(el)el.textContent=_cfg[k];
+      });
+    }
+  },err=>console.warn('cfg listener:',err.message));
+}
+
+const gPE=()=>_cfg.pinE||'1234';
+const gPB=()=>_cfg.pinB||null;
+const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4});
 
 // ── IMPUESTOS (IVA Chile + Impuesto Carnes) ───────────────────────────────────
 // Nota: en Chile las carnes frescas están exentas de IVA al consumidor final
@@ -1014,7 +1050,7 @@ function startL(){
   uM=onSnapshot(query(collection(db,'movimientos'),orderBy('creadoEn','desc')),s=>{movs=s.docs.map(d=>({id:d.id,...d.data()}));renderDash();},err=>console.warn('movs:',err.message));
   uI=onSnapshot(query(collection(db,'inventarios'),orderBy('creadoEn','desc')),s=>{invDocs=s.docs.map(d=>({id:d.id,...d.data()}));renderInvHistorial();},err=>console.warn('inv:',err.message));
 }
-function stopL(){[uP,uS,uF,uC,uM,uI].forEach(u=>u&&u());uP=uS=uF=uC=uM=uI=null;}
+function stopL(){[uP,uS,uF,uC,uM,uI,uCfg].forEach(u=>u&&u());uP=uS=uF=uC=uM=uI=uCfg=null;}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function renderDash(){
@@ -1191,22 +1227,31 @@ function renderCarrito(){
   const wrap=document.getElementById('carrito-wrap');const emp=document.getElementById('pedir-empty');
   if(carrito.length===0){wrap.style.display='none';emp.style.display='block';return;}
   emp.style.display='none';wrap.style.display='block';
-  document.getElementById('carrito').innerHTML=carrito.map((it,i)=>`
-    <div class="ci">
+  document.getElementById('carrito').innerHTML=carrito.map((it,i)=>{
+    const isKg=['kg','g','lt','ml'].includes(it.unidad.toLowerCase());
+    return`<div class="ci">
       <div class="ci-info"><div class="ci-nom">${it.nombre}</div><div class="ci-det">Stock: ${clpn(it.stock)} ${it.unidad}</div></div>
       <div class="ci-ctrl">
         <button class="ci-btn ci-m" onclick="chgC(${i},-1)">−</button>
-        <span class="ci-n" style="font-size:16px;min-width:28px">${clpn(it.cantidad)}</span>
+        <input type="number" class="ci-qty" min="${isKg?'0.1':'1'}" step="${isKg?'0.1':'1'}" value="${it.cantidad}"
+          style="width:58px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'Inter',sans-serif;font-size:17px;font-weight:800;padding:5px 4px;text-align:center;outline:none;-webkit-appearance:none"
+          oninput="setCantC(${i},this.value)" onfocus="this.select()">
         <button class="ci-btn ci-p" onclick="chgC(${i},1)">+</button>
         <button class="ci-del" onclick="rmC(${i})">✕</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function chgC(i,d){
   const it=carrito[i];
   const isKg=['kg','g','lt','ml'].includes(it.unidad.toLowerCase());
-  carrito[i].cantidad=Math.max(isKg?.1:1,parseFloat((it.cantidad+d*(isKg?.1:1)).toFixed(2)));
+  const step=isKg?.1:1;
+  carrito[i].cantidad=Math.max(step,parseFloat((it.cantidad+d*step).toFixed(2)));
   renderCarrito();
+}
+function setCantC(i,v){
+  const val=parseFloat(v);
+  if(!isNaN(val)&&val>0)carrito[i].cantidad=val;
 }
 function rmC(i){carrito.splice(i,1);renderCarrito();}
 async function enviarPedido(){
@@ -1937,26 +1982,44 @@ function abrirCfg(){
   document.getElementById('cfg-pe').value='';document.getElementById('cfg-pb').value='';
   openM('mo-cfg');
 }
-function guardarPins(){
+async function guardarPins(){
   const pe=document.getElementById('cfg-pe').value.trim();
   const pb=document.getElementById('cfg-pb').value.trim();
-  if(pe){if(!/^\d{4}$/.test(pe)){toast('PIN: 4 dígitos','err');return;}LS.s('pe',pe);}
-  if(pb){if(!/^\d{4}$/.test(pb)){toast('PIN Bodeguero: 4 dígitos','err');return;}LS.s('pb',pb);}
-  toast('✓ PINs guardados');
+  if(pe&&!/^\d{4}$/.test(pe)){toast('PIN Encargado: debe ser 4 dígitos','err');return;}
+  if(pb&&!/^\d{4}$/.test(pb)){toast('PIN Bodeguero: debe ser 4 dígitos','err');return;}
+  try{
+    const update={pinB:pb||null};
+    if(pe)update.pinE=pe;
+    await setDoc(doc(db,'config','app'),update,{merge:true});
+    toast('✓ PINs guardados en todos los dispositivos');
+    document.getElementById('cfg-pe').value='';
+    document.getElementById('cfg-pb').value='';
+  }catch(e){toast('Error: '+e.message,'err');}
 }
-function guardarNombres(){
-  const n={c1:document.getElementById('cfg-c1').value.trim()||'Desayuno',c2:document.getElementById('cfg-c2').value.trim()||'Postres',c3:document.getElementById('cfg-c3').value.trim()||'Buffet',c4:document.getElementById('cfg-c4').value.trim()||'Barra'};
-  LS.s('nms',n);['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('lbl-'+k);if(el)el.textContent=n[k];});
-  toast('✓ Nombres guardados');
+async function guardarNombres(){
+  const n={
+    c1:document.getElementById('cfg-c1').value.trim()||'Desayuno',
+    c2:document.getElementById('cfg-c2').value.trim()||'Postres',
+    c3:document.getElementById('cfg-c3').value.trim()||'Buffet',
+    c4:document.getElementById('cfg-c4').value.trim()||'Barra',
+  };
+  try{
+    await setDoc(doc(db,'config','app'),n,{merge:true});
+    toast('✓ Nombres guardados en todos los dispositivos');
+  }catch(e){toast('Error: '+e.message,'err');}
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-(()=>{const n=gN();['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('lbl-'+k);if(el)el.textContent=n[k];});})();
+// Labels de áreas se actualizan vía startCfgListener() al hacer login
+// Al inicio mostramos los defaults hasta que llegue la config de Firestore
+(()=>{['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('lbl-'+k);if(el)el.textContent=_cfg[k];});})();
+
+// Arrancar listener de config inmediatamente (para que el login muestre los nombres correctos)
+startCfgListener();
 
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,goTo,openM,closeM,navSem,
   fStock,fDesp,fSols,fMis,fProds,fInv,fDiff,fDetalle,
-  pBuscar,addCart,chgC,rmC,enviarPedido,
+  pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,
   togD,setD,despachar,abrirRechazo,confirmarRechazo,
   fnBuscar,fnAdd,fnChg,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
