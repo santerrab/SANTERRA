@@ -1753,6 +1753,7 @@ function renderConteo(){
     const contado=conteoLocal[p.id]!==undefined;
     const val=contado?conteoLocal[p.id]:0;
     const precio=p.precioTotal||0;
+    const diff=contado?val-(p.stock||0):null;
     return`<div class="inv-row ${contado?'contado':'pendiente'}">
       <div class="inv-row-top">
         <div><div class="inv-nom">${p.nombre}</div><div class="inv-cat">${p.categoria||''}${p.subcategoria?' · '+p.subcategoria:''}</div></div>
@@ -1760,18 +1761,50 @@ function renderConteo(){
       </div>
       <div class="inv-input-wrap">
         <span class="inv-stock-lbl">Sistema: <strong>${clpn(p.stock||0)} ${p.unidadMedida||''}</strong></span>
-        <input class="inv-input ${contado?'ok':''}" type="number" min="0" step="${isKg(p)?'0.1':'1'}" placeholder="0" value="${contado?val:''}" oninput="setConteo('${p.id}',this.value,this)">
+        <input class="inv-input ${contado?'ok':''}" type="number" min="0" step="${isKg(p)?'0.1':'1'}"
+          placeholder="0" value="${contado?val:''}"
+          oninput="setConteo('${p.id}',this.value,this)"
+          onblur="renderConteo()">
         <span class="inv-stock-lbl">${p.unidadMedida||''}</span>
-        ${contado?`<span style="font-size:11px;color:${val>(p.stock||0)?'var(--green)':val<(p.stock||0)?'var(--red)':'var(--txm)'};font-weight:700">${val>(p.stock||0)?'▲ +'+(val-(p.stock||0)):val<(p.stock||0)?'▼ '+(val-(p.stock||0)):'= OK'}</span>`:''}
+        <span id="inv-diff-${p.id}" style="font-size:11px;font-weight:700;color:${diff===null?'transparent':diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)'}">${diff===null?'':diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK'}</span>
       </div>
     </div>`;
   }).join('');
 }
 function setConteo(pid,v,el){
   const val=parseFloat(v);
-  if(isNaN(val)||v===''){delete conteoLocal[pid];el.classList.remove('ok');}
-  else{conteoLocal[pid]=val;el.classList.add('ok');}
-  renderConteo();
+  if(v===''||isNaN(val)){
+    delete conteoLocal[pid];
+    el.classList.remove('ok');
+    // Quitar indicador de diferencia si existe
+    const diffEl=document.getElementById('inv-diff-'+pid);
+    if(diffEl)diffEl.textContent='';
+  }else{
+    conteoLocal[pid]=val;
+    el.classList.add('ok');
+    // Mostrar diferencia inline sin redibujar todo
+    const p=prods.find(x=>x.id===pid);
+    if(p){
+      const diff=val-(p.stock||0);
+      const diffEl=document.getElementById('inv-diff-'+pid);
+      if(diffEl){
+        diffEl.textContent=diff>0?'▲ +'+diff:diff<0?'▼ '+diff:'= OK';
+        diffEl.style.color=diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)';
+      }
+    }
+  }
+  // Solo actualizar contadores, NO redibujar los inputs
+  actualizarContadores();
+}
+
+function actualizarContadores(){
+  const contados=prods.filter(p=>conteoLocal[p.id]!==undefined).length;
+  const pendientes=prods.length-contados;
+  const valorFisico=prods.reduce((a,p)=>a+(conteoLocal[p.id]!==undefined?conteoLocal[p.id]:0)*(p.precioTotal||0),0);
+  const ec=document.getElementById('inv-cnt-c');const ep=document.getElementById('inv-cnt-p');const ev=document.getElementById('inv-cnt-v');
+  if(ec)ec.textContent=contados;
+  if(ep)ep.textContent=pendientes;
+  if(ev)ev.textContent=clp(valorFisico);
 }
 
 function finalizarInventario(){
@@ -2070,7 +2103,7 @@ Object.assign(window,{
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
   guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
-  renderConteo,setConteo,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
+  renderConteo,setConteo,actualizarContadores,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
 });
 
 if('serviceWorker' in navigator){
