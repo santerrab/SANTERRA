@@ -649,6 +649,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
     <button class="btn bg-blue" onclick="guardarNombres()">Guardar nombres</button>
     <div class="divl"></div>
     <button class="btn bg-ghost" onclick="closeM('mo-cfg');setTimeout(()=>{openM('mo-cats');renderCatsM();},180)">🗂️ Gestionar categorías</button>
+    <div class="divl"></div>
+    <div style="background:var(--redd);border:1px solid var(--redb);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px">⚠️ Zona de peligro</div>
+      <div style="font-size:11px;color:var(--txm);margin-bottom:10px;line-height:1.6">Elimina <strong>todas las facturas, movimientos y solicitudes</strong>, y resetea el stock de todos los productos a 0. Úsalo solo para limpiar datos de prueba.</div>
+      <button class="btn bg-red" style="padding:10px" onclick="limpiarDatosPrueba()">🗑️ Limpiar todos los datos de prueba</button>
+    </div>
     <button class="btn bg-ghost" onclick="closeM('mo-cfg')">Cerrar</button>
   </div>
 </div>
@@ -2016,6 +2022,41 @@ async function guardarNombres(){
 // Arrancar listener de config inmediatamente (para que el login muestre los nombres correctos)
 startCfgListener();
 
+// ── LIMPIAR DATOS DE PRUEBA ───────────────────────────────────────────────────
+async function limpiarDatosPrueba(){
+  if(!confirm('¿Eliminar TODAS las facturas, movimientos, solicitudes e inventarios?\n\nEl stock de todos los productos quedará en 0.\n\nEsta acción NO se puede deshacer.'))return;
+  if(!confirm('¿Estás seguro? Se borrarán todos los datos de prueba.'))return;
+  closeM('mo-cfg');
+  toast('Limpiando datos...','warn');
+  try{
+    const batch1=writeBatch(db);
+    // Borrar facturas
+    const fSnap=await getDocs(collection(db,'facturas'));
+    fSnap.docs.forEach(d=>batch1.delete(d.ref));
+    // Borrar movimientos
+    const mSnap=await getDocs(collection(db,'movimientos'));
+    mSnap.docs.forEach(d=>batch1.delete(d.ref));
+    await batch1.commit();
+
+    const batch2=writeBatch(db);
+    // Borrar solicitudes
+    const sSnap=await getDocs(collection(db,'solicitudes'));
+    sSnap.docs.forEach(d=>batch2.delete(d.ref));
+    // Borrar inventarios
+    const iSnap=await getDocs(collection(db,'inventarios'));
+    iSnap.docs.forEach(d=>batch2.delete(d.ref));
+    await batch2.commit();
+
+    // Resetear stock de todos los productos a 0
+    const pSnap=await getDocs(collection(db,'productos'));
+    const batch3=writeBatch(db);
+    pSnap.docs.forEach(d=>batch3.update(d.ref,{stock:0,actualizadoEn:serverTimestamp()}));
+    await batch3.commit();
+
+    toast('✓ Datos de prueba eliminados. Stock reseteado a 0.');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,goTo,openM,closeM,navSem,
   fStock,fDesp,fSols,fMis,fProds,fInv,fDiff,fDetalle,
@@ -2024,7 +2065,7 @@ Object.assign(window,{
   fnBuscar,fnAdd,fnChg,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
-  guardarPins,guardarNombres,abrirCfg,
+  guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
   renderConteo,setConteo,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
 });
