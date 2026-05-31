@@ -1313,8 +1313,8 @@ function renderDesp(){
       ${sol.nota?`<div class="dsc-nota">📝 ${sol.nota}</div>`:''}
       ${itemsH}
       <div class="dsc-act">
-        <button class="btn-desp" onclick="despachar('${sol.id}')">✓ Despachar</button>
         <button class="btn-rech" onclick="abrirRechazo('${sol.id}')">✕ Rechazar</button>
+        <button class="btn-desp" onclick="despachar('${sol.id}')">✓ Despachar</button>
       </div>
     </div>`;
   }).join('');
