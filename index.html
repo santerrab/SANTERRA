@@ -590,7 +590,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
     <div class="fg"><label class="fl">Tipo de impuesto</label>
       <select class="fi" id="pp-imp" onchange="calcPrev()">
         <option value="general">IVA 19% (General)</option>
-        <option value="carnes">IVA 19% + Imp. Carne (Carnes frescas / procesadas)</option>
+        <option value="carnes">IVA 19% + Anticipo 5% = 24% (Carnes frescas / procesadas)</option>
         <option value="bebidas_azucaradas">IVA 19% + IABA 18% (Bebidas azucaradas)</option>
         <option value="cerveza">IVA 19% + ILA 15.5% (Cervezas)</option>
         <option value="vino">IVA 19% + ILA 19.5% (Vinos / Licores)</option>
@@ -809,12 +809,10 @@ const gPB=()=>_cfg.pinB||null;
 const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4});
 
 // ── IMPUESTOS (IVA Chile + Impuesto Carnes) ───────────────────────────────────
-// Nota: en Chile las carnes frescas están exentas de IVA al consumidor final
-// pero a nivel de inventario gastronómico se aplica IVA 19% como insumo.
-// Se agrega línea "Carnes" = IVA 19% estándar con etiqueta diferenciada.
+// Nota: Carne en Chile = IVA 19% + Anticipo/Cambio de Sujeto 5% = 24% total
 const IMPS={
-  general:           {l:'IVA 19%',             t:.19},
-  carnes:            {l:'IVA 19% (Carnes)',     t:.19},
+  general:           {l:'IVA 19%',                      t:.19},
+  carnes:            {l:'IVA 19% + Anticipo 5% (Carnes)',t:.24},
   bebidas_azucaradas:{l:'IVA 19% + IABA 18%',  t:.37},
   cerveza:           {l:'IVA 19% + ILA 15.5%', t:.345},
   vino:              {l:'IVA 19% + ILA 19.5%', t:.385},
@@ -1644,8 +1642,13 @@ async function guardarProd(){
     actualizadoEn:serverTimestamp()
   };
   try{
-    if(editProdId){await updateDoc(doc(db,'productos',editProdId),data);toast('✓ Producto actualizado');}
-    else{await addDoc(collection(db,'productos'),{...data,stock:0,creadoEn:serverTimestamp()});toast('✓ Producto creado');}
+    if(editProdId){
+      await updateDoc(doc(db,'productos',editProdId),data);
+      toast(`✓ Actualizado — Precio final: ${clp(c.total)} / ${data.unidadMedida}`);
+    }else{
+      await addDoc(collection(db,'productos'),{...data,stock:0,creadoEn:serverTimestamp()});
+      toast(`✓ Producto creado — Precio: ${clp(c.total)} / ${data.unidadMedida}`);
+    }
     closeM('mo-prod');editProdId=null;
   }catch(e){toast('Error: '+e.message,'err');btn.disabled=false;btn.textContent='Guardar producto';}
 }
