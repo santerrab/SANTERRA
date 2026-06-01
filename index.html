@@ -578,7 +578,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
       <div class="fg" style="margin-bottom:0"><label class="fl">Categoría *</label><select class="fi" id="pp-cat" onchange="renderSubs()"><option value="">Seleccionar...</option></select></div>
       <div class="fg" style="margin-bottom:0"><label class="fl">Subcategoría</label><select class="fi" id="pp-subcat"><option value="">Seleccionar...</option></select></div>
     </div>
-    <div class="fg"><label class="fl">Proveedor habitual</label><input class="fi" type="text" id="pp-prov" placeholder="Ej: Distribuidora XYZ"></div>
+    <div class="fg">
+      <label class="fl">Proveedor habitual</label>
+      <input class="fi" type="text" id="pp-prov" placeholder="Escribe o selecciona..." autocomplete="off"
+        oninput="filtrarProveedoresProd(this.value)" onfocus="filtrarProveedoresProd(this.value)">
+      <div id="pp-prov-dd" style="display:none;background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-top:4px;max-height:150px;overflow-y:auto;z-index:10;position:relative"></div>
+    </div>
     <div class="fg"><label class="fl">Stock mínimo (alerta)</label><input class="fi" type="number" id="pp-min" value="5" min="0"></div>
     <div class="divl"></div>
     <div style="font-size:10px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">💰 Precio e Impuestos</div>
@@ -1397,7 +1402,25 @@ function filtrarProveedores(q){
   dd.innerHTML=filtrado.map(p=>`<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--bd3);font-size:14px" onclick="selProv('${p.replace(/'/g,"\\'")}')">🏪 ${p}</div>`).join('');
 }
 function selProv(n){document.getElementById('fn-prov').value=n;document.getElementById('prov-dropdown').style.display='none';}
-document.addEventListener('click',e=>{if(!e.target.closest('#fn-prov')&&!e.target.closest('#prov-dropdown'))document.getElementById('prov-dropdown').style.display='none';});
+
+// Dropdown proveedores en modal de productos
+function filtrarProveedoresProd(q){
+  const dd=document.getElementById('pp-prov-dd');
+  if(!dd)return;
+  const todos=[...new Set([...facts.map(f=>f.proveedor),...prods.map(p=>p.proveedor)].filter(Boolean))].sort();
+  const filtrado=q?todos.filter(p=>p.toLowerCase().includes(q.toLowerCase())):todos;
+  if(!filtrado.length){dd.style.display='none';return;}
+  dd.style.display='block';
+  dd.innerHTML=filtrado.map(p=>`<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--bd3);font-size:14px" onclick="selProvProd('${p.replace(/'/g,"\\'")}')">🏪 ${p}</div>`).join('');
+}
+function selProvProd(n){
+  const el=document.getElementById('pp-prov');if(el)el.value=n;
+  const dd=document.getElementById('pp-prov-dd');if(dd)dd.style.display='none';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#fn-prov')&&!e.target.closest('#prov-dropdown'))document.getElementById('prov-dropdown').style.display='none';
+  if(!e.target.closest('#pp-prov')&&!e.target.closest('#pp-prov-dd')){const dd=document.getElementById('pp-prov-dd');if(dd)dd.style.display='none';}
+});
 
 function abrirFact(){
   fnItems=[];renderFnItems();
@@ -1577,23 +1600,26 @@ function calcConversion(){
   const hint=document.getElementById('lbl-precio-hint');
   if(!ucompra||conv<=0){
     box.style.display='none';
-    if(lbl)lbl.textContent='Precio neto por unidad *';
-    if(hint)hint.textContent='';return;
+    if(lbl)lbl.textContent='Precio neto por '+unidad+' *';
+    if(hint)hint.textContent='';
+    return;
   }
-  if(lbl)lbl.textContent=`Precio neto por ${ucompra} (precio del bulto) *`;
-  if(hint)hint.textContent=`→ El sistema divide entre ${conv} para obtener el precio por ${unidad}`;
+  // Hay bulto: el precio se ingresa POR BULTO y el sistema divide
+  if(lbl)lbl.textContent='Precio neto por '+ucompra+' (precio total del bulto) *';
+  if(hint)hint.innerHTML=`<span style="color:var(--blue)">→ Ingresa el valor de la ${ucompra} completa. El sistema divide ÷ ${conv} para obtener el precio por ${unidad}.</span>`;
   const neto=parseFloat(document.getElementById('pp-neto').value)||0;
   const tipo=document.getElementById('pp-imp').value;
   if(!neto){box.style.display='none';return;}
-  // LÓGICA CORRECTA: precio ingresado es POR BULTO → dividir para obtener unit
   const netoPorUnit=neto/conv;
   const c=calcImp(netoPorUnit,tipo);
   box.style.display='block';
   box.innerHTML=`
-    <strong style="color:var(--blue)">📦 Cálculo automático por unidad</strong><br>
-    Precio neto por ${ucompra}: <strong>${clp(neto)}</strong><br>
-    Precio neto por ${unidad}: <strong style="color:var(--green)">${clp(netoPorUnit)}</strong><br>
-    Precio con impuesto por ${unidad}: <strong style="color:var(--accent)">${clp(c.total)}</strong>`;
+    <div style="font-size:12px;line-height:2;color:var(--txm)">
+      <strong style="color:var(--blue)">📦 Cálculo automático</strong><br>
+      Precio neto por ${ucompra}: <strong style="color:var(--tx)">${clp(neto)}</strong><br>
+      ÷ ${conv} ${unidad}s = <strong style="color:var(--green)">${clp(netoPorUnit)} neto por ${unidad}</strong><br>
+      + ${IMPS[tipo]?.l||'IVA 19%'} = <strong style="color:var(--accent)">${clp(c.total)} c/imp por ${unidad}</strong>
+    </div>`;
 }
 function calcPrev(){
   const nBulto=parseFloat(document.getElementById('pp-neto').value)||0;
@@ -2098,7 +2124,7 @@ Object.assign(window,{
   fStock,fDesp,fSols,fMis,fProds,fInv,fDiff,fDetalle,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,
   togD,setD,despachar,abrirRechazo,confirmarRechazo,
-  fnBuscar,fnAdd,fnChg,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,
+  fnBuscar,fnAdd,fnChg,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
   guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,
