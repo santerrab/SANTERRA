@@ -288,6 +288,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
 .empty{text-align:center;padding:28px 16px;color:var(--txd)}.ei{font-size:36px;margin-bottom:8px}.et{font-size:13px}
 .offline-bar{display:none;background:var(--yellowd);border-bottom:1px solid var(--yellowb);padding:5px 16px;font-size:11px;color:var(--yellow);text-align:center;font-weight:600}.offline-bar.show{display:block}
 
+/* ── BODEGAS ── */
+.bodega-section{margin-bottom:14px}
+.bodega-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;margin-bottom:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:800}
+.bodega-seca{background:var(--yellowd);border:1px solid var(--yellowb);color:var(--yellow)}
+.bodega-refrig{background:var(--blued);border:1px solid var(--blueb);color:var(--blue)}
+.bodega-congel{background:var(--purpled);border:1px solid var(--purpleb);color:var(--purple)}
+.bodega-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:auto;background:rgba(255,255,255,.15)}
+
+/* ── VERIFICACIÓN PEDIDO (perfil cocinas) ── */
+.verif-item{background:var(--sf2);border:1px solid var(--bd2);border-radius:11px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.verif-item.ok{border-left:3px solid var(--green)}
+.verif-item.parcial{border-left:3px solid var(--yellow)}
+.verif-item.falta{border-left:3px solid var(--red)}
+.verif-check{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.verif-check.ok{background:var(--greend);color:var(--green)}
+.verif-check.parcial{background:var(--yellowd);color:var(--yellow)}
+.verif-check.falta{background:var(--redd);color:var(--red)}
+.verif-nom{font-size:13px;font-weight:600;flex:1;min-width:0}
+.verif-det{font-size:11px;color:var(--txm);margin-top:2px}
+.verif-cant{font-family:'Inter',sans-serif;font-size:14px;font-weight:800;white-space:nowrap;flex-shrink:0}
+
 /* ── PC ── */
 @media(min-width:900px){
   .pg{padding:24px 32px;padding-bottom:24px;max-width:1200px;margin:0 auto}
@@ -518,6 +539,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
 </div><!-- /app -->
 
 <!-- MODALES -->
+<!-- MODAL VERIFICACIÓN PEDIDO (cocinas) -->
+<div class="ovl" id="mo-verif">
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="mt">✅ Verificar pedido recibido</div>
+    <div class="mt-sub" id="verif-sub">Confirma lo que llegó</div>
+    <div id="verif-resumen" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px"></div>
+    <div id="verif-lista"></div>
+    <div style="background:var(--greend);border:1px solid var(--greenb);border-radius:10px;padding:12px;margin:12px 0;font-size:12px;color:var(--txm);display:none" id="verif-ok-msg">
+      ✅ <strong style="color:var(--green)">Todo llegó correctamente.</strong> El pedido está completo.
+    </div>
+    <div style="background:var(--yellowd);border:1px solid var(--yellowb);border-radius:10px;padding:12px;margin:12px 0;font-size:12px;color:var(--txm);display:none" id="verif-parcial-msg">
+      ⚠️ <strong style="color:var(--yellow)">Pedido incompleto.</strong> Algunos productos llegaron en cantidad diferente a lo solicitado.
+    </div>
+    <button class="btn bg-ghost" onclick="closeM('mo-verif')">Cerrar</button>
+  </div>
+</div>
+
 <div class="ovl" id="mo-rechazo">
   <div class="modal"><div class="mh"></div><div class="mt">✕ Rechazar solicitud</div>
     <div class="fg"><label class="fl">Motivo *</label><textarea class="fi" id="f-motivo" rows="3" placeholder="Indica el motivo..."></textarea></div>
@@ -583,6 +622,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
       <input class="fi" type="text" id="pp-prov" placeholder="Escribe o selecciona..." autocomplete="off"
         oninput="filtrarProveedoresProd(this.value)" onfocus="filtrarProveedoresProd(this.value)">
       <div id="pp-prov-dd" style="display:none;background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-top:4px;max-height:150px;overflow-y:auto;z-index:10;position:relative"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Bodega de almacenamiento *</label>
+      <select class="fi" id="pp-bodega" onchange="calcConversion()">
+        <option value="seca">🏠 Bodega Seca (sin refrigeración)</option>
+        <option value="refrigeracion">❄️ Cámara de Refrigeración</option>
+        <option value="congelacion">🧊 Cámara de Congelación</option>
+      </select>
+      <div style="font-size:10px;color:var(--txm);margin-top:4px" id="pp-bodega-hint"></div>
     </div>
     <div class="fg"><label class="fl">Stock mínimo (alerta)</label><input class="fi" type="number" id="pp-min" value="5" min="0"></div>
     <div class="divl"></div>
@@ -1300,14 +1348,26 @@ function renderDesp(){
   let ss=fDE?sols.filter(s=>s.estado===fDE):[...sols];
   if(!ss.length){lista.innerHTML=`<div class="empty"><div class="ei">${fDE==='pendiente'?'✅':'📋'}</div><div class="et">Sin solicitudes</div></div>`;return;}
   if(fDE!=='pendiente'){lista.innerHTML=ss.map(s=>solCard(s)).join('');return;}
+  const BODEGAS={
+    seca:         {label:'🏠 Bodega Seca',              cls:'bodega-seca'},
+    refrigeracion:{label:'❄️ Cámara de Refrigeración',  cls:'bodega-refrig'},
+    congelacion:  {label:'🧊 Cámara de Congelación',    cls:'bodega-congel'},
+  };
   lista.innerHTML=ss.map(sol=>{
     if(!despEst[sol.id])despEst[sol.id]={};
-    const itemsH=(sol.items||[]).map(it=>{
-      const p=prods.find(x=>x.id===it.productoId);const sa=p?.stock||0;
+    const grupos={seca:[],refrigeracion:[],congelacion:[]};
+    (sol.items||[]).forEach(it=>{
+      const p=prods.find(x=>x.id===it.productoId);
+      const b=p?.bodega||'seca';
+      if(!grupos[b])grupos[b]=[];
+      grupos[b].push({...it,prod:p});
+    });
+    const renderItem=it=>{
+      const p=it.prod;const sa=p?.stock||0;
       const isKg=['kg','g','lt','ml'].includes((it.unidadMedida||'').toLowerCase());
       const est=despEst[sol.id][it.productoId]||{tipo:'p',cant:it.cantidad};
       return`<div class="di">
-        <div class="di-inf"><div class="di-nom">${it.nombreProducto}</div><div class="di-det">Pedido: <strong>${clpn(it.cantidad)} ${it.unidadMedida||''}</strong> · <span class="badge ${sa===0?'bg-r-s':sa<it.cantidad?'bg-y-s':'bg-g-s'}">Cámara: ${clpn(sa)}</span></div></div>
+        <div class="di-inf"><div class="di-nom">${it.nombreProducto}</div><div class="di-det">Pedido: <strong>${clpn(it.cantidad)} ${it.unidadMedida||''}</strong> · <span class="badge ${sa===0?'bg-r-s':sa<it.cantidad?'bg-y-s':'bg-g-s'}">Stock: ${clpn(sa)}</span></div></div>
         <div class="di-right">
           <button class="di-chk ${est.tipo==='ok'?'ok':est.tipo==='ss'?'ss':''}" onclick="togD('${sol.id}','${it.productoId}',${it.cantidad})">${est.tipo==='ok'?'✓':est.tipo==='ss'?'✗':''}</button>
           <div style="display:flex;align-items:center;gap:4px">
@@ -1316,11 +1376,19 @@ function renderDesp(){
           </div>
         </div>
       </div>`;
+    };
+    const bodegasHtml=Object.entries(grupos).map(([key,items])=>{
+      if(!items.length)return'';
+      const b=BODEGAS[key]||BODEGAS.seca;
+      return`<div class="bodega-section">
+        <div class="bodega-hdr ${b.cls}">${b.label}<span class="bodega-badge">${items.length} producto${items.length>1?'s':''}</span></div>
+        ${items.map(renderItem).join('')}
+      </div>`;
     }).join('');
     return`<div class="dsc" id="dsc-${sol.id}">
       <div class="dsc-hdr"><div><div class="dsc-nom">${sol.nombreSolicitante||sol.creadoPor||'—'}</div><div class="dsc-fecha">${fDate(sol.creadoEn)}</div></div><span class="badge bg-y-s">Pendiente</span></div>
       ${sol.nota?`<div class="dsc-nota">📝 ${sol.nota}</div>`:''}
-      ${itemsH}
+      ${bodegasHtml}
       <div class="dsc-act">
         <button class="btn-rech" onclick="abrirRechazo('${sol.id}')">✕ Rechazar</button>
         <button class="btn-desp" onclick="despachar('${sol.id}')">✓ Despachar</button>
@@ -1358,6 +1426,49 @@ async function confirmarRechazo(){
   toast('Rechazado');closeM('mo-rechazo');
 }
 
+// ── VERIFICACIÓN PEDIDO (cocinas) ─────────────────────────────────────────────
+function abrirVerif(solId){
+  const sol=sols.find(x=>x.id===solId);if(!sol)return;
+  document.getElementById('verif-sub').textContent=
+    'Pedido del '+fDate(sol.creadoEn)+' · '+( sol.itemsDespacho||sol.items||[]).length+' productos';
+  const items=sol.items||[];
+  const despacho=sol.itemsDespacho||[];
+  let todoOk=true,hayParcial=false;
+  document.getElementById('verif-lista').innerHTML=items.map(it=>{
+    const d=despacho.find(x=>x.productoId===it.productoId);
+    const despachado=d?d.cantidadDespachada:0;
+    const ok=despachado>=it.cantidad;
+    const parcial=despachado>0&&despachado<it.cantidad;
+    const falta=despachado===0;
+    if(!ok)todoOk=false;
+    if(parcial)hayParcial=true;
+    const estado=ok?'ok':parcial?'parcial':'falta';
+    const icono=ok?'✓':parcial?'~':'✗';
+    return`<div class="verif-item ${estado}">
+      <div class="verif-check ${estado}">${icono}</div>
+      <div style="flex:1;min-width:0">
+        <div class="verif-nom">${it.nombreProducto}</div>
+        <div class="verif-det">${ok?'Llegó completo':parcial?`Llegó ${clpn(despachado)} de ${clpn(it.cantidad)}`:'No llegó'} ${it.unidadMedida||''}</div>
+      </div>
+      <div class="verif-cant" style="color:${ok?'var(--green)':parcial?'var(--yellow)':'var(--red)'}">
+        ${clpn(despachado)}/${clpn(it.cantidad)}<div style="font-size:9px;color:var(--txm);text-align:right">${it.unidadMedida||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  // Resumen
+  const total=items.length;
+  const completos=items.filter(it=>{const d=despacho.find(x=>x.productoId===it.productoId);return d&&d.cantidadDespachada>=it.cantidad;}).length;
+  const parciales=items.filter(it=>{const d=despacho.find(x=>x.productoId===it.productoId);return d&&d.cantidadDespachada>0&&d.cantidadDespachada<it.cantidad;}).length;
+  const faltantes=items.filter(it=>{const d=despacho.find(x=>x.productoId===it.productoId);return !d||d.cantidadDespachada===0;}).length;
+  document.getElementById('verif-resumen').innerHTML=`
+    <div class="st ac-g" style="text-align:center"><div class="sl" style="text-align:center">Completos</div><div class="sv" style="color:var(--green);text-align:center">${completos}</div></div>
+    <div class="st ac-y" style="text-align:center"><div class="sl" style="text-align:center">Parciales</div><div class="sv" style="color:var(--yellow);text-align:center">${parciales}</div></div>
+    <div class="st ac-r" style="text-align:center"><div class="sl" style="text-align:center">No llegaron</div><div class="sv" style="color:var(--red);text-align:center">${faltantes}</div></div>`;
+  document.getElementById('verif-ok-msg').style.display=todoOk?'block':'none';
+  document.getElementById('verif-parcial-msg').style.display=(!todoOk)?'block':'none';
+  openM('mo-verif');
+}
+
 // ── SOLICITUDES ──────────────────────────────────────────────────────────────
 let fSE='';
 function fSols(e,btn){fSE=e;document.querySelectorAll('#pg-sols .chip').forEach(c=>c.classList.remove('on'));btn.classList.add('on');renderSolsPage();}
@@ -1368,12 +1479,24 @@ function renderSolsPage(){
 }
 function solCard(s){
   const em={pendiente:{c:'bg-y-s',l:'Pendiente'},despachada:{c:'bg-g-s',l:'Despachada'},rechazada:{c:'bg-r-s',l:'Rechazada'}};
+  const esCocina=['c1','c2','c3','c4'].includes(role);
+  const puedeverif=esCocina&&s.estado==='despachada'&&s.creadoPor===role;
   return`<div class="solc ${s.estado}">
-    <div class="solc-hdr"><span class="badge ${em[s.estado]?.c||''}">${em[s.estado]?.l||s.estado}</span><span style="font-size:11px;color:var(--txm)">${fDate(s.creadoEn)}</span></div>
+    <div class="solc-hdr">
+      <span class="badge ${em[s.estado]?.c||''}">${em[s.estado]?.l||s.estado}</span>
+      <span style="font-size:11px;color:var(--txm)">${fDate(s.creadoEn)}</span>
+    </div>
     <div style="font-size:11px;color:var(--txm);margin-bottom:6px">Área: <strong>${s.nombreSolicitante||s.creadoPor||'—'}</strong></div>
-    <div class="sol-tags">${(s.items||[]).map(it=>{const d=s.itemsDespacho?.find(x=>x.productoId===it.productoId);return`<span class="sol-tag">${it.nombreProducto}: <strong>${d?clpn(d.cantidadDespachada)+'/'+clpn(it.cantidad):clpn(it.cantidad)} ${it.unidadMedida||''}</strong></span>`;}).join('')}</div>
+    <div class="sol-tags">${(s.items||[]).map(it=>{
+      const d=s.itemsDespacho?.find(x=>x.productoId===it.productoId);
+      const ok=d&&d.cantidadDespachada>=it.cantidad;
+      const parcial=d&&d.cantidadDespachada>0&&d.cantidadDespachada<it.cantidad;
+      const color=ok?'var(--green)':parcial?'var(--yellow)':'';
+      return`<span class="sol-tag" style="${color?'border-color:'+color+';color:'+color:''}">${it.nombreProducto}: <strong>${d?clpn(d.cantidadDespachada)+'/'+clpn(it.cantidad):clpn(it.cantidad)} ${it.unidadMedida||''}</strong></span>`;
+    }).join('')}</div>
     ${s.nota?`<div style="font-size:11px;color:var(--txm);margin-top:4px">📝 ${s.nota}</div>`:''}
     ${s.estado==='rechazada'&&s.motivoRechazo?`<div style="font-size:11px;color:var(--red);margin-top:4px">❌ ${s.motivoRechazo}</div>`:''}
+    ${puedeverif?`<button onclick="abrirVerif('${s.id}')" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--greenb);background:var(--greend);color:var(--green);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">✅ Verificar lo recibido</button>`:''}
   </div>`;
 }
 
@@ -1572,6 +1695,8 @@ function abrirProd(id=null){
   document.getElementById('pp-nombre').value=p?.nombre||'';
   document.getElementById('pp-prov').value=p?.proveedor||'';
   document.getElementById('pp-min').value=p?.stockMinimo||5;
+  document.getElementById('pp-bodega').value=p?.bodega||'seca';
+  document.getElementById('pp-bodega-hint').textContent='';
   document.getElementById('pp-neto').value=p?.precioNeto||'';
   document.getElementById('pp-unidad').value=p?.unidadMedida||'unidad';
   document.getElementById('pp-imp').value=p?.tipoImpuesto||'general';
@@ -1590,6 +1715,20 @@ function renderSubs(sv=''){
   const el=document.getElementById('pp-subcat');
   el.innerHTML='<option value="">Seleccionar...</option>'+(cat?.subcategorias||[]).map(s=>`<option value="${s}"${s===sv?' selected':''}>${s}</option>`).join('');
   if(sv)el.value=sv;
+  // Sugerir bodega según categoría
+  const catNom=(document.getElementById('pp-cat').value||'').toLowerCase();
+  const hint=document.getElementById('pp-bodega-hint');
+  const bodSel=document.getElementById('pp-bodega');
+  let sugerida=null;
+  if(catNom.includes('congelado')||catNom.includes('helado')){sugerida='congelacion';}
+  else if(catNom.includes('carne')||catNom.includes('ave')||catNom.includes('mariscos')||catNom.includes('pescado')||catNom.includes('lácteo')||catNom.includes('lacteo')||catNom.includes('huevo')||catNom.includes('frutas')||catNom.includes('verdura')){sugerida='refrigeracion';}
+  else if(catNom.includes('abarrote')||catNom.includes('bebida')||catNom.includes('panadería')||catNom.includes('panaderia')||catNom.includes('limpieza')){sugerida='seca';}
+  if(sugerida&&!bodSel.value){bodSel.value=sugerida;}
+  if(sugerida&&hint){
+    const names={seca:'Bodega Seca',refrigeracion:'Cámara de Refrigeración',congelacion:'Cámara de Congelación'};
+    hint.textContent='→ Sugerido: '+names[sugerida];
+    hint.style.color='var(--blue)';
+  }
 }
 function calcConversion(){
   const ucompra=document.getElementById('pp-ucompra').value.trim();
@@ -1660,6 +1799,7 @@ async function guardarProd(){
     nombre:nom,categoria:cat,subcategoria:document.getElementById('pp-subcat').value,
     unidadMedida:document.getElementById('pp-unidad').value,
     stockMinimo:parseInt(document.getElementById('pp-min').value)||5,
+    bodega:document.getElementById('pp-bodega').value||'seca',
     proveedor:document.getElementById('pp-prov').value.trim(),
     // Guardamos precio neto POR UNIDAD
     precioNeto:Math.round(netoUnit),
@@ -2123,7 +2263,7 @@ Object.assign(window,{
   selRole,pi,pb2,cPin,logout,goTo,openM,closeM,navSem,
   fStock,fDesp,fSols,fMis,fProds,fInv,fDiff,fDetalle,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,
-  togD,setD,despachar,abrirRechazo,confirmarRechazo,
+  togD,setD,despachar,abrirRechazo,confirmarRechazo,abrirVerif,
   fnBuscar,fnAdd,fnChg,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
