@@ -382,6 +382,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
     <div class="rcard" id="rc-c2" onclick="selRole('c2')"><div class="rci">🍮</div><div class="rcn" id="lbl-c2">Postres</div></div>
     <div class="rcard" id="rc-c4" onclick="selRole('c4')"><div class="rci">🍹</div><div class="rcn" id="lbl-c4">Barra</div></div>
   </div>
+  <!-- Servicio: ocupa fila completa -->
+  <div style="width:100%;max-width:320px;margin-top:10px">
+    <div class="rcard" id="rc-serv" onclick="selRole('serv')" style="padding:14px 10px;text-align:center">
+      <div class="rci">🍴</div><div class="rcn" id="lbl-serv">Servicio</div><div class="rcd">Pedidos · Móvil</div>
+    </div>
+  </div>
 </div>
 
 <!-- APP -->
@@ -644,7 +650,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
       <select class="fi" id="pp-imp" onchange="calcPrev()">
         <option value="general">IVA 19% (General)</option>
         <option value="carnes">IVA 19% + Anticipo 5% = 24% (Carnes frescas / procesadas)</option>
-        <option value="bebidas_azucaradas">IVA 19% + IABA 18% (Bebidas azucaradas)</option>
+        <option value="bebidas_azucaradas_10">IVA 19% + IABA 10% = 29% (Bebidas analcohólicas &lt;15g azúcar/240ml)</option>
+        <option value="bebidas_azucaradas">IVA 19% + IABA 18% = 37% (Bebidas azucaradas &gt;15g azúcar/240ml)</option>
         <option value="cerveza">IVA 19% + ILA 15.5% (Cervezas)</option>
         <option value="vino">IVA 19% + ILA 19.5% (Vinos / Licores)</option>
         <option value="destilados">IVA 19% + ILA 31.5% (Destilados +35°)</option>
@@ -699,6 +706,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
     <div class="fg"><label class="fl">Área 2</label><input class="fi" type="text" id="cfg-c2"></div>
     <div class="fg"><label class="fl">Área 3</label><input class="fi" type="text" id="cfg-c3"></div>
     <div class="fg"><label class="fl">Área 4</label><input class="fi" type="text" id="cfg-c4"></div>
+    <div class="fg"><label class="fl">Servicio</label><input class="fi" type="text" id="cfg-serv" placeholder="Servicio"></div>
     <button class="btn bg-blue" onclick="guardarNombres()">Guardar nombres</button>
     <div class="divl"></div>
     <button class="btn bg-ghost" onclick="closeM('mo-cfg');setTimeout(()=>{openM('mo-cats');renderCatsM();},180)">🗂️ Gestionar categorías</button>
@@ -833,7 +841,7 @@ async function autoSetup(){
 // ── CONFIG GLOBAL (Firestore) ─────────────────────────────────────────────────
 // PINs y nombres de área se guardan en Firestore/config/app
 // para que sean iguales en TODOS los dispositivos.
-let _cfg={pinE:'1234',pinB:null,c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra'};
+let _cfg={pinE:'1234',pinB:null,c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra',serv:'Servicio'};
 let uCfg=null;
 
 function startCfgListener(){
@@ -847,9 +855,9 @@ function startCfgListener(){
         c2:d.c2||'Postres',
         c3:d.c3||'Buffet',
         c4:d.c4||'Barra',
+        serv:d.serv||'Servicio',
       };
-      // Actualizar etiquetas de áreas en el login en tiempo real
-      ['c1','c2','c3','c4'].forEach(k=>{
+      ['c1','c2','c3','c4','serv'].forEach(k=>{
         const el=document.getElementById('lbl-'+k);
         if(el)el.textContent=_cfg[k];
       });
@@ -859,19 +867,21 @@ function startCfgListener(){
 
 const gPE=()=>_cfg.pinE||'1234';
 const gPB=()=>_cfg.pinB||null;
-const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4});
+const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4,serv:_cfg.serv||'Servicio'});
 
 // ── IMPUESTOS (IVA Chile + Impuesto Carnes) ───────────────────────────────────
 // Nota: Carne en Chile = IVA 19% + Anticipo/Cambio de Sujeto 5% = 24% total
+// IABA 10%: bebidas <15g azúcar/240ml | IABA 18%: bebidas >15g azúcar/240ml
 const IMPS={
-  general:           {l:'IVA 19%',                      t:.19},
-  carnes:            {l:'IVA 19% + Anticipo 5% (Carnes)',t:.24},
-  bebidas_azucaradas:{l:'IVA 19% + IABA 18%',  t:.37},
-  cerveza:           {l:'IVA 19% + ILA 15.5%', t:.345},
-  vino:              {l:'IVA 19% + ILA 19.5%', t:.385},
-  destilados:        {l:'IVA 19% + ILA 31.5%', t:.505},
-  tabaco:            {l:'IVA + Tabaco 60.1%',  t:.791},
-  exento:            {l:'Exento de IVA',        t:0},
+  general:              {l:'IVA 19%',               t:.19},
+  carnes:               {l:'IVA 19% + Anticipo 5%', t:.24},
+  bebidas_azucaradas_10:{l:'IVA 19% + IABA 10%',    t:.29},
+  bebidas_azucaradas:   {l:'IVA 19% + IABA 18%',    t:.37},
+  cerveza:              {l:'IVA 19% + ILA 15.5%',   t:.345},
+  vino:                 {l:'IVA 19% + ILA 19.5%',   t:.385},
+  destilados:           {l:'IVA 19% + ILA 31.5%',   t:.505},
+  tabaco:               {l:'IVA + Tabaco 60.1%',    t:.791},
+  exento:               {l:'Exento de IVA',          t:0},
 };
 function calcImp(n,tipo){
   const t=IMPS[tipo]||IMPS.general;
@@ -934,7 +944,7 @@ function playAlarm(){
 function mostrarAlarma(sol){
   if(alarmaActiva)return;alarmaActiva=true;
   const n=gN();
-  const nm={c1:n.c1,c2:n.c2,c3:n.c3,c4:n.c4}[sol.creadoPor]||sol.nombreSolicitante||'Área';
+  const nm={c1:n.c1,c2:n.c2,c3:n.c3,c4:n.c4,serv:n.serv||'Servicio'}[sol.creadoPor]||sol.nombreSolicitante||'Área';
   document.getElementById('alarm-area-nombre').textContent=nm;
   document.getElementById('alarm-overlay').classList.add('on');
   playAlarm();if('vibrate' in navigator)navigator.vibrate([200,100,200,100,400]);
@@ -949,7 +959,7 @@ function selRole(r){
   if(r==='encargado'){document.getElementById('rc-enc').classList.add('on');abrirPin('encargado','👑 Encargado','Ingresa tu PIN de 4 dígitos','enc');}
   else if(r==='bodeguero'&&pb){document.getElementById('rc-bod').classList.add('on-blue');abrirPin('bodeguero','🚚 Bodeguero','Ingresa tu PIN','bod');}
   else if(r==='bodeguero'){document.getElementById('rc-bod').classList.add('on-blue');enterApp('bodeguero');}
-  else{document.getElementById('rc-'+r).classList.add('on-purple');enterApp(r);}
+  else{document.getElementById('rc-'+r)?.classList.add('on-purple');enterApp(r);}
 }
 
 function abrirPin(target,titulo,sub,tipo){
@@ -996,7 +1006,8 @@ function enterApp(r){
     c2:{l:`🍮 ${n.c2}`,cls:'r-coc',sub:'Pedidos a bodega'},
     c3:{l:`🍽️ ${n.c3}`,cls:'r-coc',sub:'Pedidos a bodega'},
     c4:{l:`🍹 ${n.c4}`,cls:'r-coc',sub:'Pedidos a bodega'},
-  }[r];
+    serv:{l:`🍴 ${n.serv||'Servicio'}`,cls:'r-coc',sub:'Pedidos a bodega'},
+  }[r]||{l:r,cls:'r-coc',sub:''};
   document.getElementById('rbadge').textContent=info.l;
   document.getElementById('rbadge').className='rbadge '+info.cls;
   document.getElementById('hdr-sub').innerHTML=info.sub;
@@ -1021,19 +1032,18 @@ function buildNav(r){
     {id:'pg-prods',i:iPr(),l:'Productos'},{id:'pg-rep',i:iR(),l:'Reporte'},
     {id:'pg-inv',i:iInv(),l:'Inventario'},
   ];
-  // Bodeguero: Despachos primero, sin Almacén
+  // Bodeguero: Despachos primero, sin Almacén, sin Inventario
   const bod=[
     {id:'pg-desp',i:iDe(),l:'Despachos',badge:true},
     {id:'pg-dash',i:iD(),l:'Inicio'},
-    {id:'pg-inv',i:iInv(),l:'Inventario'},
   ];
-  // Cocinas: sin Almacén, Inicio en medio
+  // Cocinas y Servicio: Pedir · Inicio · Mis pedidos
   const coc=[
     {id:'pg-pedir',i:iB(),l:'Pedir'},
     {id:'pg-dash',i:iD(),l:'Inicio'},
     {id:'pg-mispedidos',i:iSo(),l:'Mis pedidos'},
   ];
-  const tabs={encargado:enc,bodeguero:bod,c1:coc,c2:coc,c3:coc,c4:coc}[r]||coc;
+  const tabs={encargado:enc,bodeguero:bod,c1:coc,c2:coc,c3:coc,c4:coc,serv:coc}[r]||coc;
   document.getElementById('nav-bar').innerHTML=tabs.map(t=>`
     <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
       ${t.i}<span>${t.l}</span>
@@ -1314,7 +1324,7 @@ function rmC(i){carrito.splice(i,1);renderCarrito();}
 async function enviarPedido(){
   if(carrito.length===0){toast('Agrega productos','err');return;}
   const btn=document.getElementById('btn-enviar');btn.disabled=true;btn.textContent='Enviando...';
-  const n=gN();const nomS={c1:n.c1,c2:n.c2,c3:n.c3,c4:n.c4}[role]||role;
+  const n=gN();const nomS={c1:n.c1,c2:n.c2,c3:n.c3,c4:n.c4,serv:n.serv||'Servicio'}[role]||role;
   try{
     await addDoc(collection(db,'solicitudes'),{
       items:carrito.map(it=>({productoId:it.pid,nombreProducto:it.nombre,cantidad:it.cantidad,unidadMedida:it.unidad})),
@@ -1337,6 +1347,9 @@ function renderMisPed(){
   if(fME)ss=ss.filter(s=>s.estado===fME);
   lista.innerHTML=ss.length?ss.map(s=>solCard(s)).join(''):'<div class="empty"><div class="ei">📋</div><div class="et">Sin pedidos aún</div></div>';
 }
+
+// Roles que usan el perfil de cocina/área
+const esAreaRole=r=>['c1','c2','c3','c4','serv'].includes(r);
 
 // ── DESPACHOS ─────────────────────────────────────────────────────────────────
 let fDE='pendiente';
@@ -1479,8 +1492,7 @@ function renderSolsPage(){
 }
 function solCard(s){
   const em={pendiente:{c:'bg-y-s',l:'Pendiente'},despachada:{c:'bg-g-s',l:'Despachada'},rechazada:{c:'bg-r-s',l:'Rechazada'}};
-  const esCocina=['c1','c2','c3','c4'].includes(role);
-  const puedeverif=esCocina&&s.estado==='despachada'&&s.creadoPor===role;
+  const puedeverif=esAreaRole(role)&&s.estado==='despachada'&&s.creadoPor===role;
   return`<div class="solc ${s.estado}">
     <div class="solc-hdr">
       <span class="badge ${em[s.estado]?.c||''}">${em[s.estado]?.l||s.estado}</span>
@@ -1607,7 +1619,9 @@ function renderFnItems(){
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px">
           <button class="ci-btn ci-m" onclick="fnChg(${i},-1)">−</button>
-          <span class="ci-n" style="font-size:16px;min-width:28px">${it.cantidad}</span>
+          <input type="number" min="${isKg?'0.1':'1'}" step="${isKg?'0.1':'1'}" value="${it.cantidad}"
+            style="width:64px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'Inter',sans-serif;font-size:17px;font-weight:800;padding:5px 4px;text-align:center;outline:none;-webkit-appearance:none"
+            oninput="setCantFn(${i},this.value)" onfocus="this.select()">
           <button class="ci-btn ci-p" onclick="fnChg(${i},1)">+</button>
           <span style="font-size:12px;color:var(--txm)">${unMostrar}</span>
         </div>
@@ -1622,7 +1636,18 @@ function renderFnItems(){
   }).join('');
   calcFnTotal();
 }
-function fnChg(i,d){fnItems[i].cantidad=Math.max(1,fnItems[i].cantidad+d);renderFnItems();}
+function setCantFn(i,v){
+  const val=parseFloat(v);
+  if(!isNaN(val)&&val>0)fnItems[i].cantidad=val;
+  calcFnTotal();
+}
+function fnChg(i,d){
+  const it=fnItems[i];
+  const isKg=['kg','g','lt','ml'].includes((it.unidad||'').toLowerCase());
+  const step=isKg?0.1:1;
+  fnItems[i].cantidad=Math.max(step,parseFloat((it.cantidad+d*step).toFixed(2)));
+  renderFnItems();
+}
 function fnPrecio(i,v){fnItems[i].precio=parseFloat(v)||0;calcFnTotal();}
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function calcFnTotal(){document.getElementById('fn-total').textContent=clp(fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0));}
@@ -1879,13 +1904,21 @@ function renderReporte(){
 
 // ── INVENTARIO FÍSICO ─────────────────────────────────────────────────────────
 let invFiltroCategoria='';
+let invFiltroBodega='';
 function renderInvChips(){
-  const cs=[...new Set(prods.map(p=>p.categoria).filter(Boolean))];
   const el=document.getElementById('inv-chips');if(!el)return;
-  el.innerHTML=`<button class="chip ${!invFiltroCategoria?'on':''}" onclick="fInv('',this)">Todos</button>`+
-    cs.map(c=>`<button class="chip ${invFiltroCategoria===c?'on':''}" onclick="fInv('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
+  el.innerHTML=
+    `<button class="chip ${!invFiltroBodega&&!invFiltroCategoria?'on':''}" onclick="fInv('','',this)">Todos</button>`+
+    `<button class="chip ${invFiltroBodega==='seca'?'on':''}" onclick="fInv('','seca',this)">🏠 Bodega Seca</button>`+
+    `<button class="chip ${invFiltroBodega==='refrigeracion'?'on':''}" onclick="fInv('','refrigeracion',this)">❄️ Refrigeración</button>`+
+    `<button class="chip ${invFiltroBodega==='congelacion'?'on':''}" onclick="fInv('','congelacion',this)">🧊 Congelación</button>`;
 }
-function fInv(c,btn){invFiltroCategoria=c;document.querySelectorAll('#inv-chips .chip').forEach(x=>x.classList.remove('on'));btn.classList.add('on');renderConteo();}
+function fInv(cat,bod,btn){
+  invFiltroCategoria=cat;invFiltroBodega=bod;
+  document.querySelectorAll('#inv-chips .chip').forEach(x=>x.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  renderConteo();
+}
 
 function nuevoInventario(){
   if(invActivo&&!confirm('Hay un conteo en progreso. ¿Iniciar uno nuevo?'))return;
@@ -1902,7 +1935,9 @@ function marcarTodosPendientes(){if(!confirm('¿Limpiar todo el conteo?'))return
 function renderConteo(){
   if(!invActivo)return;
   const q=(document.getElementById('inv-buscar').value||'').toLowerCase();
-  let pp=invFiltroCategoria?prods.filter(p=>p.categoria===invFiltroCategoria):[...prods];
+  let pp=[...prods];
+  if(invFiltroBodega)pp=pp.filter(p=>(p.bodega||'seca')===invFiltroBodega);
+  if(invFiltroCategoria)pp=pp.filter(p=>p.categoria===invFiltroCategoria);
   if(q)pp=pp.filter(p=>p.nombre.toLowerCase().includes(q));
   const contados=prods.filter(p=>conteoLocal[p.id]!==undefined).length;
   const pendientes=prods.length-contados;
@@ -1911,11 +1946,10 @@ function renderConteo(){
   document.getElementById('inv-cnt-p').textContent=pendientes;
   document.getElementById('inv-cnt-v').textContent=clp(valorFisico);
   const lista=document.getElementById('inv-conteo-lista');
-  if(!pp.length){lista.innerHTML='<div class="empty"><div class="et">Sin productos en esta categoría</div></div>';return;}
-  // Ordenar: pendientes primero
+  if(!pp.length){lista.innerHTML='<div class="empty"><div class="et">Sin productos en esta sección</div></div>';return;}
   pp.sort((a,b)=>{const ac=conteoLocal[a.id]!==undefined?1:0,bc=conteoLocal[b.id]!==undefined?1:0;return ac-bc;});
   const isKg=p=>['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
-  lista.innerHTML=pp.map(p=>{
+  const renderProd=p=>{
     const contado=conteoLocal[p.id]!==undefined;
     const val=contado?conteoLocal[p.id]:0;
     const precio=p.precioTotal||0;
@@ -1935,7 +1969,24 @@ function renderConteo(){
         <span id="inv-diff-${p.id}" style="font-size:11px;font-weight:700;color:${diff===null?'transparent':diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)'}">${diff===null?'':diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK'}</span>
       </div>
     </div>`;
-  }).join('');
+  };
+  // Si no hay filtro de bodega, agrupar por bodega
+  if(!invFiltroBodega&&!invFiltroCategoria&&!q){
+    const BDEF={seca:'🏠 Bodega Seca',refrigeracion:'❄️ Cámara de Refrigeración',congelacion:'🧊 Cámara de Congelación'};
+    const BCLS={seca:'bodega-seca',refrigeracion:'bodega-refrig',congelacion:'bodega-congel'};
+    const grupos={seca:[],refrigeracion:[],congelacion:[]};
+    pp.forEach(p=>{const b=p.bodega||'seca';if(!grupos[b])grupos[b]=[];grupos[b].push(p);});
+    lista.innerHTML=Object.entries(grupos).map(([key,items])=>{
+      if(!items.length)return'';
+      const contadosB=items.filter(p=>conteoLocal[p.id]!==undefined).length;
+      return`<div class="bodega-section">
+        <div class="bodega-hdr ${BCLS[key]||'bodega-seca'}">${BDEF[key]||key}<span class="bodega-badge">${contadosB}/${items.length}</span></div>
+        ${items.map(renderProd).join('')}
+      </div>`;
+    }).join('');
+  }else{
+    lista.innerHTML=pp.map(renderProd).join('');
+  }
 }
 function setConteo(pid,v,el){
   const val=parseFloat(v);
@@ -2187,6 +2238,7 @@ function cSug(n,btn){
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 function abrirCfg(){
   const n=gN();['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('cfg-'+k);if(el)el.value=n[k];});
+  const es=document.getElementById('cfg-serv');if(es)es.value=n.serv||'Servicio';
   document.getElementById('cfg-pe').value='';document.getElementById('cfg-pb').value='';
   openM('mo-cfg');
 }
@@ -2210,6 +2262,7 @@ async function guardarNombres(){
     c2:document.getElementById('cfg-c2').value.trim()||'Postres',
     c3:document.getElementById('cfg-c3').value.trim()||'Buffet',
     c4:document.getElementById('cfg-c4').value.trim()||'Barra',
+    serv:document.getElementById('cfg-serv')?.value.trim()||'Servicio',
   };
   try{
     await setDoc(doc(db,'config','app'),n,{merge:true});
@@ -2264,7 +2317,7 @@ Object.assign(window,{
   fStock,fDesp,fSols,fMis,fProds,fInv,fDiff,fDetalle,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,
   togD,setD,despachar,abrirRechazo,confirmarRechazo,abrirVerif,
-  fnBuscar,fnAdd,fnChg,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,
+  fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
   guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,
