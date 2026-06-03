@@ -496,7 +496,7 @@ body.light .prod-card,.light .li,.light .dsc{box-shadow:0 1px 3px rgba(0,0,0,.05
   <div id="carrito-wrap" style="display:none">
     <div style="font-size:11px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:8px">🛒 Tu pedido</div>
     <div id="carrito"></div>
-    <div class="fg" style="margin-top:10px"><label class="fl">Nota para bodega (opcional)</label><textarea class="fi" id="p-nota" rows="2" placeholder="Ej: Urgente para el servicio de hoy..."></textarea></div>
+    <div class="fg" style="margin-top:10px"><label class="fl">Nota para bodega (opcional)</label><textarea class="fi" id="p-nota" rows="2"></textarea></div>
     <button class="btn bg-acc" id="btn-enviar" onclick="enviarPedido()">📤 Enviar pedido a bodega</button>
   </div>
   <div id="pedir-empty" style="text-align:center;padding:32px 16px"><div style="font-size:44px;margin-bottom:10px">🔍</div><div style="font-size:15px;font-weight:600;color:var(--txm)">Busca un producto</div></div>
@@ -1518,7 +1518,7 @@ function renderDesp(){
     }).join('');
     return`<div class="dsc" id="dsc-${sol.id}">
       <div class="dsc-hdr"><div><div class="dsc-nom">${sol.nombreSolicitante||sol.creadoPor||'—'}${sol.subArea?` <span style="font-size:12px;color:var(--blue);font-weight:600">· ${sol.subArea}</span>`:''}</div><div class="dsc-fecha">${fDate(sol.creadoEn)}</div></div><span class="badge bg-y-s">Pendiente</span></div>
-      ${sol.subArea?`<div style="background:var(--blued);border:1px solid var(--blueb);border-radius:8px;padding:7px 12px;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--blue)">📍 Sub-área Buffet: <strong>${sol.subArea}</strong></div>`:''}      ${bodegasHtml}
+      ${sol.subArea?`<div style="background:var(--blued);border:1px solid var(--blueb);border-radius:8px;padding:7px 12px;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--blue)">📍 ${sol.subArea}</div>`:''}      ${bodegasHtml}
       <div class="dsc-act">
         <button class="btn-rech" onclick="abrirRechazo('${sol.id}')">✕ Rechazar</button>
         <button class="btn-desp" onclick="despachar('${sol.id}')">✓ Despachar</button>
