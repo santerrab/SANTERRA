@@ -288,6 +288,37 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
 .empty{text-align:center;padding:28px 16px;color:var(--txd)}.ei{font-size:36px;margin-bottom:8px}.et{font-size:13px}
 .offline-bar{display:none;background:var(--yellowd);border-bottom:1px solid var(--yellowb);padding:5px 16px;font-size:11px;color:var(--yellow);text-align:center;font-weight:600}.offline-bar.show{display:block}
 
+/* ── MODO DIURNO ── */
+body.light{
+  --bg:#f4f5f7;--sf:#ffffff;--sf2:#f0f1f3;--sf3:#e8eaed;
+  --bd:rgba(0,0,0,.1);--bd2:rgba(0,0,0,.07);--bd3:rgba(0,0,0,.04);
+  --tx:#1a1d23;--txm:#5a6375;--txd:#b0b7c3;
+  --accd:rgba(233,69,96,.08);--accb:rgba(233,69,96,.2);
+  --blued:rgba(59,130,246,.08);--blueb:rgba(59,130,246,.2);
+  --greend:rgba(16,185,129,.08);--greenb:rgba(16,185,129,.2);
+  --yellowd:rgba(245,158,11,.08);--yellowb:rgba(245,158,11,.2);
+  --redd:rgba(239,68,68,.08);--redb:rgba(239,68,68,.2);
+  --purpled:rgba(139,92,246,.08);--purpleb:rgba(139,92,246,.2);
+  --oranged:rgba(249,115,22,.08);--orangeb:rgba(249,115,22,.2);
+}
+body.light .hdr{box-shadow:0 1px 6px rgba(0,0,0,.08)}
+body.light .modal{box-shadow:0 -4px 24px rgba(0,0,0,.1)}
+body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+body.light .prod-card,.light .li,.light .dsc{box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.mode-toggle{background:none;border:1.5px solid var(--bd2);border-radius:20px;padding:5px 10px;font-size:13px;cursor:pointer;color:var(--txm);font-family:'DM Sans',sans-serif;transition:all .15s;line-height:1}
+.mode-toggle:active{transform:scale(.93)}
+
+/* ── HORARIO BODEGUERO ── */
+.horario-banner{border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6}
+.horario-activo{background:var(--greend);border:1px solid var(--greenb);color:var(--green)}
+.horario-colacion{background:var(--yellowd);border:1px solid var(--yellowb);color:var(--yellow)}
+.horario-fuera{background:var(--redd);border:1px solid var(--redb);color:var(--red)}
+
+/* ── NOTIF PEDIDO INCOMPLETO ── */
+.notif-inc{background:var(--yellowd);border:1.5px solid var(--yellowb);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
+.notif-inc-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.notif-inc-txt{flex:1;font-size:12px;line-height:1.6}
+
 /* ── BODEGAS ── */
 .bodega-section{margin-bottom:14px}
 .bodega-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;margin-bottom:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:800}
@@ -396,7 +427,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
   <div class="hdr-l"><div style="font-size:22px">📦</div>
     <div><div class="hdr-tt">SANTERRA <span class="sdot" id="sdot"></span></div><div class="hdr-sb" id="hdr-sub">—</div></div>
   </div>
-  <div class="hdr-r"><div class="hdr-tm" id="hdr-tm"></div><button class="rbadge" id="rbadge" onclick="logout()">—</button></div>
+  <div class="hdr-r"><div class="hdr-tm" id="hdr-tm"></div><button class="mode-toggle" id="mode-btn" onclick="toggleMode()" title="Cambiar modo">🌙</button><button class="rbadge" id="rbadge" onclick="logout()">—</button></div>
 </div>
 <div class="sidebar" id="sidebar" style="display:none"><div id="sb-items"></div></div>
 <div class="pages-wrap" id="pages-wrap">
@@ -447,6 +478,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
 <!-- PEDIR -->
 <div class="pg" id="pg-pedir">
   <div class="pgt">Pedir a Bodega</div><div class="pgs" id="pedir-sub">Busca y agrega productos</div>
+  <!-- Sub-área opcional (solo visible para buffet c3) -->
+  <div id="pedir-subarea-wrap" style="display:none;margin-bottom:10px">
+    <label class="fl">Área de origen (opcional)</label>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <button class="chip" id="sa-" onclick="selSubArea('',this)">General</button>
+      <button class="chip" id="sa-caliente" onclick="selSubArea('Cuarto Caliente',this)">🔥 Cuarto Caliente</button>
+      <button class="chip" id="sa-frio" onclick="selSubArea('Cuarto Frío',this)">❄️ Cuarto Frío</button>
+      <button class="chip" id="sa-reposicion" onclick="selSubArea('Reposición',this)">📦 Reposición</button>
+      <button class="chip" id="sa-pastas" onclick="selSubArea('Pastas',this)">🍝 Pastas</button>
+      <button class="chip" id="sa-sushi" onclick="selSubArea('Sushi',this)">🍱 Sushi</button>
+      <button class="chip" id="sa-parrilla" onclick="selSubArea('Parrilla',this)">🥩 Parrilla</button>
+    </div>
+  </div>
   <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="p-buscar" type="text" placeholder="Escribe el nombre del producto..." autocomplete="off" oninput="pBuscar(this.value)"></div>
   <div class="sres" id="p-res"></div>
   <div id="carrito-wrap" style="display:none">
@@ -488,6 +532,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
 <!-- PRODUCTOS -->
 <div class="pg" id="pg-prods">
   <div class="ph"><div><div class="pgt">Productos</div><div class="pgs" id="prods-sub">Base de datos maestra</div></div><button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirProd()">+ Nuevo</button></div>
+  <!-- Buscador productos -->
+  <div class="swrap" style="margin-bottom:8px">
+    <span class="sicon">🔍</span>
+    <input class="sinput" id="prod-buscar" type="text" placeholder="Buscar producto..." autocomplete="off" oninput="renderProds()">
+  </div>
+  <!-- Filtro por bodega primero, luego categorías -->
+  <div class="chips" style="margin-bottom:4px" id="prod-bodega-chips">
+    <button class="chip on" onclick="fProdBodega('',this)">Todas las bodegas</button>
+    <button class="chip" onclick="fProdBodega('seca',this)">🏠 Bodega Seca</button>
+    <button class="chip" onclick="fProdBodega('refrigeracion',this)">❄️ Refrigeración</button>
+    <button class="chip" onclick="fProdBodega('congelacion',this)">🧊 Congelación</button>
+  </div>
   <div class="chips" id="prod-chips"></div>
   <div id="prods-lista"></div>
 </div>
@@ -584,6 +640,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
       <div id="prov-dropdown" style="display:none;background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-top:4px;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="fg"><label class="fl">Observación</label><input class="fi" type="text" id="fn-obs" placeholder="Notas opcionales..."></div>
+    <!-- Descuento global en factura -->
+    <div style="background:var(--greend);border:1px solid var(--greenb);border-radius:10px;padding:12px;margin-bottom:11px">
+      <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏷️ Descuento del proveedor (opcional)</div>
+      <div class="fr" style="margin-bottom:0">
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Descuento en %</label>
+          <input class="fi" type="number" id="fn-desc-pct" placeholder="0" min="0" max="100" step="0.1" oninput="calcDescuento('pct')">
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Descuento en $</label>
+          <input class="fi" type="number" id="fn-desc-monto" placeholder="0" min="0" oninput="calcDescuento('monto')">
+        </div>
+      </div>
+      <div id="fn-desc-preview" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600"></div>
+    </div>
     <div class="divl"></div>
     <div style="font-size:11px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:8px">Busca y agrega productos</div>
     <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="fn-buscar" type="text" placeholder="Nombre del producto..." autocomplete="off" oninput="fnBuscar(this.value)"></div>
@@ -648,14 +719,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
     </div>
     <div class="fg"><label class="fl">Tipo de impuesto</label>
       <select class="fi" id="pp-imp" onchange="calcPrev()">
-        <option value="general">IVA 19% (General)</option>
-        <option value="carnes">IVA 19% + Anticipo 5% = 24% (Carnes frescas / procesadas)</option>
-        <option value="bebidas_azucaradas_10">IVA 19% + IABA 10% = 29% (Bebidas analcohólicas &lt;15g azúcar/240ml)</option>
-        <option value="bebidas_azucaradas">IVA 19% + IABA 18% = 37% (Bebidas azucaradas &gt;15g azúcar/240ml)</option>
-        <option value="cerveza">IVA 19% + ILA 15.5% (Cervezas)</option>
-        <option value="vino">IVA 19% + ILA 19.5% (Vinos / Licores)</option>
-        <option value="destilados">IVA 19% + ILA 31.5% (Destilados +35°)</option>
-        <option value="tabaco">IVA 19% + Imp. Tabaco 60.1%</option>
+        <option value="general">IVA 19% — General (incl. harina de trigo)</option>
+        <option value="carnes">IVA 19% + Anticipo 5% = 24% — Carnes frescas / procesadas</option>
+        <option value="bebidas_azucaradas_10">IVA 19% + IABA 10% = 29% — Bebidas analcohólicas &lt;15g azúcar/240ml</option>
+        <option value="bebidas_azucaradas">IVA 19% + IABA 18% = 37% — Bebidas azucaradas &gt;15g azúcar/240ml</option>
+        <option value="cerveza">IVA 19% + ILA 20.5% = 39.5% — Cervezas (ILA20C)</option>
+        <option value="vino">IVA 19% + ILA 20.5% = 39.5% — Vinos, espumantes, sidras (ILA20V)</option>
+        <option value="vino_195">IVA 19% + ILA 19.5% = 38.5% — Vinos (tasa anterior)</option>
+        <option value="destilados">IVA 19% + ILA 31.5% = 50.5% — Licores, piscos, whisky, destilados</option>
+        <option value="tabaco">IVA 19% + Imp. Tabaco 60.1% — Tabaco</option>
         <option value="exento">Exento de IVA</option>
       </select>
     </div>
@@ -710,6 +782,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overf
     <button class="btn bg-blue" onclick="guardarNombres()">Guardar nombres</button>
     <div class="divl"></div>
     <button class="btn bg-ghost" onclick="closeM('mo-cfg');setTimeout(()=>{openM('mo-cats');renderCatsM();},180)">🗂️ Gestionar categorías</button>
+    <div class="divl"></div>
+    <div style="font-size:11px;color:var(--txm);text-transform:uppercase;font-weight:700;margin-bottom:10px">🕐 Horario del Bodeguero</div>
+    <div style="font-size:11px;color:var(--txm);margin-bottom:10px;line-height:1.6">Informa a las áreas cuándo está disponible el bodeguero y su hora de colación.</div>
+    <div class="fr" style="margin-bottom:11px">
+      <div class="fg" style="margin-bottom:0"><label class="fl">Desde</label><input class="fi" type="time" id="cfg-h-desde" value="08:00"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Hasta</label><input class="fi" type="time" id="cfg-h-hasta" value="18:00"></div>
+    </div>
+    <div class="fr" style="margin-bottom:11px">
+      <div class="fg" style="margin-bottom:0"><label class="fl">Colación desde</label><input class="fi" type="time" id="cfg-col-desde" value="13:00"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Colación hasta</label><input class="fi" type="time" id="cfg-col-hasta" value="14:00"></div>
+    </div>
+    <button class="btn bg-blue" onclick="guardarHorario()">Guardar horario</button>
     <div class="divl"></div>
     <div style="background:var(--redd);border:1px solid var(--redb);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px">⚠️ Zona de peligro</div>
@@ -872,16 +956,18 @@ const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4,serv:_cfg.serv||'Serv
 // ── IMPUESTOS (IVA Chile + Impuesto Carnes) ───────────────────────────────────
 // Nota: Carne en Chile = IVA 19% + Anticipo/Cambio de Sujeto 5% = 24% total
 // IABA 10%: bebidas <15g azúcar/240ml | IABA 18%: bebidas >15g azúcar/240ml
+// ILA20V = Vinos/espumantes 20.5% | ILA20C = Cervezas 20.5% | Destilados 31.5%
 const IMPS={
-  general:              {l:'IVA 19%',               t:.19},
-  carnes:               {l:'IVA 19% + Anticipo 5%', t:.24},
-  bebidas_azucaradas_10:{l:'IVA 19% + IABA 10%',    t:.29},
-  bebidas_azucaradas:   {l:'IVA 19% + IABA 18%',    t:.37},
-  cerveza:              {l:'IVA 19% + ILA 15.5%',   t:.345},
-  vino:                 {l:'IVA 19% + ILA 19.5%',   t:.385},
-  destilados:           {l:'IVA 19% + ILA 31.5%',   t:.505},
-  tabaco:               {l:'IVA + Tabaco 60.1%',    t:.791},
-  exento:               {l:'Exento de IVA',          t:0},
+  general:              {l:'IVA 19%',                       t:.19},
+  carnes:               {l:'IVA 19% + Anticipo 5%',         t:.24},
+  bebidas_azucaradas_10:{l:'IVA 19% + IABA 10%',            t:.29},
+  bebidas_azucaradas:   {l:'IVA 19% + IABA 18%',            t:.37},
+  cerveza:              {l:'IVA 19% + ILA 20.5% (ILA20C)',   t:.395},
+  vino:                 {l:'IVA 19% + ILA 20.5% (ILA20V)',   t:.395},
+  vino_195:             {l:'IVA 19% + ILA 19.5%',            t:.385},
+  destilados:           {l:'IVA 19% + ILA 31.5%',            t:.505},
+  tabaco:               {l:'IVA + Tabaco 60.1%',             t:.791},
+  exento:               {l:'Exento de IVA',                  t:0},
 };
 function calcImp(n,tipo){
   const t=IMPS[tipo]||IMPS.general;
@@ -1074,6 +1160,13 @@ function goTo(id){
   if(id==='pg-pedir'){
     document.getElementById('p-buscar').value='';
     document.getElementById('p-res').style.display='none';
+    // Mostrar sub-área solo para Buffet (c3)
+    const saWrap=document.getElementById('pedir-subarea-wrap');
+    if(saWrap)saWrap.style.display=role==='c3'?'block':'none';
+    subAreaActual='';
+    document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
+    const saDefault=document.getElementById('sa-');
+    if(saDefault)saDefault.classList.add('on');
     if(carrito.length===0){document.getElementById('carrito-wrap').style.display='none';document.getElementById('pedir-empty').style.display='block';}
   }
 }
@@ -1159,9 +1252,11 @@ function renderDash(){
     document.getElementById('dash-stats-bod').style.display='';
     const pp=sols.filter(s=>s.estado==='pendiente').length;
     document.getElementById('d-pp2').textContent=pp;
+    const alBod=document.getElementById('dash-al-bod');
+    alBod.innerHTML='';
+    renderHorarioBanner('dash-al-bod');
     const low=prods.filter(p=>(p.stock||0)<=(p.stockMinimo||5));
-    document.getElementById('dash-al-bod').innerHTML=low.length
-      ?`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:8px 0 8px">⚠️ Alertas de stock</div>`+low.map(p=>`<div class="li"><div><div class="lt">${p.nombre}</div></div><span class="badge ${(p.stock||0)===0?'bg-r-s':'bg-y-s'}">${(p.stock||0)===0?'Sin stock':(p.stock||0)+' '+(p.unidadMedida||'')}</span></div>`).join(''):'';
+    if(low.length)alBod.innerHTML+=`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:8px 0 6px">⚠️ Alertas de stock</div>`+low.map(p=>`<div class="li"><div><div class="lt">${p.nombre}</div></div><span class="badge ${(p.stock||0)===0?'bg-r-s':'bg-y-s'}">${(p.stock||0)===0?'Sin stock':(p.stock||0)+' '+(p.unidadMedida||'')}</span></div>`).join('');
 
   }else{
     document.getElementById('dash-stats-coc').style.display='';
@@ -1169,8 +1264,22 @@ function renderDash(){
     const mH=sols.filter(s=>{if(s.creadoPor!==role||s.estado!=='despachada')return false;const d=s.despachadoEn?.toDate?s.despachadoEn.toDate():null;return d&&d>=hoy;}).length;
     document.getElementById('d-mis-pend').textContent=mP;
     document.getElementById('d-mis-hoy').textContent=mH;
+    // Banner horario para cocinas
     const misUlt=sols.filter(s=>s.creadoPor===role).slice(0,3);
-    document.getElementById('dash-sols-coc').innerHTML=misUlt.length?misUlt.map(s=>solCard(s)).join(''):'<div class="empty" style="padding:12px"><div class="et">Sin pedidos aún</div></div>';
+    const cocContainer=document.getElementById('dash-sols-coc');
+    if(cocContainer){
+      // Agregar banner de horario encima de las solicitudes
+      let html='';
+      const h=getHorario();
+      const ahora=new Date();
+      const hhmm=ahora.getHours().toString().padStart(2,'0')+':'+ahora.getMinutes().toString().padStart(2,'0');
+      const enColacion=hhmm>=h.colDesde&&hhmm<h.colHasta;
+      const enHorario=hhmm>=h.desde&&hhmm<h.hasta;
+      if(enColacion)html+=`<div class="horario-banner horario-colacion" style="margin-bottom:10px">🍽️ <strong>Bodeguero en colación</strong> hasta las ${h.colHasta} hrs.</div>`;
+      else if(!enHorario)html+=`<div class="horario-banner horario-fuera" style="margin-bottom:10px">⚠️ <strong>Fuera de horario</strong> · Horario: ${h.desde}–${h.hasta} hrs.</div>`;
+      html+=misUlt.length?misUlt.map(s=>solCard(s)).join(''):'<div class="empty" style="padding:12px"><div class="et">Sin pedidos aún</div></div>';
+      cocContainer.innerHTML=html;
+    }
   }
 }
 
@@ -1329,6 +1438,7 @@ async function enviarPedido(){
     await addDoc(collection(db,'solicitudes'),{
       items:carrito.map(it=>({productoId:it.pid,nombreProducto:it.nombre,cantidad:it.cantidad,unidadMedida:it.unidad})),
       nota:document.getElementById('p-nota').value.trim(),
+      subArea:subAreaActual||null,
       creadoPor:role,nombreSolicitante:nomS,estado:'pendiente',creadoEn:serverTimestamp()
     });
     toast('✓ Pedido enviado');
@@ -1418,17 +1528,42 @@ function togD(sid,pid,cantSol){
 }
 function setD(sid,pid,v){if(!despEst[sid])despEst[sid]={};despEst[sid][pid]={tipo:parseFloat(v)===0?'ss':'parcial',cant:parseFloat(v)||0};}
 async function despachar(solId){
-  // Sin confirmación — despacho directo
   const sol=sols.find(x=>x.id===solId);if(!sol)return;
+  // Solo despachar items que están tiqueados (tipo 'ok' o 'parcial')
   const items=[];
-  for(const it of(sol.items||[])){const est=despEst[solId]?.[it.productoId];const cant=est?est.cant:it.cantidad;if(cant>0)items.push({...it,cantidadDespachada:cant});}
+  const noTiqueados=[];
+  for(const it of(sol.items||[])){
+    const est=despEst[solId]?.[it.productoId];
+    if(!est||est.tipo==='p'){
+      noTiqueados.push(it.nombreProducto);
+      continue; // No tiqueado → no se despacha
+    }
+    if(est.tipo==='ss'||est.cant===0)continue; // Sin stock → no despachar
+    const p=prods.find(x=>x.id===it.productoId);
+    const stockDisponible=p?.stock||0;
+    const cantFinal=Math.min(est.cant,stockDisponible); // Nunca más que el stock
+    if(cantFinal>0)items.push({...it,cantidadDespachada:cantFinal});
+  }
+  if(!items.length){toast('Tikea al menos un producto para despachar','err');return;}
   try{
     const batch=writeBatch(db);
-    for(const it of items){const r=doc(db,'productos',it.productoId);const s=await getDoc(r);if(s.exists())batch.update(r,{stock:Math.max(0,(s.data().stock||0)-it.cantidadDespachada),actualizadoEn:serverTimestamp()});}
-    batch.update(doc(db,'solicitudes',solId),{estado:'despachada',despachoPor:role,areaDestino:sol.creadoPor,itemsDespacho:items,despachadoEn:serverTimestamp()});
+    for(const it of items){
+      const r=doc(db,'productos',it.productoId);
+      const s=await getDoc(r);
+      if(s.exists())batch.update(r,{stock:Math.max(0,(s.data().stock||0)-it.cantidadDespachada),actualizadoEn:serverTimestamp()});
+    }
+    batch.update(doc(db,'solicitudes',solId),{
+      estado:'despachada',despachoPor:role,areaDestino:sol.creadoPor,
+      itemsDespacho:items,
+      itemsNoTiqueados:noTiqueados,
+      incompleto:noTiqueados.length>0||items.some(it=>it.cantidadDespachada<it.cantidad),
+      despachadoEn:serverTimestamp()
+    });
     await batch.commit();
     await addDoc(collection(db,'movimientos'),{tipo:'salida',solicitudId:solId,area:sol.creadoPor,nombreArea:sol.nombreSolicitante,items,realizadoPor:role,creadoEn:serverTimestamp()});
-    delete despEst[solId];toast('✓ Despacho registrado');
+    delete despEst[solId];
+    const msg=noTiqueados.length>0?`✓ Despachado (${noTiqueados.length} producto${noTiqueados.length>1?'s':''} sin tiquear)`:'✓ Despacho registrado';
+    toast(msg);
   }catch(e){toast('Error: '+e.message,'err');}
 }
 function abrirRechazo(id){rechazandoId=id;document.getElementById('f-motivo').value='';openM('mo-rechazo');}
@@ -1498,7 +1633,7 @@ function solCard(s){
       <span class="badge ${em[s.estado]?.c||''}">${em[s.estado]?.l||s.estado}</span>
       <span style="font-size:11px;color:var(--txm)">${fDate(s.creadoEn)}</span>
     </div>
-    <div style="font-size:11px;color:var(--txm);margin-bottom:6px">Área: <strong>${s.nombreSolicitante||s.creadoPor||'—'}</strong></div>
+    <div style="font-size:11px;color:var(--txm);margin-bottom:6px">Área: <strong>${s.nombreSolicitante||s.creadoPor||'—'}</strong>${s.subArea?` · <span style="color:var(--blue);font-weight:600">${s.subArea}</span>`:''}</div>
     <div class="sol-tags">${(s.items||[]).map(it=>{
       const d=s.itemsDespacho?.find(x=>x.productoId===it.productoId);
       const ok=d&&d.cantidadDespachada>=it.cantidad;
@@ -1508,7 +1643,8 @@ function solCard(s){
     }).join('')}</div>
     ${s.nota?`<div style="font-size:11px;color:var(--txm);margin-top:4px">📝 ${s.nota}</div>`:''}
     ${s.estado==='rechazada'&&s.motivoRechazo?`<div style="font-size:11px;color:var(--red);margin-top:4px">❌ ${s.motivoRechazo}</div>`:''}
-    ${puedeverif?`<button onclick="abrirVerif('${s.id}')" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--greenb);background:var(--greend);color:var(--green);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">✅ Verificar lo recibido</button>`:''}
+    ${s.estado==='despachada'&&s.incompleto?`<div class="notif-inc"><div class="notif-inc-icon">⚠️</div><div class="notif-inc-txt"><strong style="color:var(--yellow)">Pedido incompleto</strong><br>${s.itemsNoTiqueados?.length?'No despachados: '+s.itemsNoTiqueados.join(', ')+'.<br>':''} Usa "Verificar lo recibido" para ver el detalle.</div></div>`:''}
+    ${puedeverif?`<button onclick="abrirVerif('${s.id}')" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;border:1.5px solid ${s.incompleto?'var(--yellowb)':'var(--greenb)'};background:${s.incompleto?'var(--yellowd)':'var(--greend)'};color:${s.incompleto?'var(--yellow)':'var(--green)'};font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">${s.incompleto?'⚠️ Verificar pedido incompleto':'✅ Verificar lo recibido'}</button>`:''}
   </div>`;
 }
 
@@ -1566,6 +1702,11 @@ function abrirFact(){
   document.getElementById('prov-dropdown').style.display='none';
   document.getElementById('btn-gfact').disabled=false;
   document.getElementById('btn-gfact').textContent='✓ Ingresar al stock';
+  // Limpiar descuento
+  const dp=document.getElementById('fn-desc-pct');if(dp)dp.value='';
+  const dm=document.getElementById('fn-desc-monto');if(dm)dm.value='';
+  const dprev=document.getElementById('fn-desc-preview');if(dprev){dprev.style.display='none';}
+  document.getElementById('fn-total').textContent='$0';
   openM('mo-fact');
 }
 function fnBuscar(q){
@@ -1665,11 +1806,16 @@ async function guardarFactura(){
         precioPorBulto:it.precio,precioUnitStock:precioUnit,subtotal:it.cantidad*it.precio,unidadMedida:it.unidad};
     });
     const tot=items.reduce((a,it)=>a+it.subtotal,0);
+    const descMonto=parseFloat(document.getElementById('fn-desc-monto').value)||0;
+    const descPct=parseFloat(document.getElementById('fn-desc-pct').value)||0;
+    const totalConDesc=Math.max(0,tot-descMonto);
     const ref=await addDoc(collection(db,'facturas'),{
       numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
       fechaFactura:document.getElementById('fn-fecha').value,
       observacion:document.getElementById('fn-obs').value.trim(),
-      items,totalFactura:tot,ingresadoPor:role,creadoEn:serverTimestamp()
+      items,totalFactura:totalConDesc,totalBruto:tot,
+      descuentoPct:descPct||null,descuentoMonto:descMonto||null,
+      ingresadoPor:role,creadoEn:serverTimestamp()
     });
     const batch=writeBatch(db);
     for(const it of items){const r=doc(db,'productos',it.productoId);const s=await getDoc(r);if(s.exists())batch.update(r,{stock:(s.data().stock||0)+it.cantidadStock,precioTotal:it.precioUnitStock,actualizadoEn:serverTimestamp()});}
@@ -1684,14 +1830,21 @@ async function guardarFactura(){
 let fPC='';
 function fProds(c,btn){fPC=c;document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));btn.classList.add('on');renderProds();}
 function renderProdChips(){
+  // Filtrar categorías según bodega activa
+  const prodsFiltrados=fProdBodegaActual?prods.filter(p=>(p.bodega||'seca')===fProdBodegaActual):prods;
+  const cs=[...new Set(prodsFiltrados.map(p=>p.categoria).filter(Boolean))];
   document.getElementById('prod-chips').innerHTML=
-    `<button class="chip ${!fPC?'on':''}" onclick="fProds('',this)">Todos</button>`+
-    cats.map(c=>`<button class="chip ${fPC===c.nombre?'on':''}" onclick="fProds('${c.nombre.replace(/'/g,"\\'")}',this)">${c.nombre}</button>`).join('');
+    `<button class="chip ${!fPC?'on':''}" onclick="fProds('',this)">Todas las categorías</button>`+
+    cs.map(c=>`<button class="chip ${fPC===c?'on':''}" onclick="fProds('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
 }
 function renderProds(){
   const lista=document.getElementById('prods-lista');
-  const pp=fPC?prods.filter(p=>p.categoria===fPC):[...prods];
-  document.getElementById('prods-sub').textContent=prods.length+' productos en la base de datos';
+  const q=(document.getElementById('prod-buscar')?.value||'').toLowerCase();
+  let pp=[...prods];
+  if(fProdBodegaActual)pp=pp.filter(p=>(p.bodega||'seca')===fProdBodegaActual);
+  if(fPC)pp=pp.filter(p=>p.categoria===fPC);
+  if(q)pp=pp.filter(p=>p.nombre.toLowerCase().includes(q)||(p.codigoProducto||'').toLowerCase().includes(q)||(p.proveedor||'').toLowerCase().includes(q));
+  document.getElementById('prods-sub').textContent=pp.length+' de '+prods.length+' productos';
   if(!pp.length){lista.innerHTML='<div class="empty"><div class="ei">📦</div><div class="et">Sin productos</div></div>';return;}
   lista.innerHTML=pp.map(p=>`
     <div class="prod-card">
@@ -2235,10 +2388,106 @@ function cSug(n,btn){
   document.getElementById('cat-nom').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+// ── MODO DÍA / NOCHE ─────────────────────────────────────────────────────────
+let modoOscuro=localStorage.getItem('modo')!=='claro';
+function toggleMode(){
+  modoOscuro=!modoOscuro;
+  localStorage.setItem('modo',modoOscuro?'oscuro':'claro');
+  applyMode();
+}
+function applyMode(){
+  document.body.classList.toggle('light',!modoOscuro);
+  const btn=document.getElementById('mode-btn');
+  if(btn)btn.textContent=modoOscuro?'🌙':'☀️';
+}
+applyMode();
+
+// ── HORARIO BODEGUERO ─────────────────────────────────────────────────────────
+function getHorario(){
+  try{return JSON.parse(localStorage.getItem('horario'))||{desde:'08:00',hasta:'18:00',colDesde:'13:00',colHasta:'14:00'};}
+  catch{return{desde:'08:00',hasta:'18:00',colDesde:'13:00',colHasta:'14:00'};}
+}
+function guardarHorario(){
+  const h={
+    desde:document.getElementById('cfg-h-desde').value,
+    hasta:document.getElementById('cfg-h-hasta').value,
+    colDesde:document.getElementById('cfg-col-desde').value,
+    colHasta:document.getElementById('cfg-col-hasta').value,
+  };
+  localStorage.setItem('horario',JSON.stringify(h));
+  toast('✓ Horario guardado');
+}
+function renderHorarioBanner(containerId){
+  const el=document.getElementById(containerId);if(!el)return;
+  const h=getHorario();
+  const ahora=new Date();
+  const hhmm=ahora.getHours().toString().padStart(2,'0')+':'+ahora.getMinutes().toString().padStart(2,'0');
+  const enColacion=hhmm>=h.colDesde&&hhmm<h.colHasta;
+  const enHorario=hhmm>=h.desde&&hhmm<h.hasta;
+  if(enColacion){
+    el.innerHTML=`<div class="horario-banner horario-colacion">🍽️ <strong>Bodeguero en colación</strong> hasta las ${h.colHasta} hrs.<br>Puedes enviar pedidos, serán atendidos al regresar.</div>`;
+  }else if(enHorario){
+    el.innerHTML=`<div class="horario-banner horario-activo">✅ <strong>Bodeguero disponible</strong> hasta las ${h.hasta} hrs.<br>Colación de ${h.colDesde} a ${h.colHasta} hrs.</div>`;
+  }else{
+    el.innerHTML=`<div class="horario-banner horario-fuera">⚠️ <strong>Fuera de horario</strong> · Horario: ${h.desde} a ${h.hasta} hrs.<br>Puedes enviar pedidos, un encargado los atenderá.</div>`;
+  }
+}
+
+// ── SUB-ÁREA BUFFET ───────────────────────────────────────────────────────────
+let subAreaActual='';
+function selSubArea(area,btn){
+  subAreaActual=area;
+  document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+}
+
+// ── DESCUENTO EN FACTURA ──────────────────────────────────────────────────────
+function calcDescuento(origen){
+  const total=fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0);
+  if(!total)return;
+  if(origen==='pct'){
+    const pct=parseFloat(document.getElementById('fn-desc-pct').value)||0;
+    const monto=Math.round(total*pct/100);
+    document.getElementById('fn-desc-monto').value=monto||'';
+    mostrarDescPreview(pct,monto,total);
+  }else{
+    const monto=parseFloat(document.getElementById('fn-desc-monto').value)||0;
+    const pct=total>0?Math.round(monto/total*1000)/10:0;
+    document.getElementById('fn-desc-pct').value=pct||'';
+    mostrarDescPreview(pct,monto,total);
+  }
+}
+function mostrarDescPreview(pct,monto,total){
+  const el=document.getElementById('fn-desc-preview');
+  if(!el)return;
+  if(!monto){el.style.display='none';return;}
+  el.style.display='block';
+  el.textContent=`Descuento ${pct}% = ${clp(monto)} → Total neto: ${clp(total-monto)}`;
+  document.getElementById('fn-total').textContent=clp(total-monto);
+}
+
+// ── BUSCADOR Y FILTRO BODEGA EN PRODUCTOS ────────────────────────────────────
+let fProdBodegaActual='';
+function fProdBodega(b,btn){
+  fProdBodegaActual=b;
+  document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  // Resetear filtro categoría al cambiar bodega
+  fPC='';
+  renderProdChips();
+  renderProds();
+}
+
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 function abrirCfg(){
   const n=gN();['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('cfg-'+k);if(el)el.value=n[k];});
   const es=document.getElementById('cfg-serv');if(es)es.value=n.serv||'Servicio';
+  // Cargar horario guardado
+  const h=getHorario();
+  const hd=document.getElementById('cfg-h-desde');if(hd)hd.value=h.desde;
+  const hh=document.getElementById('cfg-h-hasta');if(hh)hh.value=h.hasta;
+  const cd=document.getElementById('cfg-col-desde');if(cd)cd.value=h.colDesde;
+  const ch=document.getElementById('cfg-col-hasta');if(ch)ch.value=h.colHasta;
   document.getElementById('cfg-pe').value='';document.getElementById('cfg-pb').value='';
   openM('mo-cfg');
 }
@@ -2320,7 +2569,8 @@ Object.assign(window,{
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnDel,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
-  guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,
+  guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,guardarHorario,
+  toggleMode,selSubArea,calcDescuento,fProdBodega,
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
   renderConteo,setConteo,actualizarContadores,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
 });
@@ -2333,6 +2583,40 @@ if('serviceWorker' in navigator){
   }).catch(()=>{});
   navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
 }
+// ── PERSISTENCIA DE SESIÓN (bodeguero siempre logueado) ──────────────────────
+// Al cerrar/reabrir la app en móvil, restaurar la sesión del bodeguero
+(()=>{
+  const savedRole=localStorage.getItem('saved_role');
+  if(savedRole==='bodeguero'){
+    // Auto-login silencioso como bodeguero si no tiene PIN
+    const pb=gPB();
+    if(!pb){
+      // Sin PIN: restaurar sesión automáticamente
+      setTimeout(()=>{
+        if(!role){
+          role='bodeguero';
+          document.getElementById('lscreen').style.display='none';
+          document.getElementById('app').style.display='block';
+          const info={l:'🚚 Bodeguero',cls:'r-bod',sub:'Despachos'};
+          document.getElementById('rbadge').textContent=info.l;
+          document.getElementById('rbadge').className='rbadge '+info.cls;
+          document.getElementById('hdr-sub').innerHTML=info.sub;
+          buildNav('bodeguero');clk();startL();
+        }
+      },800);
+    }
+  }
+})();
+
+// Guardar sesión activa al hacer login
+const _enterAppOrig=enterApp;
+window.enterApp=function(r){
+  _enterAppOrig(r);
+  // Guardar sesión (solo bodeguero para auto-restore)
+  if(r==='bodeguero')localStorage.setItem('saved_role','bodeguero');
+  else localStorage.removeItem('saved_role');
+};
+
 if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone)
   setTimeout(()=>toast('Safari → Compartir → "Añadir al inicio"'),4000);
 </script>
