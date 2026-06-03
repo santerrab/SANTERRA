@@ -1163,11 +1163,15 @@ function goTo(id){
     // Mostrar sub-área solo para Buffet (c3)
     const saWrap=document.getElementById('pedir-subarea-wrap');
     if(saWrap)saWrap.style.display=role==='c3'?'block':'none';
-    subAreaActual='';
-    document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
-    const saDefault=document.getElementById('sa-');
-    if(saDefault)saDefault.classList.add('on');
-    if(carrito.length===0){document.getElementById('carrito-wrap').style.display='none';document.getElementById('pedir-empty').style.display='block';}
+    // Solo resetear sub-área si no hay carrito activo
+    if(carrito.length===0){
+      subAreaActual='';
+      document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
+      const saDefault=document.getElementById('sa-');
+      if(saDefault)saDefault.classList.add('on');
+      document.getElementById('carrito-wrap').style.display='none';
+      document.getElementById('pedir-empty').style.display='block';
+    }
   }
 }
 
@@ -1443,6 +1447,10 @@ async function enviarPedido(){
     });
     toast('✓ Pedido enviado');
     carrito=[];document.getElementById('p-nota').value='';
+    subAreaActual='';
+    document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
+    const saDefault=document.getElementById('sa-');if(saDefault)saDefault.classList.add('on');
+    const lbl=document.getElementById('pedir-sub');if(lbl)lbl.textContent='Busca y agrega productos';
     renderCarrito();goTo('pg-mispedidos');
   }catch(e){toast('Error: '+e.message,'err');}
   btn.disabled=false;btn.textContent='📤 Enviar pedido a bodega';
@@ -1509,9 +1517,8 @@ function renderDesp(){
       </div>`;
     }).join('');
     return`<div class="dsc" id="dsc-${sol.id}">
-      <div class="dsc-hdr"><div><div class="dsc-nom">${sol.nombreSolicitante||sol.creadoPor||'—'}</div><div class="dsc-fecha">${fDate(sol.creadoEn)}</div></div><span class="badge bg-y-s">Pendiente</span></div>
-      ${sol.nota?`<div class="dsc-nota">📝 ${sol.nota}</div>`:''}
-      ${bodegasHtml}
+      <div class="dsc-hdr"><div><div class="dsc-nom">${sol.nombreSolicitante||sol.creadoPor||'—'}${sol.subArea?` <span style="font-size:12px;color:var(--blue);font-weight:600">· ${sol.subArea}</span>`:''}</div><div class="dsc-fecha">${fDate(sol.creadoEn)}</div></div><span class="badge bg-y-s">Pendiente</span></div>
+      ${sol.subArea?`<div style="background:var(--blued);border:1px solid var(--blueb);border-radius:8px;padding:7px 12px;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--blue)">📍 Sub-área Buffet: <strong>${sol.subArea}</strong></div>`:''}      ${bodegasHtml}
       <div class="dsc-act">
         <button class="btn-rech" onclick="abrirRechazo('${sol.id}')">✕ Rechazar</button>
         <button class="btn-desp" onclick="despachar('${sol.id}')">✓ Despachar</button>
@@ -2439,6 +2446,9 @@ function selSubArea(area,btn){
   subAreaActual=area;
   document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
   if(btn)btn.classList.add('on');
+  // Confirmar visualmente
+  const lbl=document.getElementById('pedir-sub');
+  if(lbl)lbl.textContent=area?'Área: '+area:'Busca y agrega productos';
 }
 
 // ── DESCUENTO EN FACTURA ──────────────────────────────────────────────────────
