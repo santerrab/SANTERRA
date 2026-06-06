@@ -524,7 +524,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 <!-- PRODUCTOS -->
 <div class="pg" id="pg-prods">
   <div class="ph"><div><div class="pgt">Productos</div><div class="pgs" id="prods-sub">Base de datos maestra</div></div><button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirProd()">+ Nuevo</button></div>
-  <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="prod-buscar" type="text" placeholder="Buscar por nombre, código o proveedor..." autocomplete="off" oninput="renderProds()"></div>
+  <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="prod-buscar" type="text" placeholder="Buscar por nombre, código o proveedor..." autocomplete="off" oninput="onProdBuscar(this.value)"></div>
   <div class="chips" id="prod-bodega-chips"></div>
   <div class="chips" id="prod-chips"></div>
   <div id="prods-lista"></div>
@@ -693,7 +693,8 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
     </div>
     <div class="fg"><label class="fl">Tipo de impuesto</label>
       <select class="fi" id="pp-imp" onchange="calcPrev()">
-        <option value="general">IVA 19% — General (incl. harina de trigo)</option>
+        <option value="general">IVA 19% — General</option>
+        <option value="harina">IVA 19% + Ret. Harina 12% = 31% — Harina de trigo (Res. 5.025/1994)</option>
         <option value="carnes">IVA 19% + Anticipo 5% = 24% — Carnes</option>
         <option value="bebidas_azucaradas_10">IVA 19% + IABA 10% = 29% — Bebidas &lt;15g azúcar/240ml</option>
         <option value="bebidas_azucaradas">IVA 19% + IABA 18% = 37% — Bebidas &gt;15g azúcar/240ml</option>
@@ -1007,16 +1008,17 @@ const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4,serv:_cfg.serv||'Serv
 
 // ── IMPUESTOS ────────────────────────────────────────────────────────────────
 const IMPS={
-  general:              {l:'IVA 19%',                       t:.19},
-  carnes:               {l:'IVA 19% + Anticipo 5%',         t:.24},
-  bebidas_azucaradas_10:{l:'IVA 19% + IABA 10%',            t:.29},
-  bebidas_azucaradas:   {l:'IVA 19% + IABA 18%',            t:.37},
-  cerveza:              {l:'IVA 19% + ILA 20.5% (ILA20C)',   t:.395},
-  vino:                 {l:'IVA 19% + ILA 20.5% (ILA20V)',   t:.395},
-  vino_195:             {l:'IVA 19% + ILA 19.5%',            t:.385},
-  destilados:           {l:'IVA 19% + ILA 31.5%',            t:.505},
-  tabaco:               {l:'IVA + Tabaco 60.1%',             t:.791},
-  exento:               {l:'Exento de IVA',                  t:0},
+  general:              {l:'IVA 19%',                        t:.19},
+  harina:               {l:'IVA 19% + Ret. Harina 12%',      t:.31},
+  carnes:               {l:'IVA 19% + Anticipo 5%',          t:.24},
+  bebidas_azucaradas_10:{l:'IVA 19% + IABA 10%',             t:.29},
+  bebidas_azucaradas:   {l:'IVA 19% + IABA 18%',             t:.37},
+  cerveza:              {l:'IVA 19% + ILA 20.5% (ILA20C)',    t:.395},
+  vino:                 {l:'IVA 19% + ILA 20.5% (ILA20V)',    t:.395},
+  vino_195:             {l:'IVA 19% + ILA 19.5%',             t:.385},
+  destilados:           {l:'IVA 19% + ILA 31.5%',             t:.505},
+  tabaco:               {l:'IVA + Tabaco 60.1%',              t:.791},
+  exento:               {l:'Exento de IVA',                   t:0},
 };
 function calcImp(n,tipo){const t=IMPS[tipo]||IMPS.general;const i=Math.round(n*t.t);return{neto:n,imp:i,total:n+i,label:t.l};}
 
@@ -1844,6 +1846,17 @@ function renderProdChips(){
     cs.map(c=>`<button class="chip ${fPC===c?'on':''}" onclick="fProds('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
 }
 function fProds(c,btn){fPC=c;document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));btn.classList.add('on');renderProds();}
+function onProdBuscar(q){
+  // Si hay texto: quitar filtros para buscar en todo
+  if(q.trim()){
+    fProdBodegaActual='';fPC='';
+    document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));
+    const t=document.querySelector('#prod-bodega-chips .chip');if(t)t.classList.add('on');
+    const t2=document.querySelector('#prod-chips .chip');if(t2)t2.classList.add('on');
+  }
+  renderProds();
+}
 function renderProds(){
   const lista=document.getElementById('prods-lista');
   const q=(document.getElementById('prod-buscar')?.value||'').toLowerCase().trim();
@@ -2551,7 +2564,7 @@ startCfgListener();
 
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,goTo,openM,closeM,navSem,toggleMode,
-  fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,fInv,fDiff,fDetalle,
+  fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
   togD,setD,setBodegaD,despachar,abrirRechazo,confirmarRechazo,abrirVerif,
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
