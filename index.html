@@ -357,6 +357,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
   #fact-lista{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 }
 @media(max-width:899px){.sidebar{display:none!important}}
+@keyframes bell{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
 </style>
 </head>
 <body>
@@ -373,7 +374,6 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
     <button style="background:var(--blue);color:#fff;border:none;border-radius:12px;padding:14px 24px;font-family:'Inter',sans-serif;font-size:16px;font-weight:700;cursor:pointer;width:100%" onclick="cerrarAlarma()">👀 Ver despachos</button>
   </div>
 </div>
-@keyframes bell{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
 
 <!-- PIN OVERLAY -->
 <div class="pin-ovl" id="pin-ovl">
