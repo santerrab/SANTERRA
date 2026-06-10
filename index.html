@@ -1190,12 +1190,50 @@ function playAlarm(){
     o.start(audioCtx.currentTime+i*.18);o.stop(audioCtx.currentTime+i*.18+.2);
   });
 }
+// ── NOTIFICACIONES NATIVAS ────────────────────────────────────────────────────
+async function pedirPermisoNotificaciones(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='default'){
+    // Pequeño banner informativo antes de pedir el permiso del sistema
+    const banner=document.createElement('div');
+    banner.id='notif-banner';
+    banner.style.cssText='position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:16px;right:16px;background:#1a2235;border:1.5px solid rgba(79,142,247,.4);border-radius:16px;padding:14px 16px;z-index:500;display:flex;align-items:center;gap:12px;animation:fadeIn .3s ease';
+    banner.innerHTML=`<div style="font-size:28px;flex-shrink:0">🔔</div><div style="flex:1"><div style="font-weight:700;font-size:14px;color:#eef2ff;margin-bottom:3px">Activar notificaciones</div><div style="font-size:12px;color:#7b8499;line-height:1.4">Para recibir avisos de nuevos pedidos aunque la pantalla esté bloqueada</div></div><button onclick="solicitarNotif()" style="background:#4f8ef7;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">Activar</button><button onclick="document.getElementById('notif-banner').remove()" style="background:transparent;border:none;color:#7b8499;font-size:20px;cursor:pointer;padding:0 4px;flex-shrink:0">✕</button>`;
+    document.body.appendChild(banner);
+  }
+}
+async function solicitarNotif(){
+  const banner=document.getElementById('notif-banner');if(banner)banner.remove();
+  if(!('Notification' in window)){toast('Tu navegador no soporta notificaciones','err');return;}
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){toast('✓ Notificaciones activadas');}
+  else{toast('Notificaciones bloqueadas — actívalas desde ajustes del navegador','err');}
+}
+function enviarNotifNativa(nombreArea,cantItems){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  try{
+    const n=new Notification('📦 Nuevo pedido — SANTERRA',{
+      body:`${nombreArea} solicita ${cantItems} producto${cantItems!==1?'s':''}`,
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230d1117"/><text x="96" y="130" font-size="100" text-anchor="middle">📦</text></svg>',
+      badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="20" fill="%230d1117"/><text x="48" y="66" font-size="52" text-anchor="middle">📦</text></svg>',
+      tag:'pedido-santerra',
+      renotify:true,
+      requireInteraction:true,
+      silent:false
+    });
+    n.onclick=function(){window.focus();cerrarAlarma();n.close();};
+  }catch(e){console.warn('Notif error:',e);}
+}
 function mostrarAlarma(sol){
   if(alarmaActiva)return;alarmaActiva=true;
   const n=gN();const nm={c1:n.c1,c2:n.c2,c3:n.c3,c4:n.c4,serv:n.serv||'Servicio'}[sol.creadoPor]||sol.nombreSolicitante||'Área';
   document.getElementById('alarm-area-nombre').textContent=nm;
   const ao=document.getElementById('alarm-overlay');ao.style.display='flex';ao.style.animation='fadeIn .3s ease';
-  playAlarm();if('vibrate' in navigator)navigator.vibrate([200,100,200,100,400]);
+  playAlarm();
+  if('vibrate' in navigator)navigator.vibrate([300,100,300,100,500]);
+  // Notificación nativa del sistema operativo
+  const cantItems=(sol.items||[]).length||1;
+  enviarNotifNativa(nm,cantItems);
 }
 window.cerrarAlarma=function(){document.getElementById('alarm-overlay').style.display='none';alarmaActiva=false;goTo('pg-desp');};
 
@@ -1275,6 +1313,7 @@ function enterApp(r){
   localStorage.setItem('saved_role',r==='bodeguero'?'bodeguero':'');
   buildNav(r);clk();startL();
   if(r==='encargado')setTimeout(autoSetup,1500);
+  if(r==='bodeguero')pedirPermisoNotificaciones();
 }
 function logout(){
   if(!confirm('¿Cerrar sesión?'))return;
