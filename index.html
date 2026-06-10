@@ -995,13 +995,22 @@ input[type=number]{-moz-appearance:textfield}
 </div>
 
 <div class="ovl" id="mo-verif">
-  <div class="modal"><div class="mh"></div><div class="mt">✅ Verificar pedido recibido</div>
-    <div class="mt-sub" id="verif-sub">Confirma lo que llegó</div>
+  <div class="modal"><div class="mh"></div>
+    <div class="mt">📦 Verificar pedido recibido</div>
+    <div class="mt-sub" id="verif-sub">—</div>
+
+    <!-- Resumen 3 columnas -->
     <div id="verif-resumen" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px"></div>
-    <div id="verif-lista"></div>
-    <div style="background:var(--greend);border:1px solid var(--greenb);border-radius:10px;padding:12px;margin:12px 0;font-size:12px;color:var(--txm);display:none" id="verif-ok-msg">✅ <strong style="color:var(--green)">Todo llegó correctamente.</strong></div>
-    <div style="background:var(--yellowd);border:1px solid var(--yellowb);border-radius:10px;padding:12px;margin:12px 0;font-size:12px;color:var(--txm);display:none" id="verif-parcial-msg">⚠️ <strong style="color:var(--yellow)">Pedido incompleto.</strong> Algunos productos llegaron en cantidad diferente.</div>
-    <button class="btn bg-ghost" onclick="closeM('mo-verif')">Cerrar</button>
+
+    <!-- Banner resultado -->
+    <div style="background:var(--greend);border:1px solid var(--greenb);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--txm);display:none;line-height:1.5" id="verif-ok-msg"></div>
+    <div style="background:var(--yellowd);border:1px solid var(--yellowb);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--txm);display:none;line-height:1.5" id="verif-parcial-msg"></div>
+
+    <!-- Lista de items -->
+    <div id="verif-lista" style="margin-bottom:14px"></div>
+
+    <!-- Botones de acción -->
+    <div id="verif-btn-wrap"></div>
   </div>
 </div>
 
@@ -1033,7 +1042,7 @@ let invActivo=null,conteoLocal={},csvData=[];
 let alarmaActiva=false,solsPrevCount=null,audioCtx=null;
 let diffFiltro='diff',detalleFiltro='diff',detalleInv=null;
 let subAreaActual='';
-let trProdId=null,merProdId=null;
+let trProdId=null,merProdId=null,verifSolId=null;
 let fProdBodegaActual='',fStockBodega='',fStockCat='';
 let fPC='',fDE='pendiente',fSE='',fME='';
 
@@ -1839,24 +1848,114 @@ function solCard(s){
 function abrirVerif(solId){
   const sol=sols.find(x=>x.id===solId);if(!sol)return;
   const items=sol.items||[],despacho=sol.itemsDespacho||[];
-  let todoOk=true;
-  document.getElementById('verif-sub').textContent=fDate(sol.creadoEn)+' · '+items.length+' productos';
-  document.getElementById('verif-lista').innerHTML=items.map(it=>{
+
+  // Pre-calcular estado de cada item (una sola pasada)
+  const itemsConEstado=items.map(it=>{
     const d=despacho.find(x=>x.productoId===it.productoId);
     const despachado=d?d.cantidadDespachada:0;
-    const ok=despachado>=it.cantidad,parcial=despachado>0&&despachado<it.cantidad,falta=despachado===0;
-    if(!ok)todoOk=false;
-    const estado=ok?'ok':parcial?'parcial':'falta';
-    return`<div class="verif-item ${estado}"><div class="verif-check ${estado}">${ok?'✓':parcial?'~':'✗'}</div><div style="flex:1;min-width:0"><div class="verif-nom">${it.nombreProducto}</div><div class="verif-det">${ok?'Llegó completo':parcial?'Llegó '+clpn(despachado)+' de '+clpn(it.cantidad):'No llegó'}</div></div><div class="verif-cant" style="color:${ok?'var(--green)':parcial?'var(--yellow)':'var(--red)'}">${clpn(despachado)}/${clpn(it.cantidad)} ${it.unidadMedida||''}</div></div>`;
+    const ok=despachado>=it.cantidad;
+    const parcial=despachado>0&&despachado<it.cantidad;
+    return{...it,despachado,ok,parcial,falta:despachado===0,
+      estado:ok?'ok':parcial?'parcial':'falta'};
+  });
+
+  const completos=itemsConEstado.filter(x=>x.ok).length;
+  const parciales=itemsConEstado.filter(x=>x.parcial).length;
+  const faltantes=itemsConEstado.filter(x=>x.falta).length;
+  const todoOk=faltantes===0&&parciales===0;
+  const yaVerificado=sol.verificadoEn;
+
+  // Header del modal
+  document.getElementById('verif-sub').innerHTML=
+    `<strong style="color:var(--tx)">${sol.nombreSolicitante||sol.creadoPor||'—'}</strong>`+
+    (sol.subArea?` · <span style="color:var(--blue)">${sol.subArea}</span>`:'')+
+    `<br><span style="font-size:11px">${fDate(sol.creadoEn)} · ${items.length} producto${items.length!==1?'s':''}</span>`+
+    (yaVerificado?`<br><span style="color:var(--green);font-size:11px;font-weight:700">✓ Verificado ${fDate(sol.verificadoEn)}</span>`:'');
+
+  // Resumen numérico
+  document.getElementById('verif-resumen').innerHTML=`
+    <div class="st ac-g" style="text-align:center;padding:12px 8px">
+      <div class="sl" style="text-align:center">Completos</div>
+      <div class="sv" style="color:var(--green);text-align:center;font-size:24px">${completos}</div>
+    </div>
+    <div class="st ac-y" style="text-align:center;padding:12px 8px">
+      <div class="sl" style="text-align:center">Parciales</div>
+      <div class="sv" style="color:var(--yellow);text-align:center;font-size:24px">${parciales}</div>
+    </div>
+    <div class="st ac-r" style="text-align:center;padding:12px 8px">
+      <div class="sl" style="text-align:center">No llegaron</div>
+      <div class="sv" style="color:var(--red);text-align:center;font-size:24px">${faltantes}</div>
+    </div>`;
+
+  // Lista de items — ordenados: falta → parcial → ok
+  const sorted=[...itemsConEstado].sort((a,b)=>{
+    const o={falta:0,parcial:1,ok:2};return o[a.estado]-o[b.estado];
+  });
+  document.getElementById('verif-lista').innerHTML=sorted.map(it=>{
+    const ic=it.ok?'✓':it.parcial?'≈':'✕';
+    const clr=it.ok?'var(--green)':it.parcial?'var(--yellow)':'var(--red)';
+    const lbl=it.ok?'Llegó completo'
+      :it.parcial?`Llegó ${clpn(it.despachado)} de ${clpn(it.cantidad)} ${it.unidadMedida||''}`
+      :'No llegó';
+    return`<div class="verif-item ${it.estado}">
+      <div class="verif-check ${it.estado}" style="width:40px;height:40px;font-size:18px;font-weight:900">${ic}</div>
+      <div style="flex:1;min-width:0">
+        <div class="verif-nom">${it.nombreProducto}</div>
+        <div class="verif-det">${lbl}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'Inter',sans-serif;font-size:16px;font-weight:900;color:${clr}">${clpn(it.despachado)}</div>
+        <div style="font-size:10px;color:var(--txd)">de ${clpn(it.cantidad)} ${it.unidadMedida||''}</div>
+      </div>
+    </div>`;
   }).join('');
-  const completos=items.filter(it=>{const d=despacho.find(x=>x.productoId===it.productoId);return d&&d.cantidadDespachada>=it.cantidad;}).length;
-  const parciales=items.filter(it=>{const d=despacho.find(x=>x.productoId===it.productoId);return d&&d.cantidadDespachada>0&&d.cantidadDespachada<it.cantidad;}).length;
-  const faltantes=items.filter(it=>{const d=despacho.find(x=>x.productoId===it.productoId);return!d||d.cantidadDespachada===0;}).length;
-  document.getElementById('verif-resumen').innerHTML=`<div class="st ac-g" style="text-align:center"><div class="sl" style="text-align:center">Completos</div><div class="sv" style="color:var(--green);text-align:center">${completos}</div></div><div class="st ac-y" style="text-align:center"><div class="sl" style="text-align:center">Parciales</div><div class="sv" style="color:var(--yellow);text-align:center">${parciales}</div></div><div class="st ac-r" style="text-align:center"><div class="sl" style="text-align:center">No llegaron</div><div class="sv" style="color:var(--red);text-align:center">${faltantes}</div></div>`;
-  document.getElementById('verif-ok-msg').style.display=todoOk?'block':'none';
-  document.getElementById('verif-parcial-msg').style.display=!todoOk?'block':'none';
+
+  // Banner resultado
+  const okMsg=document.getElementById('verif-ok-msg');
+  const parcialMsg=document.getElementById('verif-parcial-msg');
+  if(todoOk){
+    okMsg.style.display='block';parcialMsg.style.display='none';
+    okMsg.innerHTML='✅ <strong style="color:var(--green)">Todo llegó correctamente.</strong> Puedes confirmar la recepción.';
+  }else{
+    okMsg.style.display='none';parcialMsg.style.display='block';
+    parcialMsg.innerHTML=`⚠️ <strong style="color:var(--yellow)">Pedido incompleto.</strong> ${faltantes>0?faltantes+' producto'+(faltantes!==1?'s':'')+' no llegaron. ':''}`+
+      (parciales>0?parciales+' llegaron en cantidad menor.':'');
+  }
+
+  // Botón de confirmación
+  const btnWrap=document.getElementById('verif-btn-wrap');
+  if(btnWrap){
+    if(yaVerificado){
+      btnWrap.innerHTML=`<div style="text-align:center;padding:12px;font-size:13px;color:var(--green);font-weight:700">✓ Ya confirmaste la recepción</div>
+        <button class="btn bg-ghost" onclick="closeM('mo-verif')">Cerrar</button>`;
+    } else {
+      btnWrap.innerHTML=`<button class="btn ${todoOk?'bg-green':'bg-orange'}" id="btn-confirmar-verif" onclick="confirmarVerif('${sol.id}',${todoOk})">
+        ${todoOk?'✅ Confirmar — todo llegó':'⚠️ Confirmar — llegó incompleto'}
+      </button>
+      <button class="btn bg-ghost" onclick="closeM('mo-verif')">Cerrar sin confirmar</button>`;
+    }
+  }
+  verifSolId=sol.id;
   openM('mo-verif');
 }
+
+async function confirmarVerif(solId,completo){
+  const btn=document.getElementById('btn-confirmar-verif');
+  if(btn){btn.disabled=true;btn.textContent='Guardando...';}
+  try{
+    await updateDoc(doc(db,'solicitudes',solId),{
+      verificadoEn:serverTimestamp(),
+      verificadoPor:role,
+      verificadoCompleto:completo
+    });
+    toast(completo?'✅ Recepción confirmada':'⚠️ Incompleto registrado');
+    closeM('mo-verif');
+  }catch(e){
+    toast('Error al confirmar: '+e.message,'err');
+    if(btn){btn.disabled=false;btn.textContent='Reintentar';}
+  }
+}
+
 // ── FACTURAS ──────────────────────────────────────────────────────────────────
 function renderFact(){
   const lista=document.getElementById('fact-lista');
@@ -2050,11 +2149,27 @@ async function guardarFactura(){
 
 // ── PRODUCTOS ─────────────────────────────────────────────────────────────────
 function renderBodegaSelects(){
-  // Llenar select de bodegas en modal producto
-  const sel=document.getElementById('pp-bodega');if(!sel)return;
-  const cur=sel.value;
-  sel.innerHTML=bodegas.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
-  if(cur)sel.value=cur;
+  const src=bodegas.length?bodegas:BODEGAS_DEFAULT;
+  const opts=src.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
+
+  // Modal producto
+  const sel=document.getElementById('pp-bodega');
+  if(sel){const cur=sel.value;sel.innerHTML=opts;if(cur)sel.value=cur;}
+
+  // Modal transferencia — llenar siempre para que estén listos al abrir
+  const trDesde=document.getElementById('tr-desde');
+  const trHacia=document.getElementById('tr-hacia');
+  if(trDesde&&trHacia){
+    const curD=trDesde.value,curH=trHacia.value;
+    trDesde.innerHTML=opts;trHacia.innerHTML=opts;
+    if(curD)trDesde.value=curD;
+    if(curH)trHacia.value=curH;
+    else if(src.length>1)trHacia.selectedIndex=1;
+  }
+
+  // Modal merma
+  const merSel=document.getElementById('mer-bodega');
+  if(merSel){const cur=merSel.value;merSel.innerHTML=opts;if(cur)merSel.value=cur;}
 }
 function renderProdBodegaChips(){
   const el=document.getElementById('prod-bodega-chips');if(!el)return;
@@ -2268,18 +2383,23 @@ function abrirTransfer(prodId){
   el('tr-res').style.display='none';
   el('tr-cant').value='';
   el('tr-stock-info').innerHTML='';
-  // Llenar selects — usar bodegas o fallback a BODEGAS_DEFAULT si aún no cargaron
-  const src=(bodegas&&bodegas.length)?bodegas:BODEGAS_DEFAULT;
-  const opts=src.map(b=>`<option value="${b.id}">${b.icono||'📦'} ${b.nombre}</option>`).join('');
-  el('tr-desde').innerHTML=opts;
-  el('tr-hacia').innerHTML=opts;
-  if(src.length>1) el('tr-hacia').selectedIndex=1;
-  // Si viene con producto preseleccionado
+
+  // Si los selects están vacíos (primera apertura antes del listener), llenarlos ahora
+  const src=bodegas.length?bodegas:BODEGAS_DEFAULT;
+  const trDesde=el('tr-desde'),trHacia=el('tr-hacia');
+  if(trDesde&&(!trDesde.options||trDesde.options.length===0)){
+    const opts=src.map(b=>`<option value="${b.id}">${b.icono||'📦'} ${b.nombre}</option>`).join('');
+    trDesde.innerHTML=opts;trHacia.innerHTML=opts;
+    if(src.length>1)trHacia.selectedIndex=1;
+  }
+
+  // Producto preseleccionado (ej: desde ficha de producto)
   if(trProdId){
     const p=prods.find(x=>x.id===trProdId);
     if(p){
       el('tr-prod-sel').style.display='block';
-      el('tr-prod-sel').innerHTML=`<div style="font-weight:700;font-size:14px">${p.nombre}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">Stock total: ${clpn(stockTotal(p))} ${p.unidad||p.unidadMedida||''}</div>`;
+      el('tr-prod-sel').innerHTML=`<div style="font-weight:700;font-size:14px">${p.nombre}</div>
+        <div style="font-size:11px;color:var(--txm);margin-top:2px">Stock total: ${clpn(stockTotal(p))} ${p.unidad||p.unidadMedida||''}</div>`;
       trActualizarStock();
     }
   } else {
@@ -2840,7 +2960,7 @@ Object.assign(window,{
   selRole,pi,pb2,cPin,logout,goTo,openM,closeM,navSem,toggleMode,
   fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
-  togD,setD,setBodegaD,despachar,abrirRechazo,confirmarRechazo,abrirVerif,
+  togD,setD,setBodegaD,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
