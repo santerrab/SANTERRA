@@ -11,7 +11,6 @@
 <title>SANTERRA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-/* ── TOKENS ──────────────────────────────────────────────────── */
 :root{
   --bg:#0d1117;--sf:#161b22;--sf2:#1c2128;--sf3:#0a0d12;
   --bd:rgba(255,255,255,.1);--bd2:rgba(255,255,255,.06);--bd3:rgba(255,255,255,.03);
@@ -31,7 +30,7 @@
 html,body{height:100%;min-height:100dvh}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
 
-/* ── MODO DIURNO ─────────────────────────────────────────────── */
+/* MODO DIURNO */
 body.light{
   --bg:#f4f5f7;--sf:#ffffff;--sf2:#f0f1f3;--sf3:#e8eaed;
   --bd:rgba(0,0,0,.1);--bd2:rgba(0,0,0,.07);--bd3:rgba(0,0,0,.04);
@@ -48,8 +47,8 @@ body.light .hdr{box-shadow:0 1px 6px rgba(0,0,0,.08)}
 body.light .modal{box-shadow:0 -4px 24px rgba(0,0,0,.1)}
 body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 
-/* ── HEADER ─────────────────────────────────────────────────── */
-.hdr{background:var(--sf);border-bottom:1px solid var(--bd);padding:0 max(16px,var(--sr)) 10px max(16px,var(--sl));padding-top:var(--st);position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;min-height:calc(52px + var(--st))}
+/* HEADER */
+.hdr{background:var(--sf);border-bottom:1px solid var(--bd);padding-top:var(--st);padding-left:max(16px,var(--sl));padding-right:max(16px,var(--sr));padding-bottom:10px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;min-height:calc(52px + var(--st))}
 .hdr-l{display:flex;align-items:center;gap:10px}
 .hdr-tt{font-family:'Inter',sans-serif;font-size:16px;font-weight:800;color:var(--accent)}
 .hdr-sb{font-size:10px;color:var(--txm);margin-top:1px}
@@ -63,20 +62,20 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .mode-toggle{background:none;border:1.5px solid var(--bd2);border-radius:20px;padding:5px 10px;font-size:13px;cursor:pointer;color:var(--txm);font-family:'DM Sans',sans-serif;transition:all .15s;line-height:1}
 .mode-toggle:active{transform:scale(.93)}
 
-/* ── NAV INFERIOR ────────────────────────────────────────────── */
+/* NAV */
 .nav{position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--bd);display:flex;padding-bottom:var(--sb);z-index:200}
 .nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 2px 7px;background:none;border:none;color:var(--txd);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;cursor:pointer;transition:color .2s;gap:3px;text-transform:uppercase;letter-spacing:.5px;position:relative}
 .nb svg{width:20px;height:20px;stroke-width:1.8}.nb.on{color:var(--accent)}.nb.on svg{stroke-width:2.5}
 .nb-badge{position:absolute;top:5px;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;display:none}
 .nb-badge.on{display:block}
 
-/* ── PÁGINAS ─────────────────────────────────────────────────── */
+/* PÁGINAS */
 .pg{display:none;padding:16px;padding-bottom:calc(90px + var(--sb))}.pg.on{display:block}
 .pgt{font-family:'Inter',sans-serif;font-size:21px;font-weight:800;margin-top:4px}
 .pgs{font-size:12px;color:var(--txm);margin-top:3px;margin-bottom:14px}
 .ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px;flex-wrap:wrap}
 
-/* ── STATS CARDS ─────────────────────────────────────────────── */
+/* STATS */
 .sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .st{background:var(--sf);border:1px solid var(--bd);border-radius:13px;padding:12px 10px}
 .st.full{grid-column:1/-1}
@@ -86,12 +85,12 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .sv{font-family:'Inter',sans-serif;font-size:22px;font-weight:800;line-height:1.1}
 .su{font-size:10px;color:var(--txm)}
 
-/* ── FORMULARIOS ─────────────────────────────────────────────── */
+/* FORMULARIOS */
 .fg{margin-bottom:11px}.fl{font-size:11px;color:var(--txm);font-weight:600;margin-bottom:5px;display:block}
 .fi{width:100%;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:16px;padding:10px 12px;appearance:none;-webkit-appearance:none;outline:none;transition:border-color .2s}
 .fi:focus{border-color:var(--accent)}.fr{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 
-/* ── BOTONES ─────────────────────────────────────────────────── */
+/* BOTONES */
 .btn{width:100%;padding:13px;border-radius:11px;border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px}
 .btn+.btn{margin-top:8px}.btn:disabled{opacity:.5;pointer-events:none}
 .bg-acc{background:var(--accent);color:#fff}.bg-acc:active{opacity:.85;transform:scale(.98)}
@@ -101,7 +100,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .bg-ghost{background:transparent;color:var(--txm);border:1.5px solid var(--bd2)}.bg-ghost:active{transform:scale(.98)}
 .bg-orange{background:var(--orange);color:#fff}.bg-orange:active{transform:scale(.98)}
 
-/* ── MODALES ─────────────────────────────────────────────────── */
+/* MODALES */
 .ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:flex-end;backdrop-filter:blur(8px)}
 .ovl.on{display:flex}
 .modal{background:var(--sf);border-radius:22px 22px 0 0;width:100%;padding:16px max(16px,var(--sr)) calc(20px + var(--sb)) max(16px,var(--sl));border-top:1px solid var(--bd);animation:su .25s ease;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -111,7 +110,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .mt-sub{font-size:12px;color:var(--txm);margin-bottom:14px}
 .divl{height:1px;background:var(--bd2);margin:12px 0}
 
-/* ── LISTAS ──────────────────────────────────────────────────── */
+/* LISTAS */
 .li{background:var(--sf2);border:1px solid var(--bd2);border-radius:11px;padding:11px 12px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .lt{font-weight:600;font-size:13px}.ls{font-size:11px;color:var(--txm);margin-top:3px;line-height:1.5}
 .badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;flex-shrink:0}
@@ -119,11 +118,11 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .dbtn{background:none;border:none;color:var(--red);font-size:15px;cursor:pointer;padding:4px 6px;border-radius:6px}
 .dbtn:active{background:var(--redd)}
 
-/* ── TOAST ───────────────────────────────────────────────────── */
+/* TOAST */
 .toast{position:fixed;top:calc(var(--st) + 60px);left:50%;transform:translateX(-50%) translateY(-8px);background:var(--green);color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:1000;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}.toast.err{background:var(--red)}.toast.warn{background:var(--yellow);color:#0d1117}
 
-/* ── LOGIN ───────────────────────────────────────────────────── */
+/* LOGIN */
 .lw{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:calc(var(--st)+20px) max(20px,var(--sr)) calc(var(--sb)+20px) max(20px,var(--sl));overflow-y:auto;background:var(--bg)}
 .logo-wrap{display:flex;align-items:center;justify-content:center;margin-bottom:6px}
 .logo-img{width:240px;max-width:70vw;height:auto;display:block;mix-blend-mode:screen;filter:brightness(1.05)}
@@ -136,7 +135,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .rci{font-size:24px;margin-bottom:4px}.rcn{font-family:'Inter',sans-serif;font-size:13px;font-weight:800}.rcd{font-size:10px;color:var(--txm);margin-top:1px}
 .area-lbl{font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 8px;text-align:center;width:100%;max-width:320px}
 
-/* ── PIN ─────────────────────────────────────────────────────── */
+/* PIN OVERLAY */
 .pin-ovl{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);align-items:flex-end}
 .pin-ovl.on{display:flex;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -156,7 +155,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .pin-cancel{display:block;text-align:center;margin-top:12px;color:var(--txm);font-size:13px;cursor:pointer;padding:8px}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 
-/* ── BUSCADOR ────────────────────────────────────────────────── */
+/* BUSCADOR */
 .swrap{position:relative;margin-bottom:8px}
 .sicon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none}
 .sinput{width:100%;background:var(--sf2);border:2px solid var(--accent);border-radius:12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:16px;padding:11px 14px 11px 42px;outline:none;-webkit-appearance:none}
@@ -168,7 +167,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .sri-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0}
 .sri-btn.added{background:var(--greend);color:var(--green);border:1px solid var(--greenb)}
 
-/* ── CARRITO ─────────────────────────────────────────────────── */
+/* CARRITO */
 .ci{background:var(--sf2);border:1px solid var(--bd2);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 .ci-info{flex:1;min-width:0}.ci-nom{font-size:13px;font-weight:600}.ci-det{font-size:11px;color:var(--txm);margin-top:2px}
 .ci-ctrl{display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -178,7 +177,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .ci-n{font-family:'Inter',sans-serif;font-size:20px;font-weight:800;min-width:32px;text-align:center}
 .ci-del{background:none;border:none;color:var(--txd);font-size:18px;cursor:pointer;padding:4px;margin-left:2px}.ci-del:active{color:var(--red)}
 
-/* ── DESPACHO ────────────────────────────────────────────────── */
+/* DESPACHO */
 .dsc{background:var(--sf);border:1.5px solid var(--yellowb);border-radius:var(--r);padding:14px;margin-bottom:12px}
 .dsc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px;flex-wrap:wrap}
 .dsc-nom{font-family:'Inter',sans-serif;font-size:15px;font-weight:800}
@@ -192,6 +191,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .di-chk.ok{background:var(--green);border-color:var(--green);color:#0d1117}.di-chk.ss{background:var(--redd);border-color:var(--redb);color:var(--red)}
 .di-cin{width:72px;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:8px;color:var(--tx);font-family:'Inter',sans-serif;font-size:16px;font-weight:700;padding:5px 8px;text-align:center;outline:none;-webkit-appearance:none}
 .di-cin:focus{border-color:var(--blue)}
+/* Selector de bodega en despacho */
 .di-bodega-sel{background:var(--sf2);border:1.5px solid var(--bd2);border-radius:8px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 8px;outline:none;-webkit-appearance:none;max-width:130px}
 .di-bodega-sel:focus{border-color:var(--blue)}
 .dsc-act{display:flex;gap:8px;margin-top:14px}
@@ -199,7 +199,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .btn-desp:active{transform:scale(.98)}.btn-desp:disabled{opacity:.5;pointer-events:none}
 .btn-rech{padding:14px 16px;border-radius:11px;border:1.5px solid var(--redb);background:var(--redd);color:var(--red);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 
-/* ── SOLICITUDES ─────────────────────────────────────────────── */
+/* SOLICITUDES */
 .solc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:9px}
 .solc.pendiente{border-left:3px solid var(--yellow)}.solc.despachada{border-left:3px solid var(--green)}.solc.rechazada{border-left:3px solid var(--red)}
 .solc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px}
@@ -207,18 +207,18 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .sol-tag{background:var(--sf2);border:1px solid var(--bd2);border-radius:20px;padding:3px 10px;font-size:12px}
 .sol-tag strong{color:var(--accent)}
 
-/* ── PRECIO PREVIEW ──────────────────────────────────────────── */
+/* PRECIO PREVIEW */
 .prev-box{background:var(--sf2);border:1px solid var(--bd2);border-radius:10px;padding:12px;margin-top:8px;display:none}
 .prev-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--txm)}
 .prev-total{border-top:1px solid var(--bd);margin-top:6px;padding-top:8px;font-size:16px;font-weight:700;color:var(--green)}
 
-/* ── CATEGORIAS MODAL ────────────────────────────────────────── */
+/* CATEGORÍAS MODAL */
 .cat-item{background:var(--sf2);border:1px solid var(--bd2);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .cat-item-nom{font-size:13px;font-weight:700}
 .cat-item-subs{font-size:11px;color:var(--txm);margin-top:3px;line-height:1.5}
 .cat-edit-form{background:var(--blued);border:1px solid var(--blueb);border-radius:10px;padding:12px;margin-bottom:10px;display:none}
 
-/* ── REPORTE ─────────────────────────────────────────────────── */
+/* REPORTE / INDICADORES */
 .rep-header{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:12px}
 .rep-semana{font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px}
 .rep-rango{font-size:11px;color:var(--txm)}
@@ -243,7 +243,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .trend-up{background:var(--redd);color:var(--red)}
 .trend-dn{background:var(--greend);color:var(--green)}
 
-/* ── PRODUCTO FICHA ──────────────────────────────────────────── */
+/* PRODUCTO FICHA */
 .prod-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:9px}
 .prod-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .prod-nom{font-family:'Inter',sans-serif;font-size:14px;font-weight:800}
@@ -253,18 +253,19 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .prod-precio-lbl{font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .prod-precio-val{font-family:'Inter',sans-serif;font-size:14px;font-weight:700;margin-top:2px}
 .prod-stock-bar{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd2)}
+/* Stock por bodega en ficha */
 .stock-bodegas{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .stock-bod-tag{font-size:10px;padding:3px 8px;border-radius:6px;background:var(--sf2);border:1px solid var(--bd2);color:var(--txm)}
 .stock-bod-tag.has-stock{border-color:var(--greenb);color:var(--green);background:var(--greend)}
 .stock-bod-tag.low-stock{border-color:var(--yellowb);color:var(--yellow);background:var(--yellowd)}
 .stock-bod-tag.no-stock{border-color:var(--redb);color:var(--red);background:var(--redd)}
 
-/* ── CHIPS ───────────────────────────────────────────────────── */
+/* CHIPS */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--bd2);color:var(--txm);cursor:pointer;background:transparent;font-family:'DM Sans',sans-serif;transition:all .15s}
 .chip.on{border-color:var(--accent);color:var(--accent);background:var(--accd)}
 
-/* ── BODEGAS ─────────────────────────────────────────────────── */
+/* BODEGAS */
 .bodega-section{margin-bottom:14px}
 .bodega-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;margin-bottom:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:800}
 .bod-clr-0{background:var(--yellowd);border:1px solid var(--yellowb);color:var(--yellow)}
@@ -275,26 +276,28 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .bod-clr-5{background:var(--oranged);border:1px solid var(--orangeb);color:var(--orange)}
 .bodega-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:auto;background:rgba(255,255,255,.15)}
 
-/* ── HISTORIAL PRECIOS / MERMA ───────────────────────────────── */
+/* TRANSFERENCIA / HISTORIAL PRECIOS */
 .precio-hist-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd3);font-size:12px}
 .precio-hist-item:last-child{border-bottom:none}
+
+/* MERMA */
 .merma-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:9px}
 
-/* ── HORARIO BANNER ──────────────────────────────────────────── */
+/* HORARIO BANNER */
 .horario-banner{border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;line-height:1.6}
 .horario-activo{background:var(--greend);border:1px solid var(--greenb);color:var(--green)}
 .horario-colacion{background:var(--yellowd);border:1px solid var(--yellowb);color:var(--yellow)}
 .horario-fuera{background:var(--redd);border:1px solid var(--redb);color:var(--red)}
 
-/* ── PEDIDO INCOMPLETO ───────────────────────────────────────── */
+/* NOTIF PEDIDO INCOMPLETO */
 .notif-inc{background:var(--yellowd);border:1.5px solid var(--yellowb);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
 .notif-inc-icon{font-size:22px;flex-shrink:0;margin-top:1px}
 .notif-inc-txt{flex:1;font-size:12px;line-height:1.6}
 
-/* ── ESTADO VISTO ────────────────────────────────────────────── */
+/* ESTADO "VISTO" */
 .badge-visto{background:var(--blued);color:var(--blue)}
 
-/* ── INVENTARIO ──────────────────────────────────────────────── */
+/* INVENTARIO */
 .inv-row{background:var(--sf2);border:1px solid var(--bd2);border-radius:11px;padding:11px 12px;margin-bottom:7px}
 .inv-row.contado{border-left:3px solid var(--green)}
 .inv-row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
@@ -318,7 +321,7 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .inv-hist-card{background:var(--sf);border:1px solid var(--bd);border-radius:13px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
 .inv-hist-card:active{border-color:var(--accent)}
 
-/* ── VERIFICACIÓN ────────────────────────────────────────────── */
+/* VERIFICACIÓN */
 .verif-item{background:var(--sf2);border:1px solid var(--bd2);border-radius:11px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
 .verif-item.ok{border-left:3px solid var(--green)}
 .verif-item.parcial{border-left:3px solid var(--yellow)}
@@ -331,22 +334,11 @@ body.light .rcard{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .verif-det{font-size:11px;color:var(--txm);margin-top:2px}
 .verif-cant{font-family:'Inter',sans-serif;font-size:14px;font-weight:800;white-space:nowrap;flex-shrink:0}
 
-/* ── MISC ────────────────────────────────────────────────────── */
+/* MISC */
 .empty{text-align:center;padding:28px 16px;color:var(--txd)}.ei{font-size:36px;margin-bottom:8px}.et{font-size:13px}
-.offline-bar{display:none;background:var(--yellowd);border-bottom:1px solid var(--yellowb);padding:5px 16px;font-size:11px;color:var(--yellow);text-align:center;font-weight:600}
-.offline-bar.show{display:block}
+.offline-bar{display:none;background:var(--yellowd);border-bottom:1px solid var(--yellowb);padding:5px 16px;font-size:11px;color:var(--yellow);text-align:center;font-weight:600}.offline-bar.show{display:block}
 
-/* Tap feedback & forms */
-button:active{transform:scale(.96)}
-.nb:active,.sb-btn:active{transform:none}
-input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
-input[type=number]{-moz-appearance:textfield}
-.dsc,.solc{scroll-margin-top:70px}
-/* Badge pulsante */
-.nb-badge.on{animation:badgePulse 2s ease-in-out infinite}
-@keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
-
-/* ── PC SIDEBAR ──────────────────────────────────────────────── */
+/* PC */
 @media(min-width:900px){
   .pg{padding:24px 32px;padding-bottom:24px;max-width:1200px;margin:0 auto}
   .nav{display:none}
@@ -372,7 +364,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="offline-bar" id="ob">⚠️ Sin conexión — modo offline</div>
 <div class="toast" id="toast"></div>
 
-<!-- ALARMA BODEGUERO -->
+<!-- ALARMA -->
 <div style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(6px)" id="alarm-overlay">
   <div style="background:var(--sf);border:2px solid var(--blueb);border-radius:24px;padding:32px 24px;max-width:320px;width:calc(100% - 32px);text-align:center">
     <div style="font-size:60px;margin-bottom:12px;animation:bell 1s ease infinite">🔔</div>
@@ -383,7 +375,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
-<!-- PIN -->
+<!-- PIN OVERLAY -->
 <div class="pin-ovl" id="pin-ovl">
   <div class="pin-sheet">
     <div class="pin-handle"></div>
@@ -468,7 +460,9 @@ input[type=number]{-moz-appearance:textfield}
 <!-- ALMACÉN -->
 <div class="pg" id="pg-stock">
   <div class="pgt">Almacén</div><div class="pgs">Stock en tiempo real</div>
+  <!-- Buscador almacén -->
   <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="stock-buscar" type="text" placeholder="Buscar producto..." autocomplete="off" oninput="renderStock()"></div>
+  <!-- Filtro bodega → luego categorías -->
   <div class="chips" id="stock-bod-chips"></div>
   <div class="chips" id="stock-chips"></div>
   <div id="stock-lista"></div>
@@ -510,14 +504,14 @@ input[type=number]{-moz-appearance:textfield}
 <!-- DESPACHOS -->
 <div class="pg" id="pg-desp">
   <div class="pgt">Despachos</div><div class="pgs" id="desp-sub">Solicitudes pendientes</div>
-  <div class="chips"><button class="chip on" onclick="fDesp('pendiente',this)">Pendientes</button><button class="chip" onclick="fDesp('despachada',this)">Despachados</button><button class="chip" onclick="fDesp('visto',this)">Vistos</button><button class="chip" onclick="fDesp('',this)">Todos</button></div>
+  <div class="chips"><button class="chip on" onclick="fDesp('pendiente',this)">Pendientes</button><button class="chip" onclick="fDesp('despachada',this)">Despachados</button><button class="chip" onclick="fDesp('',this)">Todos</button></div>
   <div id="desp-lista"></div>
 </div>
 
 <!-- SOLICITUDES -->
 <div class="pg" id="pg-sols">
   <div class="pgt">Solicitudes</div><div class="pgs">Historial completo</div>
-  <div class="chips"><button class="chip on" onclick="fSols('',this)">Todas</button><button class="chip" onclick="fSols('pendiente',this)">Pendientes</button><button class="chip" onclick="fSols('visto',this)">Vistos</button><button class="chip" onclick="fSols('despachada',this)">Despachadas</button><button class="chip" onclick="fSols('rechazada',this)">Rechazadas</button></div>
+  <div class="chips"><button class="chip on" onclick="fSols('',this)">Todas</button><button class="chip" onclick="fSols('pendiente',this)">Pendientes</button><button class="chip" onclick="fSols('despachada',this)">Despachadas</button><button class="chip" onclick="fSols('rechazada',this)">Rechazadas</button></div>
   <div id="sols-lista"></div>
 </div>
 
@@ -570,7 +564,7 @@ input[type=number]{-moz-appearance:textfield}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">
         <div style="background:var(--sf);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:600">Contados</div><div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:800;color:var(--green)" id="inv-cnt-c">0</div></div>
         <div style="background:var(--sf);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:600">Pendientes</div><div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:800;color:var(--yellow)" id="inv-cnt-p">0</div></div>
-        <div style="background:var(--sf);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:600">Valor físico</div><div style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:var(--accent)" id="inv-cnt-v">$0</div></div>
+        <div style="background:var(--sf);border-radius:10px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:600">Valor físico</div><div style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:var(--accent)" id="inv-cnt-v">/bin/sh</div></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn bg-blue" style="flex:1;padding:9px;font-size:12px" onclick="openM('mo-inv-csv')">📥 Importar CSV</button>
@@ -662,6 +656,7 @@ input[type=number]{-moz-appearance:textfield}
         </select>
       </div>
     </div>
+    <!-- Bulto -->
     <div style="background:var(--blued);border:1px solid var(--blueb);border-radius:10px;padding:12px;margin-bottom:11px">
       <div style="font-size:10px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">📦 ¿Se compra en bulto? (opcional)</div>
       <div style="font-size:11px;color:var(--txm);margin-bottom:10px">Ingresa el precio del bulto y el sistema calcula el precio por unidad.</div>
@@ -683,7 +678,9 @@ input[type=number]{-moz-appearance:textfield}
     </div>
     <div class="fg">
       <label class="fl">Bodega principal *</label>
-      <select class="fi" id="pp-bodega" onchange="calcConversion()"></select>
+      <select class="fi" id="pp-bodega" onchange="calcConversion()">
+        <!-- Opciones cargadas dinámicamente -->
+      </select>
       <div style="font-size:10px;color:var(--txm);margin-top:4px" id="pp-bodega-hint"></div>
     </div>
     <div class="fg"><label class="fl">Stock mínimo (alerta)</label><input class="fi" type="number" id="pp-min" value="5" min="0"></div>
@@ -697,12 +694,12 @@ input[type=number]{-moz-appearance:textfield}
     <div class="fg"><label class="fl">Tipo de impuesto</label>
       <select class="fi" id="pp-imp" onchange="calcPrev()">
         <option value="general">IVA 19% — General</option>
-        <option value="harina">IVA 19% + Ret. Harina 12% = 31% — Harina de trigo</option>
+        <option value="harina">IVA 19% + Ret. Harina 12% = 31% — Harina de trigo (Res. 5.025/1994)</option>
         <option value="carnes">IVA 19% + Anticipo 5% = 24% — Carnes</option>
-        <option value="bebidas_azucaradas_10">IVA 19% + IABA 10% = 29% — Bebidas &lt;15g azúcar</option>
-        <option value="bebidas_azucaradas">IVA 19% + IABA 18% = 37% — Bebidas &gt;15g azúcar</option>
-        <option value="cerveza">IVA 19% + ILA 20.5% = 39.5% — Cervezas</option>
-        <option value="vino">IVA 19% + ILA 20.5% = 39.5% — Vinos/espumantes</option>
+        <option value="bebidas_azucaradas_10">IVA 19% + IABA 10% = 29% — Bebidas &lt;15g azúcar/240ml</option>
+        <option value="bebidas_azucaradas">IVA 19% + IABA 18% = 37% — Bebidas &gt;15g azúcar/240ml</option>
+        <option value="cerveza">IVA 19% + ILA 20.5% = 39.5% — Cervezas (ILA20C)</option>
+        <option value="vino">IVA 19% + ILA 20.5% = 39.5% — Vinos/espumantes (ILA20V)</option>
         <option value="vino_195">IVA 19% + ILA 19.5% = 38.5% — Vinos (tasa anterior)</option>
         <option value="destilados">IVA 19% + ILA 31.5% = 50.5% — Licores/destilados</option>
         <option value="tabaco">IVA 19% + Tabaco 60.1% — Tabaco</option>
@@ -744,6 +741,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
+<!-- MODAL BODEGAS CONFIG -->
 <div class="ovl" id="mo-bodegas">
   <div class="modal"><div class="mh"></div><div class="mt">🏠 Gestionar Bodegas</div>
     <div id="bodegas-lista" style="margin-bottom:12px"></div>
@@ -758,6 +756,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
+<!-- MODAL TRANSFERENCIA -->
 <div class="ovl" id="mo-transfer">
   <div class="modal"><div class="mh"></div><div class="mt">🔄 Transferir entre bodegas</div>
     <div class="mt-sub" id="transfer-sub">Mueve stock de una bodega a otra</div>
@@ -779,6 +778,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
+<!-- MODAL MERMA -->
 <div class="ovl" id="mo-merma">
   <div class="modal"><div class="mh"></div><div class="mt">📉 Registrar Merma</div>
     <div class="fg"><label class="fl">Producto *</label>
@@ -870,7 +870,8 @@ input[type=number]{-moz-appearance:textfield}
   <div class="modal"><div class="mh"></div><div class="mt">📥 Importar desde CSV</div>
     <div style="background:var(--blued);border:1px solid var(--blueb);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--txm);line-height:1.8">
       <strong style="color:var(--blue)">Formato (2 columnas):</strong><br>
-      Col A: Nombre del producto · Col B: Cantidad física
+      Col A: Nombre del producto · Col B: Cantidad física<br>
+      En Excel: guardar como CSV (delimitado por comas)
     </div>
     <div style="background:var(--sf2);border:1px dashed var(--bd);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px;cursor:pointer" onclick="document.getElementById('csv-input').click()">
       <div style="font-size:32px;margin-bottom:8px">📂</div>
@@ -887,6 +888,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
 </div>
 
+<!-- MODAL VERIFICACIÓN -->
 <div class="ovl" id="mo-verif">
   <div class="modal"><div class="mh"></div><div class="mt">✅ Verificar pedido recibido</div>
     <div class="mt-sub" id="verif-sub">Confirma lo que llegó</div>
@@ -1038,11 +1040,7 @@ function sdot(s){const d=document.getElementById('sdot');if(d){d.className='sdot
 let tT;
 function toast(msg,tipo=''){
   const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(tipo?' '+tipo:'');
-  clearTimeout(tT);
-  requestAnimationFrame(()=>{
-    t.classList.add('on');
-    tT=setTimeout(()=>t.classList.remove('on'),tipo==='err'?4000:2600);
-  });
+  clearTimeout(tT);requestAnimationFrame(()=>{t.classList.add('on');tT=setTimeout(()=>t.classList.remove('on'),3400);});
 }
 function openM(id){document.getElementById(id)?.classList.add('on');}
 function closeM(id){document.getElementById(id)?.classList.remove('on');}
@@ -1179,16 +1177,8 @@ function buildNav(r){
     {id:'pg-inv',i:iInv(),l:'Inventario'},{id:'pg-merma',i:iMer(),l:'Merma'},
     {id:'pg-precios',i:iChart(),l:'Precios'},
   ];
-  const bod=[
-    {id:'pg-desp',i:iDe(),l:'Despachos',badge:true},
-    {id:'pg-stock',i:iSt(),l:'Almacén'},
-    {id:'pg-dash',i:iD(),l:'Inicio'}
-  ];
-  const coc=[
-    {id:'pg-pedir',i:iB(),l:'Pedir'},
-    {id:'pg-mispedidos',i:iSo(),l:'Mis pedidos'},
-    {id:'pg-dash',i:iD(),l:'Inicio'}
-  ];
+  const bod=[{id:'pg-desp',i:iDe(),l:'Despachos',badge:true},{id:'pg-dash',i:iD(),l:'Inicio'}];
+  const coc=[{id:'pg-pedir',i:iB(),l:'Pedir'},{id:'pg-dash',i:iD(),l:'Inicio'},{id:'pg-mispedidos',i:iSo(),l:'Mis pedidos'}];
   const tabs={encargado:enc,bodeguero:bod,c1:coc,c2:coc,c3:coc,c4:coc,serv:coc}[r]||coc;
   document.getElementById('nav-bar').innerHTML=tabs.map(t=>`
     <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
@@ -1415,24 +1405,15 @@ function renderCarrito(){
   emp.style.display='none';wrap.style.display='block';
   document.getElementById('carrito').innerHTML=carrito.map((it,i)=>{
     const isKg=['kg','g','lt','ml'].includes(it.unidad.toLowerCase());
-    const lowStock=it.stock<it.cantidad;
-    return`<div class="ci" style="${lowStock?'border-color:var(--yellowb);background:var(--yellowd)':''}">
-      <div class="ci-info">
-        <div class="ci-nom">${it.nombre}</div>
-        <div class="ci-det" style="color:${lowStock?'var(--yellow)':''}">
-          ${lowStock?'⚠️ Stock bajo: ':'Stock: '}${clpn(it.stock)} ${it.unidad}
-        </div>
-      </div>
+    return`<div class="ci">
+      <div class="ci-info"><div class="ci-nom">${it.nombre}</div><div class="ci-det">Stock: ${clpn(it.stock)} ${it.unidad}</div></div>
       <div class="ci-ctrl">
-        <button class="ci-btn ci-m" onclick="chgC(${i},-1)" style="width:40px;height:40px;font-size:22px">−</button>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
-          <input type="number" class="ci-qty" min="${isKg?.1:1}" step="${isKg?.1:1}" value="${it.cantidad}"
-            style="width:62px;background:var(--sf);border:2px solid var(--accent);border-radius:9px;color:var(--tx);font-family:'Inter',sans-serif;font-size:19px;font-weight:800;padding:5px 4px;text-align:center;outline:none;-webkit-appearance:none"
-            oninput="setCantC(${i},this.value)" onfocus="this.select()">
-          <span style="font-size:9px;color:var(--txd);font-weight:600">${it.unidad}</span>
-        </div>
-        <button class="ci-btn ci-p" onclick="chgC(${i},1)" style="width:40px;height:40px;font-size:22px">+</button>
-        <button class="ci-del" onclick="rmC(${i})" style="color:var(--txd);font-size:20px;padding:6px 8px">✕</button>
+        <button class="ci-btn ci-m" onclick="chgC(${i},-1)">−</button>
+        <input type="number" class="ci-qty" min="${isKg?.1:1}" step="${isKg?.1:1}" value="${it.cantidad}"
+          style="width:58px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'Inter',sans-serif;font-size:17px;font-weight:800;padding:5px 4px;text-align:center;outline:none;-webkit-appearance:none"
+          oninput="setCantC(${i},this.value)" onfocus="this.select()">
+        <button class="ci-btn ci-p" onclick="chgC(${i},1)">+</button>
+        <button class="ci-del" onclick="rmC(${i})">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -1483,14 +1464,10 @@ function renderDesp(){
   const sub=document.getElementById('desp-sub');if(sub)sub.textContent=pp>0?pp+' pendiente'+(pp>1?'s':''):'Sin pendientes';
   let ss=fDE?sols.filter(s=>s.estado===fDE):[...sols];
   if(!ss.length){lista.innerHTML=`<div class="empty"><div class="ei">✅</div><div class="et">Sin solicitudes</div></div>`;return;}
-  if(fDE!=='pendiente'&&fDE!=='visto'){lista.innerHTML=ss.map(s=>solCard(s)).join('');return;}
+  if(fDE!=='pendiente'){lista.innerHTML=ss.map(s=>solCard(s)).join('');return;}
 
   lista.innerHTML=ss.map(sol=>{
     if(!despEst[sol.id])despEst[sol.id]={};
-    // Marcar como visto automáticamente
-    if(sol.estado==='pendiente'&&!sol.vistoPor){
-      updateDoc(doc(db,'solicitudes',sol.id),{estado:'visto',vistoPor:role,vistoEn:serverTimestamp()}).catch(()=>{});
-    }
     // Agrupar items por bodega
     const grupos={};
     bodegas.forEach(b=>grupos[b.id]=[]);
@@ -1507,32 +1484,21 @@ function renderDesp(){
       // Stock disponible en la bodega elegida
       const stockBod=p?stockEnBodega(p,est.bodega||p?.bodega||'seca'):0;
       const stockTot=p?stockTotal(p):0;
-      const sinStock=stockTot===0;const bajStock=stockTot>0&&stockTot<it.cantidad;
-      return`<div class="di" style="${sinStock?'opacity:.8':''}">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
-          <div class="di-nom" style="font-size:15px">${it.nombreProducto}</div>
-          <button class="di-chk ${est.tipo==='ok'?'ok':est.tipo==='ss'?'ss':''}"
-            onclick="togD('${sol.id}','${it.productoId}',${it.cantidad})"
-            style="width:44px;height:44px;border-radius:12px;font-size:20px;flex-shrink:0">
-            ${est.tipo==='ok'?'✓':est.tipo==='ss'?'✗':''}
-          </button>
+      return`<div class="di">
+        <div class="di-inf">
+          <div class="di-nom">${it.nombreProducto}</div>
+          <div class="di-det">Pedido: <strong>${clpn(it.cantidad)} ${it.unidadMedida||''}</strong> · <span class="badge ${stockTot===0?'bg-r-s':stockTot<it.cantidad?'bg-y-s':'bg-g-s'}">Stock: ${clpn(stockTot)}</span></div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="badge ${sinStock?'bg-r-s':bajStock?'bg-y-s':'bg-g-s'}">
-            ${sinStock?'⚠️ Sin stock':bajStock?'⚠️ Stock bajo: '+clpn(stockTot):'Stock: '+clpn(stockTot)} ${it.unidadMedida||''}
-          </span>
-          <span style="font-size:12px;color:var(--txm)">Pedido: <strong>${clpn(it.cantidad)} ${it.unidadMedida||''}</strong></span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <select class="di-bodega-sel" style="flex:1;min-width:130px" onchange="setBodegaD('${sol.id}','${it.productoId}',this.value)">
-            ${bodegas.map(b=>`<option value="${b.id}" ${(est.bodega||p?.bodega||'seca')===b.id?'selected':''}>${b.icono} ${b.nombre} (${clpn(p?stockEnBodega(p,b.id):0)})</option>`).join('')}
-          </select>
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            <span style="font-size:11px;color:var(--txm)">Cant.:</span>
-            <input class="di-cin" type="number" min="0" step="${isKg?'0.1':'1'}" value="${est.cant}"
-              style="width:78px;font-size:18px;font-weight:800"
-              oninput="setD('${sol.id}','${it.productoId}',this.value)" onfocus="this.select()">
-            <span style="font-size:11px;color:var(--txm)">${it.unidadMedida||''}</span>
+        <div class="di-right">
+          <button class="di-chk ${est.tipo==='ok'?'ok':est.tipo==='ss'?'ss':''}" onclick="togD('${sol.id}','${it.productoId}',${it.cantidad})">${est.tipo==='ok'?'✓':est.tipo==='ss'?'✗':''}</button>
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+            <select class="di-bodega-sel" onchange="setBodegaD('${sol.id}','${it.productoId}',this.value)">
+              ${bodegas.map(b=>`<option value="${b.id}" ${(est.bodega||p?.bodega||'seca')===b.id?'selected':''}>${b.icono} ${b.nombre} (${clpn(p?stockEnBodega(p,b.id):0)})</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input class="di-cin" type="number" min="0" step="${isKg?'0.1':'1'}" value="${est.cant}" oninput="setD('${sol.id}','${it.productoId}',this.value)">
+            <span style="font-size:10px;color:var(--txm)">${it.unidadMedida||''}</span>
           </div>
         </div>
       </div>`;
@@ -1544,33 +1510,15 @@ function renderDesp(){
         ${items.map(renderItem).join('')}
       </div>`;
     }).join('');
-    const estadoBadge=sol.estado==='visto'?`<span class="badge badge-visto">👁 Visto</span>`:`<span class="badge bg-y-s">🔔 Pendiente</span>`;
-    const nItems=(sol.items||[]).length;
-    const tiqueados=Object.values(despEst[sol.id]||{}).filter(e=>e.tipo!=='p').length;
-    const progPct=nItems>0?Math.round(tiqueados/nItems*100):0;
+    const estadoBadge=`<span class="badge bg-y-s">Pendiente</span>`;
     return`<div class="dsc" id="dsc-${sol.id}">
-      <div class="dsc-hdr">
-        <div>
-          <div class="dsc-nom" style="font-size:17px">${sol.nombreSolicitante||sol.creadoPor||'—'}
-            ${sol.subArea?`<span style="font-size:12px;color:var(--blue);font-weight:600;margin-left:6px">· ${sol.subArea}</span>`:''}
-          </div>
-          <div class="dsc-fecha">${fDate(sol.creadoEn)}</div>
-        </div>
-        ${estadoBadge}
-      </div>
+      <div class="dsc-hdr"><div><div class="dsc-nom">${sol.nombreSolicitante||sol.creadoPor||'—'}${sol.subArea?` <span style="font-size:12px;color:var(--blue);font-weight:600">· ${sol.subArea}</span>`:''}</div><div class="dsc-fecha">${fDate(sol.creadoEn)}</div></div>${estadoBadge}</div>
+      ${sol.subArea?`<div style="background:var(--blued);border:1px solid var(--blueb);border-radius:8px;padding:7px 12px;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--blue)">📍 ${sol.subArea}</div>`:''}
       ${sol.nota?`<div class="dsc-nota">📝 ${sol.nota}</div>`:''}
-      ${nItems>0?`<div style="background:var(--sf2);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px">
-        <div style="flex:1;background:var(--bd2);border-radius:4px;height:6px;overflow:hidden">
-          <div style="background:${tiqueados===nItems?'var(--green)':'var(--accent)'};height:100%;width:${progPct}%;transition:width .3s;border-radius:4px"></div>
-        </div>
-        <span style="font-size:12px;font-weight:700;color:${tiqueados===nItems?'var(--green)':'var(--txm)'};white-space:nowrap">${tiqueados}/${nItems} tiqueados</span>
-      </div>`:''}
       ${bodegasHtml}
       <div class="dsc-act">
         <button class="btn-rech" onclick="abrirRechazo('${sol.id}')">✕ Rechazar</button>
-        <button class="btn-desp" onclick="despachar('${sol.id}')" ${tiqueados===0?'disabled':''}>
-          ✓ Despachar${tiqueados>0&&tiqueados<nItems?' ('+tiqueados+')':''}
-        </button>
+        <button class="btn-desp" onclick="despachar('${sol.id}')">✓ Despachar</button>
       </div>
     </div>`;
   }).join('');
@@ -1645,33 +1593,16 @@ function renderSolsPage(){
   lista.innerHTML=ss.length?ss.map(s=>solCard(s)).join(''):'<div class="empty"><div class="ei">📋</div><div class="et">Sin solicitudes</div></div>';
 }
 function solCard(s){
-  const em={pendiente:{c:'bg-y-s',l:'Pendiente'},visto:{c:'badge-visto',l:'Visto'},despachada:{c:'bg-g-s',l:'Despachada'},rechazada:{c:'bg-r-s',l:'Rechazada'}};
+  const em={pendiente:{c:'bg-y-s',l:'Pendiente'},despachada:{c:'bg-g-s',l:'Despachada'},rechazada:{c:'bg-r-s',l:'Rechazada'}};
   const puedeverif=esAreaRole(role)&&s.estado==='despachada'&&s.creadoPor===role;
-  const totalItems=(s.items||[]).length;
-  const nomArea=s.nombreSolicitante||s.creadoPor||'—';
-  return`<div class="solc ${s.estado}" style="cursor:default">
-    <div class="solc-hdr">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span class="badge ${em[s.estado]?.c||''}">${em[s.estado]?.l||s.estado}</span>
-        <span style="font-family:'Inter',sans-serif;font-size:14px;font-weight:700">${nomArea}</span>
-        ${s.subArea?`<span style="font-size:11px;color:var(--blue);font-weight:600;background:var(--blued);padding:2px 8px;border-radius:6px">${s.subArea}</span>`:''}
-      </div>
-      <span style="font-size:10px;color:var(--txd);white-space:nowrap">${fDate(s.creadoEn)}</span>
-    </div>
-    ${s.nota?`<div style="font-size:12px;color:var(--txm);background:var(--sf3);border-radius:8px;padding:7px 10px;margin:6px 0">📝 ${s.nota}</div>`:''}
-    <div class="sol-tags">
-      ${(s.items||[]).map(it=>{
-        const d=s.itemsDespacho?.find(x=>x.productoId===it.productoId);
-        const ok=d&&d.cantidadDespachada>=it.cantidad;
-        const parcial=d&&d.cantidadDespachada>0&&d.cantidadDespachada<it.cantidad;
-        const ic=ok?'✓ ':parcial?'~ ':'';
-        const clr=ok?'var(--green)':parcial?'var(--yellow)':'';
-        return`<span class="sol-tag" style="${clr?'border-color:'+clr+';color:'+clr:''}">${ic}${it.nombreProducto}: <strong>${d?clpn(d.cantidadDespachada)+'/'+clpn(it.cantidad):clpn(it.cantidad)}</strong> ${it.unidadMedida||''}</span>`;
-      }).join('')}
-    </div>
-    ${s.estado==='rechazada'&&s.motivoRechazo?`<div style="font-size:12px;color:var(--red);background:var(--redd);border-radius:8px;padding:8px 10px;margin-top:6px">❌ Motivo: ${s.motivoRechazo}</div>`:''}
-    ${s.estado==='despachada'&&s.incompleto?`<div class="notif-inc"><div class="notif-inc-icon">⚠️</div><div class="notif-inc-txt"><strong style="color:var(--yellow)">Pedido incompleto</strong><br>${s.itemsNoTiqueados?.length?'Faltaron: '+s.itemsNoTiqueados.join(', '):'Algunas cantidades fueron menores.'}</div></div>`:''}
-    ${puedeverif?`<button onclick="abrirVerif('${s.id}')" style="margin-top:10px;width:100%;padding:12px;border-radius:12px;border:none;background:${s.incompleto?'var(--yellow)':'var(--green)'};color:${s.incompleto?'#000':'#0d1117'};font-family:'Inter',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:opacity .15s" ontouchstart="" onmousedown="this.style.opacity='.85'" onmouseup="this.style.opacity='1'" onmouseleave="this.style.opacity='1'">${s.incompleto?'⚠️ Verificar — llegó incompleto':'✅ Confirmar recepción'}</button>`:''}
+  return`<div class="solc ${s.estado}">
+    <div class="solc-hdr"><span class="badge ${em[s.estado]?.c||''}">${em[s.estado]?.l||s.estado}</span><span style="font-size:11px;color:var(--txm)">${fDate(s.creadoEn)}</span></div>
+    <div style="font-size:11px;color:var(--txm);margin-bottom:6px">Área: <strong>${s.nombreSolicitante||s.creadoPor||'—'}</strong>${s.subArea?` · <span style="color:var(--blue);font-weight:600">${s.subArea}</span>`:''}</div>
+    <div class="sol-tags">${(s.items||[]).map(it=>{const d=s.itemsDespacho?.find(x=>x.productoId===it.productoId);const ok=d&&d.cantidadDespachada>=it.cantidad,parcial=d&&d.cantidadDespachada>0&&d.cantidadDespachada<it.cantidad;const color=ok?'var(--green)':parcial?'var(--yellow)':'';return`<span class="sol-tag" style="${color?'border-color:'+color+';color:'+color:''}">${it.nombreProducto}: <strong>${d?clpn(d.cantidadDespachada)+'/'+clpn(it.cantidad):clpn(it.cantidad)} ${it.unidadMedida||''}</strong></span>`;}).join('')}</div>
+    ${s.nota?`<div style="font-size:11px;color:var(--txm);margin-top:4px">📝 ${s.nota}</div>`:''}
+    ${s.estado==='rechazada'&&s.motivoRechazo?`<div style="font-size:11px;color:var(--red);margin-top:4px">❌ ${s.motivoRechazo}</div>`:''}
+    ${s.estado==='despachada'&&s.incompleto?`<div class="notif-inc"><div class="notif-inc-icon">⚠️</div><div class="notif-inc-txt"><strong style="color:var(--yellow)">Pedido incompleto</strong><br>${s.itemsNoTiqueados?.length?'No despachados: '+s.itemsNoTiqueados.join(', '):'Algunas cantidades fueron menores.'}</div></div>`:''}
+    ${puedeverif?`<button onclick="abrirVerif('${s.id}')" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;border:1.5px solid ${s.incompleto?'var(--yellowb)':'var(--greenb)'};background:${s.incompleto?'var(--yellowd)':'var(--greend)'};color:${s.incompleto?'var(--yellow)':'var(--green)'};font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">${s.incompleto?'⚠️ Verificar pedido incompleto':'✅ Verificar lo recibido'}</button>`:''}
   </div>`;
 }
 function abrirVerif(solId){
@@ -2654,19 +2585,6 @@ if('serviceWorker' in navigator){
 }
 if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone)
   setTimeout(()=>toast('Safari → Compartir → "Añadir al inicio"'),4000);
-</script>
-
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').then(reg=>{
-    reg.update();
-    reg.addEventListener('updatefound',()=>{const nw=reg.installing;if(!nw)return;nw.addEventListener('statechange',()=>{if(nw.state==='installed')nw.postMessage('SKIP_WAITING');if(nw.state==='activated')window.location.reload();});});
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update();});
-  }).catch(()=>{});
-  navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
-}
-if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone)
-  setTimeout(()=>{ const t=document.getElementById('toast'); if(t){t.textContent='Safari → Compartir → "Añadir al inicio"';t.className='toast warn';t.classList.add('on');setTimeout(()=>t.classList.remove('on'),5000);} },4000);
 </script>
 </body>
 </html>
