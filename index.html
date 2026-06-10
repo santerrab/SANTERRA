@@ -600,14 +600,14 @@ input[type=number]{-moz-appearance:textfield}
 <!-- DESPACHOS -->
 <div class="pg" id="pg-desp">
   <div class="pgt">Despachos</div><div class="pgs" id="desp-sub">Solicitudes pendientes</div>
-  <div class="chips"><button class="chip on" onclick="fDesp('pendiente',this)">Pendientes</button><button class="chip" onclick="fDesp('despachada',this)">Despachados</button><button class="chip" onclick="fDesp('visto',this)">Vistos</button><button class="chip" onclick="fDesp('',this)">Todos</button></div>
+  <div class="chips"><button class="chip on" onclick="fDesp('pendiente',this)">Pendientes</button><button class="chip" onclick="fDesp('despachada',this)">Despachados</button><button class="chip" onclick="fDesp('',this)">Todos</button></div>
   <div id="desp-lista"></div>
 </div>
 
 <!-- SOLICITUDES -->
 <div class="pg" id="pg-sols">
   <div class="pgt">Solicitudes</div><div class="pgs">Historial completo</div>
-  <div class="chips"><button class="chip on" onclick="fSols('',this)">Todas</button><button class="chip" onclick="fSols('pendiente',this)">Pendientes</button><button class="chip" onclick="fSols('visto',this)">Vistos</button><button class="chip" onclick="fSols('despachada',this)">Despachadas</button><button class="chip" onclick="fSols('rechazada',this)">Rechazadas</button></div>
+  <div class="chips"><button class="chip on" onclick="fSols('',this)">Todas</button><button class="chip" onclick="fSols('pendiente',this)">Pendientes</button><button class="chip" onclick="fSols('despachada',this)">Despachadas</button><button class="chip" onclick="fSols('rechazada',this)">Rechazadas</button></div>
   <div id="sols-lista"></div>
 </div>
 
@@ -1574,8 +1574,10 @@ function renderDesp(){
   let ss=fDE?sols.filter(s=>s.estado===fDE):[...sols];
   if(!ss.length){lista.innerHTML=`<div class="empty"><div class="ei">✅</div><div class="et">Sin solicitudes</div></div>`;return;}
   if(fDE!=='pendiente'&&fDE!=='visto'){lista.innerHTML=ss.map(s=>solCard(s)).join('');return;}
-
-  lista.innerHTML=ss.map(sol=>{
+  // "pendiente" y "visto" se muestran juntos bajo el filtro Pendientes
+  const filtrados=fDE===''?ss:ss.filter(s=>s.estado==='pendiente'||s.estado==='visto');
+  if(!filtrados.length){lista.innerHTML=`<div class="empty"><div class="ei">🎉</div><div class="et">Sin pedidos pendientes</div></div>`;return;}
+  lista.innerHTML=filtrados.map(sol=>{
     if(!despEst[sol.id])despEst[sol.id]={};
     // Marcar como visto automáticamente
     if(sol.estado==='pendiente'&&!sol.vistoPor){
@@ -1652,8 +1654,8 @@ function renderDesp(){
         ${items.map(renderItem).join('')}
       </div>`;
     }).join('');
-    const estadoBadge=sol.estado==='visto'
-      ?`<span class="badge badge-visto" style="font-size:10px;padding:5px 10px">👁 Visto</span>`
+    const estadoBadge=(sol.estado==='visto'||sol.estado==='pendiente')
+      ?`<span class="badge bg-y-s" style="font-size:10px;padding:5px 10px">🔔 Pendiente</span>`
       :`<span class="badge bg-y-s" style="font-size:10px;padding:5px 10px">🔔 Nuevo</span>`;
     const nItems=(sol.items||[]).length;
     const tiqueados=Object.values(despEst[sol.id]||{}).filter(e=>e.tipo!=='p').length;
