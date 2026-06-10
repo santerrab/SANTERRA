@@ -1595,29 +1595,44 @@ function renderMisPed(){
 function fDesp(e,btn){fDE=e;document.querySelectorAll('#pg-desp .chip').forEach(c=>c.classList.remove('on'));btn.classList.add('on');renderDesp();}
 function renderDesp(){
   const lista=document.getElementById('desp-lista');
-  const pp=sols.filter(s=>s.estado==='pendiente').length;
-  const sub=document.getElementById('desp-sub');if(sub)sub.textContent=pp>0?pp+' pendiente'+(pp>1?'s':''):'Sin pendientes';
-  let ss=fDE?sols.filter(s=>s.estado===fDE):[...sols];
-  if(!ss.length){lista.innerHTML=`<div class="empty"><div class="ei">✅</div><div class="et">Sin solicitudes</div></div>`;return;}
-  if(fDE!=='pendiente'&&fDE!=='visto'){lista.innerHTML=ss.map(s=>solCard(s)).join('');return;}
-  // "pendiente" y "visto" se muestran juntos bajo el filtro Pendientes
-  const filtrados=fDE===''?ss:ss.filter(s=>s.estado==='pendiente'||s.estado==='visto');
-  if(!filtrados.length){lista.innerHTML=`<div class="empty"><div class="ei">🎉</div><div class="et">Sin pedidos pendientes</div></div>`;return;}
-  lista.innerHTML=filtrados.map(sol=>{
-    if(!despEst[sol.id])despEst[sol.id]={};
-    // Marcar como visto automáticamente
-    if(sol.estado==='pendiente'&&!sol.vistoPor){
-      updateDoc(doc(db,'solicitudes',sol.id),{estado:'visto',vistoPor:role,vistoEn:serverTimestamp()}).catch(()=>{});
-    }
-    // Agrupar items por bodega
-    const grupos={};
-    bodegas.forEach(b=>grupos[b.id]=[]);
-    (sol.items||[]).forEach(it=>{
-      const p=prods.find(x=>x.id===it.productoId);
-      const bodId=p?.bodega||'seca';
-      if(!grupos[bodId])grupos[bodId]=[];
-      grupos[bodId].push({...it,prod:p});
-    });
+  // pendiente y visto son lo mismo para el bodeguero
+  const esPendiente=s=>s.estado==='pendiente'||s.estado==='visto';
+  const pp=sols.filter(esPendiente).length;
+  const sub=document.getElementById('desp-sub');
+  if(sub)sub.textContent=pp>0?pp+' pendiente'+(pp>1?'s':''):'Sin pendientes';
+
+  // Filtrar según tab activo
+  let ss;
+  if(fDE==='pendiente'||fDE==='visto'||fDE===''){
+    // Tab "Pendientes" o "Todos" — mostrar pendiente+visto
+    ss=sols.filter(fDE===''?()=>true:esPendiente);
+  } else {
+    // Tab "Despachados"
+    ss=sols.filter(s=>s.estado===fDE);
+  }
+
+  if(!ss.length){
+    lista.innerHTML=`<div class="empty"><div class="ei">${fDE==='despachada'?'📦':'🎉'}</div><div class="et">${fDE==='despachada'?'Sin despachos aún':'Sin pedidos pendientes'}</div></div>`;
+    return;
+  }
+
+  // Para tab Pendientes: renderizar cards de despacho interactivos
+  if(fDE==='pendiente'||fDE==='visto'||fDE===''){
+    lista.innerHTML=ss.map(sol=>{
+      if(!despEst[sol.id])despEst[sol.id]={};
+      // Marcar como visto si aún está en pendiente
+      if(sol.estado==='pendiente'&&!sol.vistoPor){
+        updateDoc(doc(db,'solicitudes',sol.id),{estado:'visto',vistoPor:role,vistoEn:serverTimestamp()}).catch(()=>{});
+      }
+      // Agrupar items por bodega
+      const grupos={};
+      bodegas.forEach(b=>grupos[b.id]=[]);
+      (sol.items||[]).forEach(it=>{
+        const p=prods.find(x=>x.id===it.productoId);
+        const bodId=p?.bodega||'seca';
+        if(!grupos[bodId])grupos[bodId]=[];
+        grupos[bodId].push({...it,prod:p});
+      });
     const renderItem=it=>{
       const p=it.prod;
       const isKg=['kg','g','lt','ml'].includes((it.unidadMedida||'').toLowerCase());
@@ -1734,6 +1749,10 @@ function renderDesp(){
       </div>
     </div>`;
   }).join('');
+  } else {
+    // Tab Despachados — vista de solo lectura con solCard
+    lista.innerHTML=ss.map(s=>solCard(s)).join('');
+  }
 }
 function togD(sid,pid,cantSol){
   if(!despEst[sid])despEst[sid]={};
