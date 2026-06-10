@@ -849,21 +849,38 @@ input[type=number]{-moz-appearance:textfield}
 </div>
 
 <div class="ovl" id="mo-transfer">
-  <div class="modal"><div class="mh"></div><div class="mt">🔄 Transferir entre bodegas</div>
-    <div class="mt-sub" id="transfer-sub">Mueve stock de una bodega a otra</div>
-    <div class="fg"><label class="fl">Producto</label>
-      <div class="swrap" style="margin-bottom:4px"><span class="sicon">🔍</span><input class="sinput" id="tr-buscar" type="text" placeholder="Buscar producto..." oninput="trBuscar(this.value)"></div>
-      <div id="tr-res" class="sres"></div>
-      <div id="tr-prod-sel" style="display:none;background:var(--sf2);border-radius:9px;padding:10px 12px;margin-top:4px;font-size:13px;font-weight:600"></div>
+  <div class="modal"><div class="mh"></div>
+    <div class="mt">🔄 Transferir stock</div>
+    <div class="mt-sub">Mueve mercadería de una bodega a otra</div>
+
+    <!-- 1. Producto -->
+    <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">1 · Producto</div>
+    <div class="swrap" style="margin-bottom:6px"><span class="sicon">🔍</span><input class="sinput" id="tr-buscar" type="text" placeholder="Buscar producto..." oninput="trBuscar(this.value)" autocomplete="off"></div>
+    <div id="tr-res" class="sres"></div>
+    <div id="tr-prod-sel" style="display:none;background:var(--greend);border:1px solid var(--greenb);border-radius:12px;padding:12px 14px;margin-bottom:14px"></div>
+
+    <!-- 2. Bodegas -->
+    <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">2 · Origen y destino</div>
+    <div class="fr" style="margin-bottom:4px">
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Desde</label>
+        <select class="fi" id="tr-desde" onchange="trActualizarStock()"></select>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Hacia</label>
+        <select class="fi" id="tr-hacia" onchange="trActualizarStock()"></select>
+      </div>
     </div>
-    <div class="fr" style="margin-bottom:11px">
-      <div class="fg" style="margin-bottom:0"><label class="fl">Desde bodega</label><select class="fi" id="tr-desde" onchange="trActualizarStock()"></select></div>
-      <div class="fg" style="margin-bottom:0"><label class="fl">Hacia bodega</label><select class="fi" id="tr-hacia"></select></div>
+    <!-- Preview de stock entre bodegas -->
+    <div id="tr-stock-info" style="margin-bottom:14px"></div>
+
+    <!-- 3. Cantidad -->
+    <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">3 · Cantidad a mover</div>
+    <div class="fg">
+      <input class="fi" type="number" id="tr-cant" min="0" step="1" placeholder="0"
+        style="font-family:'Inter',sans-serif;font-size:28px;font-weight:900;text-align:center;padding:14px">
     </div>
-    <div class="fg"><label class="fl">Cantidad a transferir</label>
-      <input class="fi" type="number" id="tr-cant" min="0.1" step="0.1" placeholder="0">
-      <div style="font-size:11px;color:var(--txm);margin-top:4px" id="tr-stock-info">—</div>
-    </div>
+
     <button class="btn bg-orange" onclick="confirmarTransferencia()">🔄 Confirmar transferencia</button>
     <button class="btn bg-ghost" onclick="closeM('mo-transfer')">Cancelar</button>
   </div>
@@ -2244,35 +2261,50 @@ async function elimBodega(id,n){
 }
 
 // ── TRANSFERENCIA ENTRE BODEGAS ───────────────────────────────────────────────
-function abrirTransfer(){
-  trProdId=null;
-  document.getElementById('tr-buscar').value='';
-  document.getElementById('tr-res').style.display='none';
-  document.getElementById('tr-prod-sel').style.display='none';
-  document.getElementById('tr-cant').value='';
-  document.getElementById('tr-stock-info').textContent='—';
-  // Llenar selects de bodega
-  const desde=document.getElementById('tr-desde'),hacia=document.getElementById('tr-hacia');
-  if(desde&&hacia){
-    const opts=bodegas.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
-    desde.innerHTML=opts;hacia.innerHTML=opts;
-    if(bodegas.length>1)hacia.selectedIndex=1;
+function abrirTransfer(prodId){
+  trProdId=prodId||null;
+  const el=id=>document.getElementById(id);
+  el('tr-buscar').value='';
+  el('tr-res').style.display='none';
+  el('tr-cant').value='';
+  el('tr-stock-info').innerHTML='';
+  // Llenar selects — usar bodegas o fallback a BODEGAS_DEFAULT si aún no cargaron
+  const src=(bodegas&&bodegas.length)?bodegas:BODEGAS_DEFAULT;
+  const opts=src.map(b=>`<option value="${b.id}">${b.icono||'📦'} ${b.nombre}</option>`).join('');
+  el('tr-desde').innerHTML=opts;
+  el('tr-hacia').innerHTML=opts;
+  if(src.length>1) el('tr-hacia').selectedIndex=1;
+  // Si viene con producto preseleccionado
+  if(trProdId){
+    const p=prods.find(x=>x.id===trProdId);
+    if(p){
+      el('tr-prod-sel').style.display='block';
+      el('tr-prod-sel').innerHTML=`<div style="font-weight:700;font-size:14px">${p.nombre}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">Stock total: ${clpn(stockTotal(p))} ${p.unidad||p.unidadMedida||''}</div>`;
+      trActualizarStock();
+    }
+  } else {
+    el('tr-prod-sel').style.display='none';
   }
   openM('mo-transfer');
 }
+
 function trBuscar(q){
   const res=document.getElementById('tr-res');
   if(!q.trim()){res.style.display='none';return;}
   const t=q.toLowerCase();
-  const m=prods.filter(p=>p.nombre.toLowerCase().includes(t)).slice(0,8);
+  const m=prods.filter(p=>p.nombre.toLowerCase().includes(t)&&stockTotal(p)>0).slice(0,8);
   res.style.display='block';
   if(!m.length){res.innerHTML='<div style="padding:12px;text-align:center;color:var(--txd);font-size:13px">Sin resultados</div>';return;}
   res.innerHTML=m.map(p=>`
     <div class="sri" onclick="trSelProd('${p.id}')">
-      <div class="sri-info"><div class="sri-nom">${p.nombre}</div><div class="sri-det">Stock total: ${clpn(stockTotal(p))} ${p.unidadMedida||''}</div></div>
+      <div class="sri-info">
+        <div class="sri-nom">${p.nombre}</div>
+        <div class="sri-det">Stock total: ${clpn(stockTotal(p))} ${p.unidad||p.unidadMedida||''}</div>
+      </div>
       <button class="sri-btn">Seleccionar</button>
     </div>`).join('');
 }
+
 function trSelProd(pid){
   trProdId=pid;
   const p=prods.find(x=>x.id===pid);if(!p)return;
@@ -2280,43 +2312,75 @@ function trSelProd(pid){
   document.getElementById('tr-buscar').value='';
   const sel=document.getElementById('tr-prod-sel');
   sel.style.display='block';
-  sel.textContent=p.nombre+' · Stock total: '+clpn(stockTotal(p))+' '+p.unidadMedida;
+  sel.innerHTML=`<div style="font-weight:700;font-size:14px">${p.nombre}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">Stock total: ${clpn(stockTotal(p))} ${p.unidad||p.unidadMedida||''}</div>`;
   trActualizarStock();
 }
+
 function trActualizarStock(){
   if(!trProdId)return;
   const p=prods.find(x=>x.id===trProdId);if(!p)return;
-  const bodId=document.getElementById('tr-desde')?.value;if(!bodId)return;
-  const s=stockEnBodega(p,bodId);
-  const isKg=['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
-  document.getElementById('tr-stock-info').textContent=`Disponible en ${getBodegaById(bodId).nombre}: ${clpn(s)} ${p.unidadMedida||''}`;
-  const ci=document.getElementById('tr-cant');if(ci){ci.step=isKg?'0.1':'1';ci.max=s;}
+  const desdeId=document.getElementById('tr-desde')?.value;
+  const haciaId=document.getElementById('tr-hacia')?.value;
+  if(!desdeId)return;
+  const sDesde=stockEnBodega(p,desdeId);
+  const sHacia=haciaId?stockEnBodega(p,haciaId):0;
+  const isKg=['kg','g','lt','ml'].includes((p.unidad||p.unidadMedida||'').toLowerCase());
+  const ci=document.getElementById('tr-cant');
+  if(ci){ci.step=isKg?'0.1':'1';ci.max=sDesde;}
+  const src=(bodegas&&bodegas.length)?bodegas:BODEGAS_DEFAULT;
+  const bDesde=src.find(b=>b.id===desdeId);
+  const bHacia=src.find(b=>b.id===haciaId);
+  const unid=p.unidad||p.unidadMedida||'';
+  const info=document.getElementById('tr-stock-info');
+  if(info) info.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:10px">
+      <div style="background:var(--sf2);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--bd2)">
+        <div style="font-size:10px;color:var(--txm);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${bDesde?.icono||'📦'} ${bDesde?.nombre||desdeId}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:900;color:${sDesde===0?'var(--red)':sDesde<5?'var(--yellow)':'var(--green)'}">${clpn(sDesde)}</div>
+        <div style="font-size:10px;color:var(--txm);margin-top:2px">${unid}</div>
+      </div>
+      <div style="font-size:24px;color:var(--txd)">→</div>
+      <div style="background:var(--sf2);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--bd2)">
+        <div style="font-size:10px;color:var(--txm);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${bHacia?.icono||'📦'} ${bHacia?.nombre||haciaId}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:900;color:var(--blue)">${clpn(sHacia)}</div>
+        <div style="font-size:10px;color:var(--txm);margin-top:2px">${unid}</div>
+      </div>
+    </div>
+    ${sDesde===0?'<div style="font-size:12px;color:var(--red);margin-top:8px;font-weight:700;text-align:center;padding:8px;background:var(--redd);border-radius:8px">⚠️ Sin stock en esta bodega</div>':''}`;
 }
+
 async function confirmarTransferencia(){
   if(!trProdId){toast('Selecciona un producto','err');return;}
   const cant=parseFloat(document.getElementById('tr-cant').value)||0;
-  if(cant<=0){toast('Ingresa la cantidad','err');return;}
+  if(cant<=0){toast('Ingresa la cantidad a transferir','err');return;}
   const desde=document.getElementById('tr-desde').value;
   const hacia=document.getElementById('tr-hacia').value;
   if(desde===hacia){toast('Elige bodegas diferentes','err');return;}
   const p=prods.find(x=>x.id===trProdId);if(!p)return;
   const stockOrigen=stockEnBodega(p,desde);
-  if(cant>stockOrigen){toast(`Stock insuficiente. Disponible: ${clpn(stockOrigen)} ${p.unidadMedida||''}`, 'err');return;}
+  if(cant>stockOrigen){toast(`Stock insuficiente. Disponible: ${clpn(stockOrigen)} ${p.unidad||p.unidadMedida||''}`,'err');return;}
+  const btn=document.querySelector('#mo-transfer .btn.bg-orange');
+  if(btn){btn.disabled=true;btn.textContent='Transfiriendo...';}
   try{
     const spb={...(p.stockPorBodega||{})};
-    if(!p.stockPorBodega&&(p.stock||0)>0){spb[p.bodega||'seca']=p.stock||0;}
+    if(!p.stockPorBodega&&(p.stock||0)>0) spb[p.bodega||'seca']=p.stock||0;
     spb[desde]=Math.max(0,(spb[desde]||0)-cant);
     spb[hacia]=(spb[hacia]||0)+cant;
     const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+    const src=(bodegas&&bodegas.length)?bodegas:BODEGAS_DEFAULT;
+    const nb=src.find(b=>b.id===desde)?.nombre||desde;
+    const nh=src.find(b=>b.id===hacia)?.nombre||hacia;
     await updateDoc(doc(db,'productos',trProdId),{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
     await addDoc(collection(db,'movimientos'),{
       tipo:'transferencia',productoId:trProdId,nombreProducto:p.nombre,
       cantidad:cant,bodegaOrigen:desde,bodegaDestino:hacia,
+      bodegaOrigenNombre:nb,bodegaDestinoNombre:nh,
       realizadoPor:role,creadoEn:serverTimestamp()
     });
-    toast(`✓ ${clpn(cant)} ${p.unidadMedida||''} transferidos`);
+    toast(`✓ ${clpn(cant)} ${p.unidad||p.unidadMedida||''} transferidos a ${nh}`);
     closeM('mo-transfer');trProdId=null;
   }catch(e){toast('Error: '+e.message,'err');}
+  finally{if(btn){btn.disabled=false;btn.textContent='🔄 Confirmar transferencia';}}
 }
 
 // ── MERMA ─────────────────────────────────────────────────────────────────────
