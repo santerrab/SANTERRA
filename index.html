@@ -1202,7 +1202,7 @@ async function pedirPermisoNotificaciones(){
     document.body.appendChild(banner);
   }
 }
-async function solicitarNotif(){
+window.solicitarNotif=async function(){
   const banner=document.getElementById('notif-banner');if(banner)banner.remove();
   if(!('Notification' in window)){toast('Tu navegador no soporta notificaciones','err');return;}
   const perm=await Notification.requestPermission();
