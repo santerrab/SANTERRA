@@ -1039,7 +1039,7 @@ let uP=null,uS=null,uF=null,uC=null,uM=null,uI=null,uMer=null,uBod=null,uCfg=nul
 let editProdId=null,rechazandoId=null,editCatId=null;
 let carrito=[],fnItems=[],despEst={},semOffset=0;
 let invActivo=null,conteoLocal={},csvData=[];
-let alarmaActiva=false,solsPrevCount=null,audioCtx=null;
+let alarmaActiva=false,solsPrevCount=null,audioCtx=null,wakeLock=null;
 let diffFiltro='diff',detalleFiltro='diff',detalleInv=null;
 let subAreaActual='';
 let trProdId=null,merProdId=null,verifSolId=null;
@@ -1190,6 +1190,29 @@ function playAlarm(){
     o.start(audioCtx.currentTime+i*.18);o.stop(audioCtx.currentTime+i*.18+.2);
   });
 }
+// ── WAKE LOCK (mantiene la app activa con pantalla bloqueada) ─────────────────
+async function activarWakeLock(){
+  if(!('wakeLock' in navigator))return;
+  try{
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{
+      // El sistema liberó el lock (ej: batería baja) — reintentar si sigue siendo bodeguero
+      wakeLock=null;
+      if(role==='bodeguero')setTimeout(activarWakeLock,5000);
+    });
+  }catch(e){
+    // El usuario rechazó o el dispositivo no lo permite — falla silenciosamente
+    console.warn('WakeLock no disponible:',e.message);
+  }
+}
+function liberarWakeLock(){
+  if(wakeLock){wakeLock.release();wakeLock=null;}
+}
+// Reactivar si la app vuelve al primer plano (el sistema libera el lock al minimizar)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&role==='bodeguero'&&!wakeLock)activarWakeLock();
+});
+
 // ── NOTIFICACIONES NATIVAS ────────────────────────────────────────────────────
 async function pedirPermisoNotificaciones(){
   if(!('Notification' in window))return;
@@ -1313,10 +1336,11 @@ function enterApp(r){
   localStorage.setItem('saved_role',r==='bodeguero'?'bodeguero':'');
   buildNav(r);clk();startL();
   if(r==='encargado')setTimeout(autoSetup,1500);
-  if(r==='bodeguero')pedirPermisoNotificaciones();
+  if(r==='bodeguero'){pedirPermisoNotificaciones();activarWakeLock();}
 }
 function logout(){
   if(!confirm('¿Cerrar sesión?'))return;
+  liberarWakeLock();
   stopL();role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];mermas=[];bodegas=[];
   carrito=[];fnItems=[];despEst={};solsPrevCount=null;alarmaActiva=false;invActivo=null;conteoLocal={};
   localStorage.removeItem('saved_role');
@@ -2111,7 +2135,7 @@ function renderFnItems(){
   el.innerHTML=fnItems.map((it,i)=>{
     const unMostrar=it.tieneBulto?it.unidadCompra:it.unidad;
     const stockAgregar=it.cantidad*(it.factorConversion||1);
-    const costoUnit=it.tieneBulto?Math.round(it.precio/(it.factorConversion||1)):it.precio;
+    const costoUnit=it.tieneBulto?Math.round((it.precio/(it.factorConversion||1))*100)/100:it.precio;
     const isKg=['kg','g','lt','ml'].includes(it.unidad.toLowerCase());
     // Selector de bodega por item
     const bodSel=bodegas.map(b=>`<option value="${b.id}" ${it.bodega===b.id?'selected':''}>${b.icono} ${b.nombre}</option>`).join('');
@@ -2162,7 +2186,9 @@ async function guardarFactura(){
   try{
     const items=fnItems.map(it=>{
       const cantStock=it.cantidad*(it.factorConversion||1);
-      const precioUnit=it.factorConversion>1?Math.round(it.precio/it.factorConversion):it.precio;
+      // Precio unitario exacto (sin redondear) para que cantStock × precioUnit = precio bulto exacto
+      const precioUnitExacto=it.factorConversion>1?(it.precio/it.factorConversion):it.precio;
+      const precioUnit=Math.round(precioUnitExacto*100)/100; // 2 decimales, no entero
       return{productoId:it.pid,nombreProducto:it.nombre,cantidadBultos:it.cantidad,cantidadStock:cantStock,
         unidadCompra:it.unidadCompra||null,factorConversion:it.factorConversion||1,
         precioPorBulto:it.precio,precioUnitStock:precioUnit,subtotal:it.cantidad*it.precio,
