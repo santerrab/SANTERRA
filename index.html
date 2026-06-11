@@ -1134,7 +1134,7 @@ const IMPS={
   tabaco:               {l:'IVA + Tabaco 60.1%',              t:.791},
   exento:               {l:'Exento de IVA',                   t:0},
 };
-function calcImp(n,tipo){const t=IMPS[tipo]||IMPS.general;const i=Math.round(n*t.t);return{neto:n,imp:i,total:n+i,label:t.l};}
+function calcImp(n,tipo){const t=IMPS[tipo]||IMPS.general;const i=n*t.t;return{neto:n,imp:i,total:Math.round(n+i),label:t.l};}
 
 // ── FORMATO ──────────────────────────────────────────────────────────────────
 const clp=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(Math.round(v||0));
@@ -2086,20 +2086,21 @@ function abrirFact(){
   openM('mo-fact');
 }
 function calcDescuento(origen){
-  const total=fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0);if(!total)return;
+  const totalNeto=fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0);if(!totalNeto)return;
   if(origen==='pct'){
     const pct=parseFloat(document.getElementById('fn-desc-pct').value)||0;
-    const monto=Math.round(total*pct/100);
+    const monto=Math.round(totalNeto*pct/100);
     document.getElementById('fn-desc-monto').value=monto||'';
-    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Total: ${clp(total-monto)}`;}
-    document.getElementById('fn-total').textContent=clp(total-monto);
+    const netoConDesc=totalNeto-monto;const iva=Math.round(netoConDesc*0.19);
+    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Neto ${clp(netoConDesc)} + IVA ${clp(iva)} = ${clp(netoConDesc+iva)}`;}
   }else{
     const monto=parseFloat(document.getElementById('fn-desc-monto').value)||0;
-    const pct=total>0?Math.round(monto/total*1000)/10:0;
+    const pct=totalNeto>0?Math.round(monto/totalNeto*1000)/10:0;
     document.getElementById('fn-desc-pct').value=pct||'';
-    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Total: ${clp(total-monto)}`;}
-    document.getElementById('fn-total').textContent=clp(total-monto);
+    const netoConDesc=totalNeto-monto;const iva=Math.round(netoConDesc*0.19);
+    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Neto ${clp(netoConDesc)} + IVA ${clp(iva)} = ${clp(netoConDesc+iva)}`;}
   }
+  calcFnTotal();
 }
 function fnBuscar(q){
   const res=document.getElementById('fn-res');if(!q.trim()){res.style.display='none';return;}
@@ -2119,11 +2120,13 @@ function fnAdd(pid){
   const p=prods.find(x=>x.id===pid);if(!p)return;
   if(fnItems.find(x=>x.pid===pid)){toast(p.nombre+' ya está','warn');return;}
   const tB=p.unidadCompra&&(p.factorConversion||1)>1;
-  const precioBulto=tB?Math.round((p.precioTotal||0)*(p.factorConversion||1)):(p.precioTotal||0);
-  fnItems.push({pid,nombre:p.nombre,cantidad:1,precio:precioBulto,
+  // Usar precioNeto×conv para pre-cargar el campo: el usuario lo ajusta según la factura real
+  const netoUnit=p.precioNeto||0;
+  const precioBultoNeto=tB?Math.round(netoUnit*(p.factorConversion||1)):netoUnit;
+  fnItems.push({pid,nombre:p.nombre,cantidad:1,precio:precioBultoNeto,
     unidad:p.unidadMedida||'unidad',unidadCompra:tB?p.unidadCompra:null,
     factorConversion:tB?(p.factorConversion||1):1,tieneBulto:tB,
-    bodega:p.bodega||'seca'}); // bodega por defecto del producto
+    bodega:p.bodega||'seca'});
   toast('✓ '+p.nombre);
   document.getElementById('fn-buscar').value='';document.getElementById('fn-res').style.display='none';
   renderFnItems();
@@ -2154,7 +2157,7 @@ function renderFnItems(){
           <span style="font-size:12px;color:var(--txm)">${unMostrar}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
-          <span style="font-size:11px;color:var(--txm);white-space:nowrap">$/bulto:</span>
+          <span style="font-size:11px;color:var(--txm);white-space:nowrap">Neto bulto $:</span>
           <input type="number" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${it.precio}" min="0" oninput="fnPrecio(${i},this.value)">
         </div>
         <span style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
@@ -2174,9 +2177,17 @@ function fnPrecio(i,v){fnItems[i].precio=parseFloat(v)||0;calcFnTotal();}
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function fnBodega(i,bodId){fnItems[i].bodega=bodId;}
 function calcFnTotal(){
-  const tot=fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0);
+  // it.precio = neto del bulto → sumar todos los netos
+  const totalNeto=fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0);
   const descMonto=parseFloat(document.getElementById('fn-desc-monto')?.value)||0;
-  document.getElementById('fn-total').textContent=clp(Math.max(0,tot-descMonto));
+  const netoConDesc=Math.max(0,totalNeto-descMonto);
+  // IVA se aplica sobre el total neto (lógica factura chilena)
+  const iva=Math.round(netoConDesc*0.19);
+  const totalConIva=netoConDesc+iva;
+  const el=document.getElementById('fn-total');
+  if(el)el.innerHTML=netoConDesc>0
+    ?`<span style="font-size:12px;color:var(--txm);font-weight:400">Neto ${clp(netoConDesc)} + IVA ${clp(iva)} = </span>${clp(totalConIva)}`
+    :'$0';
 }
 async function guardarFactura(){
   const prov=document.getElementById('fn-prov').value.trim();
@@ -2186,22 +2197,28 @@ async function guardarFactura(){
   try{
     const items=fnItems.map(it=>{
       const cantStock=it.cantidad*(it.factorConversion||1);
-      // Precio unitario exacto (sin redondear) para que cantStock × precioUnit = precio bulto exacto
-      const precioUnitExacto=it.factorConversion>1?(it.precio/it.factorConversion):it.precio;
-      const precioUnit=Math.round(precioUnitExacto*100)/100; // 2 decimales, no entero
+      // it.precio = neto del bulto (lo que dice la factura)
+      const netoUnitExacto=it.factorConversion>1?(it.precio/it.factorConversion):it.precio;
+      const prod=prods.find(x=>x.id===it.pid);
+      const tipo=prod?.tipoImpuesto||'general';
+      const c=calcImp(netoUnitExacto,tipo);
       return{productoId:it.pid,nombreProducto:it.nombre,cantidadBultos:it.cantidad,cantidadStock:cantStock,
         unidadCompra:it.unidadCompra||null,factorConversion:it.factorConversion||1,
-        precioPorBulto:it.precio,precioUnitStock:precioUnit,subtotal:it.cantidad*it.precio,
-        unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca'};
+        precioPorBulto:it.precio,precioNetoUnit:Math.round(netoUnitExacto*100)/100,
+        precioUnitStock:c.total,subtotal:it.cantidad*it.precio,
+        tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca'};
     });
-    const tot=items.reduce((a,it)=>a+it.subtotal,0);
+    const tot=items.reduce((a,it)=>a+it.subtotal,0); // total neto
     const descMonto=parseFloat(document.getElementById('fn-desc-monto')?.value)||0;
     const descPct=parseFloat(document.getElementById('fn-desc-pct')?.value)||0;
-    const totalConDesc=Math.max(0,tot-descMonto);
+    const netoConDesc=Math.max(0,tot-descMonto);
+    const ivaTotal=Math.round(netoConDesc*0.19);
+    const totalConDesc=netoConDesc+ivaTotal; // total con IVA calculado sobre neto total
     const ref=await addDoc(collection(db,'facturas'),{
       numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
       fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
-      items,totalFactura:totalConDesc,totalBruto:tot,descuentoPct:descPct||null,descuentoMonto:descMonto||null,
+      items,totalNeto:netoConDesc,totalIVA:ivaTotal,totalFactura:totalConDesc,
+      totalBruto:tot,descuentoPct:descPct||null,descuentoMonto:descMonto||null,
       ingresadoPor:role,creadoEn:serverTimestamp()
     });
     // Actualizar stock por bodega
@@ -2215,11 +2232,16 @@ async function guardarFactura(){
         if(!data.stockPorBodega&&(data.stock||0)>0){spb[data.bodega||'seca']=(data.stock||0);}
         spb[it.bodegaDestino]=(spb[it.bodegaDestino]||0)+it.cantidadStock;
         const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-        batch.update(r,{stockPorBodega:spb,stock:newTotal,precioTotal:it.precioUnitStock,actualizadoEn:serverTimestamp()});
+        batch.update(r,{stockPorBodega:spb,stock:newTotal,
+          precioNeto:Math.round(it.precioNetoUnit*100)/100,
+          precioTotal:it.precioUnitStock,
+          totalImpuestos:it.precioUnitStock-Math.round(it.precioNetoUnit),
+          actualizadoEn:serverTimestamp()});
         // Guardar historial de precios
         await addDoc(collection(db,'historialPrecios'),{
-          productoId:it.productoId,nombreProducto:it.nombreProducto,precio:it.precioUnitStock,
-          precioNeto:Math.round(it.precioUnitStock/(1+(IMPS[data.tipoImpuesto||'general']?.t||.19))),
+          productoId:it.productoId,nombreProducto:it.nombreProducto,
+          precio:it.precioUnitStock,precioNeto:Math.round(it.precioNetoUnit*100)/100,
+          tipoImpuesto:it.tipoImpuesto,
           proveedor:prov,facturaId:ref.id,creadoEn:serverTimestamp()
         });
       }
@@ -2409,7 +2431,7 @@ async function guardarProd(){
     codigoProducto:document.getElementById('pp-cod').value.trim(),nombre:nom,categoria:cat,
     subcategoria:document.getElementById('pp-subcat').value,unidadMedida:document.getElementById('pp-unidad').value,
     stockMinimo:parseInt(document.getElementById('pp-min').value)||5,proveedor:document.getElementById('pp-prov').value.trim(),
-    precioNeto:Math.round(netoUnit),tipoImpuesto:tipo,precioTotal:c.total,totalImpuestos:c.imp,
+    precioNeto:Math.round(netoUnit*100)/100,tipoImpuesto:tipo,precioTotal:c.total,totalImpuestos:Math.round(c.imp),
     unidadCompra:ucompra||null,factorConversion:ucompra&&conv>1?conv:1,
     bodega,actualizadoEn:serverTimestamp()
   };
@@ -2496,7 +2518,7 @@ function trBuscar(q){
   const res=document.getElementById('tr-res');
   if(!q.trim()){res.style.display='none';return;}
   const t=q.toLowerCase();
-  const m=prods.filter(p=>p.nombre.toLowerCase().includes(t)&&stockTotal(p)>0).slice(0,8);
+  const m=prods.filter(p=>p.nombre.toLowerCase().includes(t)||(p.codigoProducto||'').toLowerCase().includes(t)).slice(0,8);
   res.style.display='block';
   if(!m.length){res.innerHTML='<div style="padding:12px;text-align:center;color:var(--txd);font-size:13px">Sin resultados</div>';return;}
   res.innerHTML=m.map(p=>`
