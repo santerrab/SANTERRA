@@ -458,7 +458,7 @@ input[type=number]{-moz-appearance:textfield}
 @keyframes bell{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(14deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
 </style>
 </head>
-<body>
+<body style="overflow:hidden">
 <div class="offline-bar" id="ob">⚠️ Sin conexión — modo offline</div>
 <div class="toast" id="toast"></div>
 
@@ -527,7 +527,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="pages-wrap">
 
 <!-- DASHBOARD -->
-<div class="pg on" id="pg-dash">
+<div class="pg" id="pg-dash">
   <div style="margin-bottom:14px"><div class="pgt" id="dash-f">—</div><div class="pgs">Resumen del día</div></div>
   <div id="dash-stats-enc" style="display:none">
     <div class="sg">
@@ -1320,6 +1320,7 @@ function cPin(){document.getElementById('pin-ovl').classList.remove('on');pbuf='
 function updPD(){const tipo=document.getElementById('pin-ovl').dataset.tipo||'enc';for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.remove('f','fb');if(i<pbuf.length)d.classList.add(tipo==='bod'?'fb':'f');}}
 function enterApp(r){
   role=r;
+  document.body.style.overflow='';
   document.getElementById('lscreen').style.display='none';
   document.getElementById('app').style.display='block';
   const n=gN();
@@ -1346,6 +1347,7 @@ function logout(){
   localStorage.removeItem('saved_role');
   document.getElementById('lscreen').style.display='flex';
   document.getElementById('app').style.display='none';
+  document.body.style.overflow='hidden';
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));pbuf='';
 }
 
@@ -2087,18 +2089,25 @@ function abrirFact(){
 }
 function calcDescuento(origen){
   const totalNeto=fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0);if(!totalNeto)return;
+  const totalImpItems=fnItems.reduce((a,it)=>{
+    const prod=prods.find(x=>x.id===it.pid);
+    const tasa=(IMPS[prod?.tipoImpuesto||'general']||IMPS.general).t;
+    return a+it.cantidad*it.precio*tasa;
+  },0);
   if(origen==='pct'){
     const pct=parseFloat(document.getElementById('fn-desc-pct').value)||0;
     const monto=Math.round(totalNeto*pct/100);
     document.getElementById('fn-desc-monto').value=monto||'';
-    const netoConDesc=totalNeto-monto;const iva=Math.round(netoConDesc*0.19);
-    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Neto ${clp(netoConDesc)} + IVA ${clp(iva)} = ${clp(netoConDesc+iva)}`;}
+    const netoConDesc=totalNeto-monto;
+    const imp=Math.round(totalImpItems*(totalNeto>0?netoConDesc/totalNeto:1));
+    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Neto ${clp(netoConDesc)} + Imp. ${clp(imp)} = ${clp(netoConDesc+imp)}`;}
   }else{
     const monto=parseFloat(document.getElementById('fn-desc-monto').value)||0;
     const pct=totalNeto>0?Math.round(monto/totalNeto*1000)/10:0;
     document.getElementById('fn-desc-pct').value=pct||'';
-    const netoConDesc=totalNeto-monto;const iva=Math.round(netoConDesc*0.19);
-    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Neto ${clp(netoConDesc)} + IVA ${clp(iva)} = ${clp(netoConDesc+iva)}`;}
+    const netoConDesc=totalNeto-monto;
+    const imp=Math.round(totalImpItems*(totalNeto>0?netoConDesc/totalNeto:1));
+    const el=document.getElementById('fn-desc-preview');if(el){el.style.display=monto?'block':'none';el.textContent=`Desc. ${pct}% = ${clp(monto)} → Neto ${clp(netoConDesc)} + Imp. ${clp(imp)} = ${clp(netoConDesc+imp)}`;}
   }
   calcFnTotal();
 }
@@ -2177,16 +2186,26 @@ function fnPrecio(i,v){fnItems[i].precio=parseFloat(v)||0;calcFnTotal();}
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function fnBodega(i,bodId){fnItems[i].bodega=bodId;}
 function calcFnTotal(){
-  // it.precio = neto del bulto → sumar todos los netos
-  const totalNeto=fnItems.reduce((a,it)=>a+it.cantidad*it.precio,0);
+  if(!fnItems.length){const el=document.getElementById('fn-total');if(el)el.innerHTML='$0';return;}
   const descMonto=parseFloat(document.getElementById('fn-desc-monto')?.value)||0;
+  // Calcular neto e impuesto por ítem según su tipo de impuesto individual
+  let totalNeto=0,totalImp=0;
+  fnItems.forEach(it=>{
+    const netoItem=it.cantidad*it.precio;
+    totalNeto+=netoItem;
+    const prod=prods.find(x=>x.id===it.pid);
+    const tipo=prod?.tipoImpuesto||'general';
+    const tasa=(IMPS[tipo]||IMPS.general).t;
+    totalImp+=netoItem*tasa;
+  });
   const netoConDesc=Math.max(0,totalNeto-descMonto);
-  // IVA se aplica sobre el total neto (lógica factura chilena)
-  const iva=Math.round(netoConDesc*0.19);
-  const totalConIva=netoConDesc+iva;
+  // Ajustar impuesto proporcionalmente si hay descuento
+  const factorDesc=totalNeto>0?netoConDesc/totalNeto:1;
+  const impConDesc=Math.round(totalImp*factorDesc);
+  const totalFinal=netoConDesc+impConDesc;
   const el=document.getElementById('fn-total');
   if(el)el.innerHTML=netoConDesc>0
-    ?`<span style="font-size:12px;color:var(--txm);font-weight:400">Neto ${clp(netoConDesc)} + IVA ${clp(iva)} = </span>${clp(totalConIva)}`
+    ?`<span style="font-size:12px;color:var(--txm);font-weight:400">Neto ${clp(netoConDesc)} + Imp. ${clp(impConDesc)} = </span>${clp(totalFinal)}`
     :'$0';
 }
 async function guardarFactura(){
@@ -2209,15 +2228,20 @@ async function guardarFactura(){
         tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca'};
     });
     const tot=items.reduce((a,it)=>a+it.subtotal,0); // total neto
+    const totalImpItems=items.reduce((a,it)=>{
+      const tasa=(IMPS[it.tipoImpuesto]||IMPS.general).t;
+      return a+it.subtotal*tasa;
+    },0);
     const descMonto=parseFloat(document.getElementById('fn-desc-monto')?.value)||0;
     const descPct=parseFloat(document.getElementById('fn-desc-pct')?.value)||0;
     const netoConDesc=Math.max(0,tot-descMonto);
-    const ivaTotal=Math.round(netoConDesc*0.19);
-    const totalConDesc=netoConDesc+ivaTotal; // total con IVA calculado sobre neto total
+    const factorDesc=tot>0?netoConDesc/tot:1;
+    const impTotal=Math.round(totalImpItems*factorDesc);
+    const totalConDesc=netoConDesc+impTotal;
     const ref=await addDoc(collection(db,'facturas'),{
       numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
       fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
-      items,totalNeto:netoConDesc,totalIVA:ivaTotal,totalFactura:totalConDesc,
+      items,totalNeto:netoConDesc,totalImpuestos:impTotal,totalFactura:totalConDesc,
       totalBruto:tot,descuentoPct:descPct||null,descuentoMonto:descMonto||null,
       ingresadoPor:role,creadoEn:serverTimestamp()
     });
