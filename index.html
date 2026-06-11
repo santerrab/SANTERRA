@@ -458,7 +458,7 @@ input[type=number]{-moz-appearance:textfield}
 @keyframes bell{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(14deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
 </style>
 </head>
-<body style="overflow:hidden">
+<body>
 <div class="offline-bar" id="ob">⚠️ Sin conexión — modo offline</div>
 <div class="toast" id="toast"></div>
 
@@ -1320,7 +1320,6 @@ function cPin(){document.getElementById('pin-ovl').classList.remove('on');pbuf='
 function updPD(){const tipo=document.getElementById('pin-ovl').dataset.tipo||'enc';for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.remove('f','fb');if(i<pbuf.length)d.classList.add(tipo==='bod'?'fb':'f');}}
 function enterApp(r){
   role=r;
-  document.body.style.overflow='';
   document.getElementById('lscreen').style.display='none';
   document.getElementById('app').style.display='block';
   const n=gN();
@@ -1347,7 +1346,6 @@ function logout(){
   localStorage.removeItem('saved_role');
   document.getElementById('lscreen').style.display='flex';
   document.getElementById('app').style.display='none';
-  document.body.style.overflow='hidden';
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));pbuf='';
 }
 
