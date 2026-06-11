@@ -1732,9 +1732,11 @@ function renderDesp(){
     return;
   }
 
-  // Para tab Pendientes: renderizar cards de despacho interactivos
+  // Para tab Pendientes o Todos: pendientes van con interfaz interactiva, despachados/rechazados con solCard
   if(fDE==='pendiente'||fDE==='visto'||fDE===''){
-    lista.innerHTML=ss.map(sol=>{
+    const pendientes=ss.filter(esPendiente);
+    const noActivos=ss.filter(s=>!esPendiente(s));
+    const htmlPendientes=pendientes.map(sol=>{
       if(!despEst[sol.id])despEst[sol.id]={};
       // Marcar como visto si aún está en pendiente
       if(sol.estado==='pendiente'&&!sol.vistoPor){
@@ -1864,7 +1866,13 @@ function renderDesp(){
         </button>
       </div>
     </div>`;
-  }).join('');
+    }).join('');
+    // En tab "Todos": agregar despachados/rechazados como solo lectura debajo
+    const htmlNoActivos=noActivos.length
+      ?`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:14px 0 8px;padding:0 2px">Historial</div>`
+        +noActivos.map(s=>solCard(s)).join('')
+      :'';
+    lista.innerHTML=htmlPendientes+htmlNoActivos;
   } else {
     // Tab Despachados — vista de solo lectura con solCard
     lista.innerHTML=ss.map(s=>solCard(s)).join('');
