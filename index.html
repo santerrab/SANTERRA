@@ -30,6 +30,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;min-height:100dvh}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
+body.login-active{overflow:hidden;height:100dvh}
 
 /* ── MODO DIURNO ─────────────────────────────────────────────── */
 body.light{
@@ -206,7 +207,7 @@ body.light .nav{background:rgba(255,255,255,.92)}
 .toast.warn{background:var(--yellow);color:#1a0f00;box-shadow:0 4px 24px rgba(255,184,0,.4)}
 
 /* ── LOGIN ───────────────────────────────────────────────────── */
-.lw{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:calc(var(--st)+24px) max(24px,var(--sr)) calc(var(--sb)+24px) max(24px,var(--sl));overflow-y:auto;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,59,92,.12),transparent),var(--bg);position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999}
+.lw{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:calc(var(--st)+24px) max(24px,var(--sr)) calc(var(--sb)+24px) max(24px,var(--sl));overflow-y:auto;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,59,92,.12),transparent),var(--bg)}
 body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,59,92,.07),transparent),var(--bg)}
 .logo-wrap{display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .logo-img{width:260px;max-width:72vw;height:auto;display:block;mix-blend-mode:screen;filter:brightness(1.1) contrast(1.05)}
@@ -458,7 +459,7 @@ input[type=number]{-moz-appearance:textfield}
 @keyframes bell{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(14deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
 </style>
 </head>
-<body>
+<body class="login-active">
 <div class="offline-bar" id="ob">⚠️ Sin conexión — modo offline</div>
 <div class="toast" id="toast"></div>
 
@@ -1350,6 +1351,7 @@ function cPin(){document.getElementById('pin-ovl').classList.remove('on');pbuf='
 function updPD(){const tipo=document.getElementById('pin-ovl').dataset.tipo||'enc';for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.remove('f','fb');if(i<pbuf.length)d.classList.add(tipo==='bod'?'fb':'f');}}
 function enterApp(r){
   role=r;
+  document.body.classList.remove('login-active');
   document.getElementById('lscreen').style.display='none';
   document.getElementById('app').style.display='block';
   const n=gN();
@@ -1376,6 +1378,7 @@ function logout(){
   localStorage.removeItem('saved_role');
   document.getElementById('lscreen').style.display='flex';
   document.getElementById('app').style.display='none';
+  document.body.classList.add('login-active');
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));pbuf='';
 }
 
