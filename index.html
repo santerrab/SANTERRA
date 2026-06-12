@@ -559,9 +559,11 @@ input[type=number]{-moz-appearance:textfield}
   <div class="chips" id="stock-chips"></div>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;padding:0 2px">
     <select id="stock-sort" onchange="renderStock()" style="flex:1;font-size:13px;padding:9px 12px;border-radius:12px;border:1.5px solid var(--bd2);background:var(--sf2);color:var(--tx);font-family:inherit">
-      <option value="">Ordenar por nombre</option>
-      <option value="precio-desc">Precio mayor → menor</option>
-      <option value="precio-asc">Precio menor → mayor</option>
+      <option value="">Ordenar por nombre / categoría</option>
+      <option value="precio-desc">Precio bruto mayor → menor</option>
+      <option value="precio-asc">Precio bruto menor → mayor</option>
+      <option value="neto-desc">Precio neto mayor → menor</option>
+      <option value="neto-asc">Precio neto menor → mayor</option>
       <option value="stock-desc">Stock mayor → menor</option>
       <option value="stock-asc">Stock menor → mayor</option>
     </select>
@@ -1123,19 +1125,19 @@ async function autoSetup(){
 }
 
 // ── CONFIG ───────────────────────────────────────────────────────────────────
-let _cfg={pinE:'1234',pinB:null,c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra',serv:'Servicio'};
+let _cfg={pinE:'1234',pinB:null,c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra'};
 function startCfgListener(){
   uCfg=onSnapshot(doc(db,'config','app'),snap=>{
     if(snap.exists()){
       const d=snap.data();
-      _cfg={pinE:d.pinE||'1234',pinB:d.pinB||null,c1:d.c1||'Desayuno',c2:d.c2||'Postres',c3:d.c3||'Buffet',c4:d.c4||'Barra',serv:d.serv||'Servicio'};
+      _cfg={pinE:d.pinE||'1234',pinB:d.pinB||null,c1:d.c1||'Desayuno',c2:d.c2||'Postres',c3:d.c3||'Buffet',c4:d.c4||'Barra'};
       ['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('lbl-'+k);if(el)el.textContent=_cfg[k];});
     }
   },err=>console.warn('cfg:',err.message));
 }
 const gPE=()=>_cfg.pinE||'1234';
 const gPB=()=>_cfg.pinB||null;
-const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4,serv:_cfg.serv||'Servicio'});
+const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4});
 
 // ── IMPUESTOS ────────────────────────────────────────────────────────────────
 const IMPS={
@@ -1478,7 +1480,10 @@ function startL(){
       else{solsPrevCount=pend.length;}
       const b=document.getElementById('nb-badge-desp');if(b){b.textContent=pend.length;b.classList.toggle('on',pend.length>0);}
     }
-    sols=nueva;renderDash();renderSolsPage();renderDesp();renderMisPed();
+    sols=nueva;
+    renderDash();
+    if(role==='bodeguero'){renderDesp();}
+    else{renderSolsPage();renderMisPed();}
   },err=>console.warn('sols:',err.message));
   uF=onSnapshot(query(collection(db,'facturas'),orderBy('creadoEn','desc')),s=>{facts=s.docs.map(d=>({id:d.id,...d.data()}));renderFact();},err=>console.warn('facts:',err.message));
   uM=onSnapshot(query(collection(db,'movimientos'),orderBy('creadoEn','desc')),s=>{movs=s.docs.map(d=>({id:d.id,...d.data()}));renderDash();},err=>console.warn('movs:',err.message));
@@ -1569,53 +1574,74 @@ function fStockCat2(c,btn){fStockCat=c;document.querySelectorAll('#stock-chips .
 
 function renderStock(){
   const lista=document.getElementById('stock-lista');
-  const q=(document.getElementById('stock-buscar')?.value||'').toLowerCase();
+  const q=(document.getElementById('stock-buscar')?.value||'').toLowerCase().trim();
   const sortMode=document.getElementById('stock-sort')?.value||'';
   let pp=[...prods];
-  if(fStockBodega)pp=pp.filter(p=>{if(p.stockPorBodega)return(p.stockPorBodega[fStockBodega]||0)>0||p.bodega===fStockBodega;return p.bodega===fStockBodega;});
-  if(fStockCat)pp=pp.filter(p=>p.categoria===fStockCat);
-  if(q)pp=pp.filter(p=>p.nombre.toLowerCase().includes(q)||(p.codigoProducto||'').toLowerCase().includes(q));
-  if(!pp.length){lista.innerHTML='<div class="empty"><div class="ei">📦</div><div class="et">Sin productos</div></div>';return;}
-  // Ordenar
-  if(sortMode==='precio-desc')pp.sort((a,b)=>(b.precioTotal||0)-(a.precioTotal||0));
-  else if(sortMode==='precio-asc')pp.sort((a,b)=>(a.precioTotal||0)-(b.precioTotal||0));
-  else if(sortMode==='stock-desc')pp.sort((a,b)=>stockTotal(b)-stockTotal(a));
-  else if(sortMode==='stock-asc')pp.sort((a,b)=>stockTotal(a)-stockTotal(b));
-  // Si hay ordenamiento activo, mostrar lista plana sin agrupar por categoría
-  if(sortMode){
-    lista.innerHTML=pp.map(p=>{
-      const st=stockTotal(p),m=p.stockMinimo||5;
-      const cls=st===0?'bg-r-s':st<=m?'bg-y-s':'bg-g-s';
-      const bodTags=bodegas.map(b=>{const s=stockEnBodega(p,b.id);if(!s&&p.bodega!==b.id)return'';const sc=s===0?'no-stock':s<=m?'low-stock':'has-stock';return`<span class="stock-bod-tag ${sc}">${b.icono} ${b.nombre}: ${clpn(s)} ${p.unidadMedida||''}</span>`;}).filter(Boolean).join('');
-      return`<div class="prod-card">
-        <div class="prod-hdr"><div><div class="prod-nom">${p.nombre}</div><div class="prod-cat">${p.subcategoria||p.categoria||'—'}${p.proveedor?' · '+p.proveedor:''}</div></div><span class="badge ${cls}">${st===0?'Sin stock':clpn(st)+' '+(p.unidadMedida||'')}</span></div>
-        ${bodTags?`<div class="stock-bodegas">${bodTags}</div>`:''}
-        <div class="prod-precios">
-          <div class="prod-precio-item"><div class="prod-precio-lbl">Precio neto</div><div class="prod-precio-val" style="color:var(--txm)">${clp(p.precioNeto||0)}</div></div>
-          <div class="prod-precio-item"><div class="prod-precio-lbl">Con impuesto</div><div class="prod-precio-val">${clp(p.precioTotal||0)}</div></div>
-          <div class="prod-precio-item"><div class="prod-precio-lbl">Valor almacén</div><div class="prod-precio-val" style="color:var(--green)">${clp(st*(p.precioTotal||0))}</div></div>
-        </div>
-      </div>`;
-    }).join('');
+
+  // Filtro bodega SOLO si no hay texto de búsqueda activo
+  if(fStockBodega&&!q)pp=pp.filter(p=>{
+    if(p.stockPorBodega)return(p.stockPorBodega[fStockBodega]||0)>0||p.bodega===fStockBodega;
+    return p.bodega===fStockBodega;
+  });
+  // Filtro categoría SOLO si no hay texto de búsqueda activo
+  if(fStockCat&&!q)pp=pp.filter(p=>p.categoria===fStockCat);
+
+  // Búsqueda de texto — busca en nombre, código y proveedor
+  if(q)pp=pp.filter(p=>
+    p.nombre.toLowerCase().includes(q)||
+    (p.codigoProducto||'').toLowerCase().includes(q)||
+    (p.proveedor||'').toLowerCase().includes(q)
+  );
+
+  if(!pp.length){
+    lista.innerHTML='<div class="empty"><div class="ei">📦</div><div class="et">Sin resultados</div></div>';
     return;
   }
-  const gc={};pp.forEach(p=>{const c=p.categoria||'Sin categoría';if(!gc[c])gc[c]=[];gc[c].push(p);});
-  lista.innerHTML=Object.entries(gc).map(([c,ps])=>`
-    <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 6px">${c}</div>
-    ${ps.map(p=>{
-      const st=stockTotal(p),m=p.stockMinimo||5;
-      const cls=st===0?'bg-r-s':st<=m?'bg-y-s':'bg-g-s';
-      const bodTags=bodegas.map(b=>{const s=stockEnBodega(p,b.id);if(!s&&p.bodega!==b.id)return'';const sc=s===0?'no-stock':s<=m?'low-stock':'has-stock';return`<span class="stock-bod-tag ${sc}">${b.icono} ${b.nombre}: ${clpn(s)} ${p.unidadMedida||''}</span>`;}).filter(Boolean).join('');
-      return`<div class="prod-card">
-        <div class="prod-hdr"><div><div class="prod-nom">${p.nombre}</div><div class="prod-cat">${p.subcategoria||p.categoria||'—'}${p.proveedor?' · '+p.proveedor:''}</div></div><span class="badge ${cls}">${st===0?'Sin stock':clpn(st)+' '+(p.unidadMedida||'')}</span></div>
-        ${bodTags?`<div class="stock-bodegas">${bodTags}</div>`:''}
-        <div class="prod-precios">
-          <div class="prod-precio-item"><div class="prod-precio-lbl">Precio neto</div><div class="prod-precio-val" style="color:var(--txm)">${clp(p.precioNeto||0)}</div></div>
-          <div class="prod-precio-item"><div class="prod-precio-lbl">Con impuesto</div><div class="prod-precio-val">${clp(p.precioTotal||0)}</div></div>
-          <div class="prod-precio-item"><div class="prod-precio-lbl">Valor almacén</div><div class="prod-precio-val" style="color:var(--green)">${clp(st*(p.precioTotal||0))}</div></div>
-        </div>
-      </div>`;
-    }).join('')}`).join('');
+
+  // Ordenar — parseFloat para evitar errores con valores guardados como string
+  const pn=p=>parseFloat(p.precioNeto)||0;
+  const pt=p=>parseFloat(p.precioTotal)||0;
+  if(sortMode==='precio-desc')     pp.sort((a,b)=>pt(b)-pt(a));
+  else if(sortMode==='precio-asc') pp.sort((a,b)=>pt(a)-pt(b));
+  else if(sortMode==='neto-desc')  pp.sort((a,b)=>pn(b)-pn(a));
+  else if(sortMode==='neto-asc')   pp.sort((a,b)=>pn(a)-pn(b));
+  else if(sortMode==='stock-desc') pp.sort((a,b)=>stockTotal(b)-stockTotal(a));
+  else if(sortMode==='stock-asc')  pp.sort((a,b)=>stockTotal(a)-stockTotal(b));
+
+  // Función compartida de card
+  function prodCard(p){
+    const st=stockTotal(p),m=p.stockMinimo||5;
+    const cls=st===0?'bg-r-s':st<=m?'bg-y-s':'bg-g-s';
+    const bodTags=bodegas.map(b=>{
+      const s=stockEnBodega(p,b.id);
+      if(!s&&p.bodega!==b.id)return'';
+      const sc=s===0?'no-stock':s<=m?'low-stock':'has-stock';
+      return`<span class="stock-bod-tag ${sc}">${b.icono} ${b.nombre}: ${clpn(s)} ${p.unidadMedida||''}</span>`;
+    }).filter(Boolean).join('');
+    return`<div class="prod-card">
+      <div class="prod-hdr"><div><div class="prod-nom">${p.nombre}</div><div class="prod-cat">${p.subcategoria||p.categoria||'—'}${p.proveedor?' · '+p.proveedor:''}</div></div><span class="badge ${cls}">${st===0?'Sin stock':clpn(st)+' '+(p.unidadMedida||'')}</span></div>
+      ${bodTags?`<div class="stock-bodegas">${bodTags}</div>`:''}
+      <div class="prod-precios">
+        <div class="prod-precio-item"><div class="prod-precio-lbl">Precio neto</div><div class="prod-precio-val" style="color:var(--txm)">${clp(pt(p)?pn(p):0)}</div></div>
+        <div class="prod-precio-item"><div class="prod-precio-lbl">Con impuesto</div><div class="prod-precio-val">${clp(pt(p))}</div></div>
+        <div class="prod-precio-item"><div class="prod-precio-lbl">Valor almacén</div><div class="prod-precio-val" style="color:var(--green)">${clp(st*pt(p))}</div></div>
+      </div>
+    </div>`;
+  }
+
+  // Si hay búsqueda o sort activo → lista plana
+  if(q||sortMode){
+    lista.innerHTML=pp.map(p=>prodCard(p)).join('');
+    return;
+  }
+
+  // Sin búsqueda ni sort → agrupar por categoría
+  const gc={};
+  pp.forEach(p=>{const c=p.categoria||'Sin categoría';if(!gc[c])gc[c]=[];gc[c].push(p);});
+  lista.innerHTML=Object.entries(gc).map(([c,ps])=>
+    `<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 6px">${c}</div>`
+    +ps.map(p=>prodCard(p)).join('')
+  ).join('');
 }
 
 // ── PEDIR ─────────────────────────────────────────────────────────────────────
@@ -2128,27 +2154,30 @@ function renderFact(){
 }
 function verFact(fid){
   const f=facts.find(x=>x.id===fid);if(!f)return;
+  // Compatibilidad con facturas antiguas que no tienen totalNeto separado
+  const totalFact=f.totalFactura||0;
+  const totalNeto=f.totalNeto||f.totalBruto||0;
+  const totalIVA=f.totalIVA||f.totalImpuestos||0;
+  const totalAdic=f.totalAdicional||0;
   document.getElementById('fv-titulo').textContent=`📄 ${f.proveedor||'—'}${f.numeroFactura?' — N° '+f.numeroFactura:''}`;
   document.getElementById('fv-sub').textContent=`${fDateOnly(f.creadoEn)} · ${(f.items||[]).length} productos · Ingresado por ${f.ingresadoPor||'—'}`;
-  // Totales
   document.getElementById('fv-totales').innerHTML=`
-    <div class="sg-i"><div class="sg-v">${clp(f.totalNeto||0)}</div><div class="sg-l">Neto</div></div>
-    <div class="sg-i"><div class="sg-v" style="color:var(--yellow)">${clp((f.totalIVA||f.totalImpuestos||0))}</div><div class="sg-l">IVA</div></div>
-    ${f.totalAdicional?`<div class="sg-i"><div class="sg-v" style="color:var(--blue)">${clp(f.totalAdicional)}</div><div class="sg-l">Imp. adicional</div></div>`:''}
-    <div class="sg-i"><div class="sg-v" style="color:var(--green)">${clp(f.totalFactura||0)}</div><div class="sg-l">Total factura</div></div>`;
-  // Items
+    ${totalNeto?`<div class="sg-i"><div class="sg-v">${clp(totalNeto)}</div><div class="sg-l">Neto</div></div>`:''}
+    ${totalIVA?`<div class="sg-i"><div class="sg-v" style="color:var(--yellow)">${clp(totalIVA)}</div><div class="sg-l">Impuestos</div></div>`:''}
+    ${totalAdic?`<div class="sg-i"><div class="sg-v" style="color:var(--blue)">${clp(totalAdic)}</div><div class="sg-l">Imp. adicional</div></div>`:''}
+    <div class="sg-i"><div class="sg-v" style="color:var(--green)">${clp(totalFact)}</div><div class="sg-l">Total factura</div></div>`;
   document.getElementById('fv-items').innerHTML=`
     <div style="font-size:11px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Productos</div>
     ${(f.items||[]).map(it=>`
     <div style="padding:10px 0;border-bottom:1px solid var(--bd3)">
-      <div style="font-size:14px;font-weight:700;margin-bottom:4px">${it.nombreProducto}</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px">${it.nombreProducto||'—'}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--txm)">
-        <span>Cant: <strong style="color:var(--tx)">${clpn(it.cantidadBultos)} ${it.unidadCompra||it.unidadMedida||''}</strong></span>
-        ${it.factorConversion>1?`<span>→ Stock: <strong style="color:var(--tx)">${clpn(it.cantidadStock)} ${it.unidadMedida||''}</strong></span>`:''}
-        <span>Neto bulto: <strong style="color:var(--tx)">${clp(it.precioPorBulto||0)}</strong></span>
-        <span>Bodega: <strong style="color:var(--blue)">${it.bodegaDestino||'—'}</strong></span>
+        <span>Cant: <strong style="color:var(--tx)">${clpn(it.cantidadBultos||it.cantidad||0)} ${it.unidadCompra||it.unidadMedida||''}</strong></span>
+        ${(it.factorConversion||1)>1?`<span>→ ${clpn(it.cantidadStock||0)} ${it.unidadMedida||''}</span>`:''}
+        <span>Neto: <strong style="color:var(--tx)">${clp(it.precioPorBulto||it.precioNeto||0)}</strong></span>
+        ${it.bodegaDestino?`<span>Bodega: <strong style="color:var(--blue)">${it.bodegaDestino}</strong></span>`:''}
       </div>
-      <div style="text-align:right;font-family:'Inter',sans-serif;font-weight:800;font-size:15px;color:var(--green);margin-top:4px">${clp(it.subtotal||0)}</div>
+      <div style="text-align:right;font-family:'Inter',sans-serif;font-weight:800;font-size:15px;color:var(--green);margin-top:4px">${clp(it.subtotal||it.precioTotal||0)}</div>
     </div>`).join('')}`;
   openM('mo-fact-view');
 }
@@ -3171,7 +3200,7 @@ function cSug(n,btn){const c=CATS_BASE.find(x=>x.nombre===n);if(!c)return;docume
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 function abrirCfg(){
   const n=gN();['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('cfg-'+k);if(el)el.value=n[k];});
-  const es=document.getElementById('cfg-serv');if(es)es.value=n.serv||'Servicio';
+  const es=document.getElementById('cfg-serv');if(es)es.value='';
   document.getElementById('cfg-pe').value='';document.getElementById('cfg-pb').value='';
   const h=getHorario();
   const hd=document.getElementById('cfg-h-desde');if(hd)hd.value=h.desde;
@@ -3192,7 +3221,7 @@ async function guardarPins(){
   }catch(e){toast('Error: '+e.message,'err');}
 }
 async function guardarNombres(){
-  const n={c1:document.getElementById('cfg-c1').value.trim()||'Desayuno',c2:document.getElementById('cfg-c2').value.trim()||'Postres',c3:document.getElementById('cfg-c3').value.trim()||'Buffet',c4:document.getElementById('cfg-c4').value.trim()||'Barra',serv:document.getElementById('cfg-serv')?.value.trim()||'Servicio'};
+  const n={c1:document.getElementById('cfg-c1').value.trim()||'Desayuno',c2:document.getElementById('cfg-c2').value.trim()||'Postres',c3:document.getElementById('cfg-c3').value.trim()||'Buffet',c4:document.getElementById('cfg-c4').value.trim()||'Barra'};
   try{await setDoc(doc(db,'config','app'),n,{merge:true});toast('✓ Nombres guardados');}
   catch(e){toast('Error: '+e.message,'err');}
 }
