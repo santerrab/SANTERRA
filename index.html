@@ -554,7 +554,7 @@ input[type=number]{-moz-appearance:textfield}
 <!-- ALMACÉN -->
 <div class="pg" id="pg-stock">
   <div class="pgt">Almacén</div><div class="pgs">Stock en tiempo real</div>
-  <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="stock-buscar" type="text" placeholder="Buscar producto..." autocomplete="off" oninput="renderStock()"></div>
+  <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="stock-buscar" type="text" placeholder="Buscar producto..." autocomplete="off" oninput="renderStock()" onkeyup="renderStock()" onsearch="renderStock()"></div>
   <div class="chips" id="stock-bod-chips"></div>
   <div class="chips" id="stock-chips"></div>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;padding:0 2px">
@@ -1432,6 +1432,10 @@ function goTo(id){
   if(id==='pg-inv')renderInvHistorial();
   if(id==='pg-merma')renderMermas();
   if(id==='pg-precios')renderHistPrecios();
+  if(id==='pg-stock'){
+    const sb=document.getElementById('stock-buscar');
+    if(sb){sb.value='';renderStock();}
+  }
   if(id==='pg-pedir'){
     document.getElementById('p-buscar').value='';
     document.getElementById('p-res').style.display='none';
@@ -1474,11 +1478,23 @@ function startL(){
   uS=onSnapshot(query(collection(db,'solicitudes'),orderBy('creadoEn','desc')),s=>{
     const nueva=s.docs.map(d=>({id:d.id,...d.data()}));
     if(role==='bodeguero'){
-      const pend=nueva.filter(x=>x.estado==='pendiente');
-      if(solsPrevCount===null){solsPrevCount=pend.length;}
-      else if(pend.length>solsPrevCount){mostrarAlarma(nueva.find(x=>x.estado==='pendiente'));solsPrevCount=pend.length;}
-      else{solsPrevCount=pend.length;}
-      const b=document.getElementById('nb-badge-desp');if(b){b.textContent=pend.length;b.classList.toggle('on',pend.length>0);}
+      const pend=nueva.filter(x=>x.estado==='pendiente'||x.estado==='visto');
+      if(solsPrevCount===null){
+        // Primera carga — guardar IDs conocidos sin disparar alarma
+        solsPrevCount=new Set(pend.map(x=>x.id));
+      } else {
+        // Detectar IDs nuevos que no estaban antes
+        const nuevosPend=pend.filter(x=>!solsPrevCount.has(x.id));
+        if(nuevosPend.length>0){
+          mostrarAlarma(nuevosPend[0]);
+          nuevosPend.forEach(x=>solsPrevCount.add(x.id));
+        }
+        // Limpiar IDs despachados/rechazados del set para no crecer indefinidamente
+        const pendIds=new Set(pend.map(x=>x.id));
+        solsPrevCount.forEach(id=>{if(!pendIds.has(id))solsPrevCount.delete(id);});
+      }
+      const b=document.getElementById('nb-badge-desp');
+      if(b){b.textContent=pend.length;b.classList.toggle('on',pend.length>0);}
     }
     sols=nueva;
     renderDash();
@@ -3254,7 +3270,7 @@ Object.assign(window,{
   selRole,pi,pb2,cPin,logout,goTo,openM,closeM,navSem,toggleMode,
   fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
-  togD,setD,setBodegaD,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
+  togD,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
@@ -3264,7 +3280,7 @@ Object.assign(window,{
   guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,guardarHorario,
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
   renderConteo,setConteo,actualizarContadores,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
-  renderHistPrecios,exportarPDF,
+  renderHistPrecios,exportarPDF,verFact,
 });
 
 if('serviceWorker' in navigator){
