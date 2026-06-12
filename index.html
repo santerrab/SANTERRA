@@ -1403,7 +1403,7 @@ function buildNav(r){
     {id:'pg-mispedidos',i:iSo(),l:'Mis pedidos'},
     {id:'pg-dash',i:iD(),l:'Inicio'}
   ];
-  const tabs={encargado:enc,bodeguero:bod,c1:coc,c2:coc,c3:coc,c4:coc,serv:coc}[r]||coc;
+  const tabs={encargado:enc,bodeguero:bod,c1:coc,c2:coc,c3:coc,c4:coc}[r]||coc;
   document.getElementById('nav-bar').innerHTML=tabs.map(t=>`
     <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
       ${t.i}<span>${t.l}</span>
@@ -1575,8 +1575,12 @@ function renderTendencia(movs,prods){
 // ── ALMACÉN con búsqueda + filtro bodega + categoría ─────────────────────────
 function renderBodegaChipsAll(){
   const el=document.getElementById('stock-bod-chips');if(!el)return;
-  el.innerHTML=`<button class="chip ${!fStockBodega?'on':''}" onclick="fStockBod('',this)">Todas las bodegas</button>`+
-    bodegas.map((b,i)=>`<button class="chip ${fStockBodega===b.id?'on':''}" onclick="fStockBod('${b.id}',this)">${b.icono} ${b.nombre}</button>`).join('');
+  // Si la bodega activa ya no existe en la lista, resetear
+  if(fStockBodega&&!bodegas.find(b=>b.id===fStockBodega))fStockBodega='';
+  el.innerHTML=`<button class="chip ${!fStockBodega?'on':''}" onclick="fStockBod('',this)">Todas</button>`+
+    bodegas.map(b=>`<button class="chip ${fStockBodega===b.id?'on':''}" onclick="fStockBod('${b.id}',this)">${b.icono} ${b.nombre}</button>`).join('');
+  renderStockCatChips();
+  renderStock();
 }
 function renderStockCatChips(){
   const prodsFilt=fStockBodega?prods.filter(p=>(p.stockPorBodega?p.stockPorBodega[fStockBodega]>0:p.bodega===fStockBodega)):prods;
