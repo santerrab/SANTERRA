@@ -1434,7 +1434,7 @@ function goTo(id){
   if(id==='pg-precios')renderHistPrecios();
   if(id==='pg-stock'){
     const sb=document.getElementById('stock-buscar');
-    if(sb){sb.value='';renderStock();}
+    if(sb&&sb.value){sb.value='';renderStock();}
   }
   if(id==='pg-pedir'){
     document.getElementById('p-buscar').value='';
@@ -1473,7 +1473,7 @@ function startL(){
   },err=>console.warn('cats:',err.message));
   uP=onSnapshot(query(collection(db,'productos'),orderBy('nombre')),s=>{
     prods=s.docs.map(d=>({id:d.id,...d.data()}));
-    renderDash();renderStock();renderProds();sdot('ok');
+    renderDash();renderStockCatChips();renderStock();renderProds();sdot('ok');
   },err=>{sdot('er');toast('Error: '+err.message,'err');});
   uS=onSnapshot(query(collection(db,'solicitudes'),orderBy('creadoEn','desc')),s=>{
     const nueva=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -1575,12 +1575,10 @@ function renderTendencia(movs,prods){
 // ── ALMACÉN con búsqueda + filtro bodega + categoría ─────────────────────────
 function renderBodegaChipsAll(){
   const el=document.getElementById('stock-bod-chips');if(!el)return;
-  // Si la bodega activa ya no existe en la lista, resetear
   if(fStockBodega&&!bodegas.find(b=>b.id===fStockBodega))fStockBodega='';
   el.innerHTML=`<button class="chip ${!fStockBodega?'on':''}" onclick="fStockBod('',this)">Todas</button>`+
     bodegas.map(b=>`<button class="chip ${fStockBodega===b.id?'on':''}" onclick="fStockBod('${b.id}',this)">${b.icono} ${b.nombre}</button>`).join('');
   renderStockCatChips();
-  renderStock();
 }
 function renderStockCatChips(){
   const prodsFilt=fStockBodega?prods.filter(p=>(p.stockPorBodega?p.stockPorBodega[fStockBodega]>0:p.bodega===fStockBodega)):prods;
