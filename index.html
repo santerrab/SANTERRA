@@ -540,6 +540,7 @@ input[type=number]{-moz-appearance:textfield}
   <div id="dash-stats-bod" style="display:none">
     <div class="sg"><div class="st full ac-y"><div class="sl">Solicitudes pendientes</div><div class="sv" style="color:var(--yellow)" id="d-pp2">0</div><div class="su">esperando despacho</div></div></div>
     <div id="dash-al-bod"></div>
+    <div id="notif-status-card" style="margin-top:12px"></div>
   </div>
   <div id="dash-stats-coc" style="display:none">
     <div class="sg" style="grid-template-columns:1fr 1fr">
@@ -1620,6 +1621,7 @@ function renderDash(){
     renderHorarioBanner('dash-al-bod');
     const low=prods.filter(p=>stockTotal(p)<=(p.stockMinimo||5));
     if(low.length)alBod.innerHTML+=`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:8px 0 6px">⚠️ Alertas de stock</div>`+low.map(p=>`<div class="li"><div><div class="lt">${p.nombre}</div></div><span class="badge ${stockTotal(p)===0?'bg-r-s':'bg-y-s'}">${stockTotal(p)===0?'Sin stock':clpn(stockTotal(p))+' '+(p.unidadMedida||'')}</span></div>`).join('');
+    renderNotifStatus();
   }else{
     document.getElementById('dash-stats-coc').style.display='';
     const mP=sols.filter(s=>s.creadoPor===role&&s.estado==='pendiente').length;
@@ -2279,8 +2281,30 @@ function verFact(fid){
     </div>`).join('')}`;
   openM('mo-fact-view');
 }
+function renderNotifStatus(){
+  const card=document.getElementById('notif-status-card');
+  if(!card||role!=='bodeguero')return;
+  if(!('Notification' in window)){
+    card.innerHTML=`<div class="st full" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:14px;text-align:center"><div style="font-size:13px;color:#ef4444;font-weight:600">⚠️ Tu navegador no soporta notificaciones push</div></div>`;
+    return;
+  }
+  const perm=Notification.permission;
+  if(perm==='granted'){
+    card.innerHTML=`<div class="st full" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px"><span style="font-size:22px">🔔</span><div><div style="font-size:13px;font-weight:700;color:var(--green)">Notificaciones activas</div><div style="font-size:11px;color:var(--txm)">Recibirás avisos de nuevos pedidos</div></div></div>`;
+  } else if(perm==='denied'){
+    card.innerHTML=`<div class="st full" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:14px;padding:12px 16px"><div style="font-size:13px;font-weight:700;color:#ef4444;margin-bottom:4px">🔕 Notificaciones bloqueadas</div><div style="font-size:12px;color:var(--txm);line-height:1.5">Para activarlas: Chrome → 3 puntos → Configuración del sitio → Notificaciones → santerrab.github.io → Permitir</div></div>`;
+  } else {
+    card.innerHTML=`<button onclick="activarNotifManual()" style="width:100%;background:linear-gradient(135deg,#4f8ef7,#6366f1);color:#fff;border:none;border-radius:14px;padding:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">🔔 Activar notificaciones de pedidos</button>`;
+  }
+}
+window.activarNotifManual=async function(){
+  if(!('Notification' in window)){toast('Tu navegador no soporta notificaciones','err');return;}
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){initAudio();await registrarTokenFCM();initFCMForeground();toast('✓ Notificaciones activadas');}
+  else{toast('Notificaciones bloqueadas — actívalas desde Ajustes de Chrome','err');}
+  renderNotifStatus();
+};
 function filtrarProveedores(q){
-  const dd=document.getElementById('prov-dropdown');if(!dd)return;
   const todos=[...new Set([...facts.map(f=>f.proveedor),...prods.map(p=>p.proveedor)].filter(Boolean))].sort();
   const filtrado=q?todos.filter(p=>p.toLowerCase().includes(q.toLowerCase())):todos;
   if(!filtrado.length){dd.style.display='none';return;}
@@ -3350,7 +3374,7 @@ startCfgListener();
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,goTo,openM,closeM,navSem,toggleMode,
   fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
-  renderStock,
+  renderStock,renderNotifStatus,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
   togD,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
