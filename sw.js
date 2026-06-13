@@ -1,5 +1,21 @@
-// Service Worker SANTERRA — v3 — fuerza descarga limpia
-const CACHE = 'santerra-v3';
+// Service Worker SANTERRA — v4 — FCM Push Notifications
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+
+// Firebase config
+firebase.initializeApp({
+  apiKey: "AIzaSyAHoSDlNAZdxjAZCrjLeDMZoYTGr2Oq-CA",
+  authDomain: "santerra-1d82f.firebaseapp.com",
+  projectId: "santerra-1d82f",
+  storageBucket: "santerra-1d82f.firebasestorage.app",
+  messagingSenderId: "942523311161",
+  appId: "1:942523311161:web:3f9a25e92ef33488b719e8"
+});
+
+const messaging = firebase.messaging();
+
+// ── CACHE ─────────────────────────────────────────────────────────────────────
+const CACHE = 'santerra-v4';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -9,7 +25,6 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(Promise.all([
     self.clients.claim(),
-    // Eliminar TODOS los caches anteriores (v1, v2, etc)
     caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
   ]));
 });
@@ -20,7 +35,6 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('googleapis.com') ||
       url.hostname.includes('firebase') ||
       url.hostname.includes('gstatic.com')) return;
-  // HTML y manifest: Network First — siempre descarga lo más nuevo
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('/') ||
       url.pathname === '' || url.pathname.endsWith('manifest.json')) {
     e.respondWith(
@@ -29,31 +43,32 @@ self.addEventListener('fetch', e => {
         .catch(() => caches.match('./index.html'))
     ); return;
   }
-  // Resto: Cache First
   e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request)));
 });
 
-// Push notifications
-self.addEventListener('push', e => {
-  let data = { title: '📦 Nuevo pedido — SANTERRA', body: 'Hay una solicitud pendiente' };
-  try { if (e.data) data = { ...data, ...e.data.json() }; } catch(_) {}
-  e.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230d1117"/><text x="96" y="130" font-size="100" text-anchor="middle">📦</text></svg>',
-      tag: 'pedido-santerra', renotify: true, requireInteraction: true,
-      vibrate: [300, 100, 300, 100, 500]
-    })
-  );
+// ── FCM: notificación en background (app cerrada o minimizada) ────────────────
+messaging.onBackgroundMessage(payload => {
+  const { title, body } = payload.notification || {};
+  self.registration.showNotification(title || '📦 Nuevo pedido — SANTERRA', {
+    body: body || 'Hay una solicitud pendiente de despacho',
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230d1117"/><text x="96" y="130" font-size="100" text-anchor="middle">📦</text></svg>',
+    tag: 'pedido-santerra',
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [400, 150, 400, 150, 600, 150, 600],
+    data: { url: 'https://santerrab.github.io/SANTERRA/' }
+  });
 });
 
+// Al tocar la notificación → abrir o enfocar la app
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  const target = e.notification.data?.url || 'https://santerrab.github.io/SANTERRA/';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      const existing = list.find(c => c.url.includes('index.html') || c.url.endsWith('/'));
+      const existing = list.find(c => c.url.includes('SANTERRA') || c.url.includes('santerrab'));
       if (existing) return existing.focus();
-      return clients.openWindow('./index.html');
+      return clients.openWindow(target);
     })
   );
 });
