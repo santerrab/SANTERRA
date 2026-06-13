@@ -1216,12 +1216,33 @@ applyMode();
 function initAudio(){if(audioCtx)return;try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
 function playAlarm(){
   initAudio();if(!audioCtx)return;
-  [523,659,784].forEach((freq,i)=>{
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.connect(g);g.connect(audioCtx.destination);o.frequency.value=freq;o.type='sine';
-    g.gain.setValueAtTime(0,audioCtx.currentTime+i*.18);g.gain.linearRampToValueAtTime(.4,audioCtx.currentTime+i*.18+.04);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+i*.18+.18);
-    o.start(audioCtx.currentTime+i*.18);o.stop(audioCtx.currentTime+i*.18+.2);
-  });
+  try{
+    // Resumir contexto si está suspendido (requerido en móviles)
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const now=audioCtx.currentTime;
+    // Secuencia de 3 pitidos fuertes
+    [[523,.0],[659,.22],[784,.44],[659,.66],[523,.88]].forEach(([freq,t])=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.frequency.value=freq;o.type='square';
+      g.gain.setValueAtTime(0,now+t);
+      g.gain.linearRampToValueAtTime(.6,now+t+.03);
+      g.gain.linearRampToValueAtTime(.6,now+t+.16);
+      g.gain.linearRampToValueAtTime(0,now+t+.2);
+      o.start(now+t);o.stop(now+t+.22);
+    });
+  }catch(e){console.warn('Audio error:',e);}
+}
+let alarmaTimer=null;
+function repetirAlarma(){
+  // Repetir cada 8 segundos mientras la alarma esté activa
+  alarmaTimer=setTimeout(()=>{
+    if(alarmaActiva){
+      playAlarm();
+      if('vibrate' in navigator)navigator.vibrate([400,150,400,150,600,150,600]);
+      repetirAlarma();
+    }
+  },8000);
 }
 // ── WAKE LOCK (mantiene la app activa con pantalla bloqueada) ─────────────────
 async function activarWakeLock(){
@@ -1229,19 +1250,14 @@ async function activarWakeLock(){
   try{
     wakeLock=await navigator.wakeLock.request('screen');
     wakeLock.addEventListener('release',()=>{
-      // El sistema liberó el lock (ej: batería baja) — reintentar si sigue siendo bodeguero
       wakeLock=null;
       if(role==='bodeguero')setTimeout(activarWakeLock,5000);
     });
-  }catch(e){
-    // El usuario rechazó o el dispositivo no lo permite — falla silenciosamente
-    console.warn('WakeLock no disponible:',e.message);
-  }
+  }catch(e){console.warn('WakeLock no disponible:',e.message);}
 }
 function liberarWakeLock(){
   if(wakeLock){wakeLock.release();wakeLock=null;}
 }
-// Reactivar si la app vuelve al primer plano (el sistema libera el lock al minimizar)
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&role==='bodeguero'&&!wakeLock)activarWakeLock();
 });
@@ -1250,49 +1266,76 @@ document.addEventListener('visibilitychange',()=>{
 async function pedirPermisoNotificaciones(){
   if(!('Notification' in window))return;
   if(Notification.permission==='default'){
-    // Pequeño banner informativo antes de pedir el permiso del sistema
     const banner=document.createElement('div');
     banner.id='notif-banner';
     banner.style.cssText='position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:16px;right:16px;background:#1a2235;border:1.5px solid rgba(79,142,247,.4);border-radius:16px;padding:14px 16px;z-index:500;display:flex;align-items:center;gap:12px;animation:fadeIn .3s ease';
     banner.innerHTML=`<div style="font-size:28px;flex-shrink:0">🔔</div><div style="flex:1"><div style="font-weight:700;font-size:14px;color:#eef2ff;margin-bottom:3px">Activar notificaciones</div><div style="font-size:12px;color:#7b8499;line-height:1.4">Para recibir avisos de nuevos pedidos aunque la pantalla esté bloqueada</div></div><button onclick="solicitarNotif()" style="background:#4f8ef7;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">Activar</button><button onclick="document.getElementById('notif-banner').remove()" style="background:transparent;border:none;color:#7b8499;font-size:20px;cursor:pointer;padding:0 4px;flex-shrink:0">✕</button>`;
     document.body.appendChild(banner);
+  } else if(Notification.permission==='granted'){
+    // Ya tiene permiso — inicializar audio con interacción implícita del login
+    initAudio();
   }
 }
 window.solicitarNotif=async function(){
   const banner=document.getElementById('notif-banner');if(banner)banner.remove();
   if(!('Notification' in window)){toast('Tu navegador no soporta notificaciones','err');return;}
   const perm=await Notification.requestPermission();
-  if(perm==='granted'){toast('✓ Notificaciones activadas');}
-  else{toast('Notificaciones bloqueadas — actívalas desde ajustes del navegador','err');}
+  if(perm==='granted'){initAudio();toast('✓ Notificaciones activadas');}
+  else{toast('Notificaciones bloqueadas — actívalas desde Ajustes del celular','err');}
 }
 function enviarNotifNativa(nombreArea,cantItems){
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   try{
-    const n=new Notification('📦 Nuevo pedido — SANTERRA',{
-      body:`${nombreArea} solicita ${cantItems} producto${cantItems!==1?'s':''}`,
-      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230d1117"/><text x="96" y="130" font-size="100" text-anchor="middle">📦</text></svg>',
-      badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="20" fill="%230d1117"/><text x="48" y="66" font-size="52" text-anchor="middle">📦</text></svg>',
-      tag:'pedido-santerra',
-      renotify:true,
-      requireInteraction:true,
-      silent:false
-    });
-    n.onclick=function(){window.focus();cerrarAlarma();n.close();};
+    // Cerrar notificación anterior del mismo tag antes de crear una nueva
+    if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+      // Usar SW para mostrar con vibración nativa
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification('📦 Nuevo pedido — SANTERRA',{
+          body:`${nombreArea} solicita ${cantItems} producto${cantItems!==1?'s':''}`,
+          icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230d1117"/><text x="96" y="130" font-size="100" text-anchor="middle">📦</text></svg>',
+          tag:'pedido-santerra',renotify:true,requireInteraction:true,
+          vibrate:[400,150,400,150,600,150,600],
+          data:{url:location.href}
+        });
+      }).catch(()=>{
+        // Fallback: Notification API directa
+        new Notification('📦 Nuevo pedido — SANTERRA',{
+          body:`${nombreArea} solicita ${cantItems} producto${cantItems!==1?'s':''}`,
+          tag:'pedido-santerra',renotify:true,requireInteraction:true,silent:false
+        });
+      });
+    } else {
+      new Notification('📦 Nuevo pedido — SANTERRA',{
+        body:`${nombreArea} solicita ${cantItems} producto${cantItems!==1?'s':''}`,
+        tag:'pedido-santerra',renotify:true,requireInteraction:true,silent:false
+      });
+    }
   }catch(e){console.warn('Notif error:',e);}
 }
 function mostrarAlarma(sol){
-  if(alarmaActiva)return;alarmaActiva=true;
-  const n=gN();const nm={c1:n.c1,c2:n.c2,c3:n.c3,c4:n.c4}[sol.creadoPor]||sol.nombreSolicitante||'Área';
+  const n=gN();
+  const nm={c1:n.c1,c2:n.c2,c3:n.c3,c4:n.c4}[sol.creadoPor]||sol.nombreSolicitante||'Área';
+  // Actualizar texto aunque ya esté activa
   document.getElementById('alarm-area-nombre').textContent=nm;
-  const ao=document.getElementById('alarm-overlay');ao.style.display='flex';ao.style.animation='fadeIn .3s ease';
+  const ao=document.getElementById('alarm-overlay');
+  ao.style.display='flex';ao.style.animation='fadeIn .3s ease';
+  // Siempre sonar y vibrar aunque ya esté activa
   playAlarm();
-  if('vibrate' in navigator)navigator.vibrate([300,100,300,100,500]);
-  // Notificación nativa del sistema operativo
-  const cantItems=(sol.items||[]).length||1;
-  enviarNotifNativa(nm,cantItems);
+  if('vibrate' in navigator)navigator.vibrate([400,150,400,150,600,150,600]);
+  // Solo enviar notificación y repetir si no estaba activa
+  if(!alarmaActiva){
+    alarmaActiva=true;
+    const cantItems=(sol.items||[]).length||1;
+    enviarNotifNativa(nm,cantItems);
+    repetirAlarma();
+  }
 }
-window.cerrarAlarma=function(){document.getElementById('alarm-overlay').style.display='none';alarmaActiva=false;goTo('pg-desp');};
-
+window.cerrarAlarma=function(){
+  document.getElementById('alarm-overlay').style.display='none';
+  alarmaActiva=false;
+  if(alarmaTimer){clearTimeout(alarmaTimer);alarmaTimer=null;}
+  goTo('pg-desp');
+};
 // HORARIO
 function guardarHorario(){
   const h={desde:document.getElementById('cfg-h-desde').value,hasta:document.getElementById('cfg-h-hasta').value,colDesde:document.getElementById('cfg-col-desde').value,colHasta:document.getElementById('cfg-col-hasta').value};
