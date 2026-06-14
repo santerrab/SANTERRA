@@ -30,7 +30,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;min-height:100dvh}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
-body.login-active{overflow:hidden;height:100dvh}
+body.login-active{overflow:hidden}
 
 /* ── MODO DIURNO ─────────────────────────────────────────────── */
 body.light{
@@ -1058,19 +1058,25 @@ try{fcmMessaging=getMessaging(app);}catch(e){console.warn('FCM no disponible:',e
 
 // ── TOKEN FCM ─────────────────────────────────────────────────────────────────
 async function registrarTokenFCM(){
-  if(!fcmMessaging)return;
-  if(Notification.permission!=='granted')return;
+  if(!fcmMessaging){console.warn('FCM: messaging no inicializado');return;}
+  if(Notification.permission!=='granted'){console.warn('FCM: sin permiso de notificaciones');return;}
   try{
-    const token=await getToken(fcmMessaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:await navigator.serviceWorker.ready});
-    if(!token)return;
-    // Guardar token en Firestore bajo colección fcmTokens
-    const tokenId='bodeguero_'+btoa(token).slice(0,20);
+    // Forzar actualización del SW antes de pedir token
+    const reg=await navigator.serviceWorker.ready;
+    await reg.update();
+    const token=await getToken(fcmMessaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
+    if(!token){console.warn('FCM: no se obtuvo token');toast('No se pudo obtener token FCM','err');return;}
+    console.log('FCM token obtenido:',token.slice(0,20)+'...');
+    const tokenId='bodeguero_'+btoa(token).slice(0,20).replace(/[^a-zA-Z0-9]/g,'');
     await setDoc(doc(db,'fcmTokens',tokenId),{
       token,rol:'bodeguero',dispositivo:navigator.userAgent.slice(0,80),
       actualizadoEn:serverTimestamp()
     });
-    console.log('Token FCM registrado');
-  }catch(e){console.warn('Error registrando token FCM:',e.message);}
+    console.log('FCM: token guardado en Firestore');
+  }catch(e){
+    console.error('FCM error:',e.code,e.message);
+    toast('Error FCM: '+e.message,'err');
+  }
 }
 
 // Manejar notificaciones cuando la app está en foreground (abierta)
@@ -1434,6 +1440,10 @@ function updPD(){const tipo=document.getElementById('pin-ovl').dataset.tipo||'en
 function enterApp(r){
   role=r;
   document.body.classList.remove('login-active');
+  document.body.style.overflow='';
+  document.body.style.height='';
+  document.documentElement.style.overflow='';
+  document.documentElement.style.height='';
   document.getElementById('lscreen').style.display='none';
   document.getElementById('app').style.display='block';
   const n=gN();
