@@ -116,6 +116,7 @@ body.light .nav{background:rgba(255,255,255,.92)}
 
 /* ── PÁGINAS ─────────────────────────────────────────────────── */
 .pg{display:none;padding:20px;padding-bottom:calc(96px + var(--sb))}.pg.on{display:block}
+.pages-wrap{-webkit-overflow-scrolling:touch;overflow-y:auto}
 .pgt{font-family:'Inter',sans-serif;font-size:24px;font-weight:900;margin-top:2px;letter-spacing:-.4px}
 .pgs{font-size:12px;color:var(--txm);margin-top:4px;margin-bottom:18px;font-weight:500}
 .ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:10px;flex-wrap:wrap}
@@ -726,8 +727,8 @@ input[type=number]{-moz-appearance:textfield}
     <div style="background:var(--greend);border:1px solid var(--greenb);border-radius:10px;padding:12px;margin-bottom:11px">
       <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏷️ Descuento del proveedor (opcional)</div>
       <div class="fr" style="margin-bottom:0">
-        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en %</label><input class="fi" type="number" id="fn-desc-pct" placeholder="0" min="0" max="100" step="0.1" oninput="calcDescuento('pct')"></div>
-        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en $</label><input class="fi" type="number" id="fn-desc-monto" placeholder="0" min="0" oninput="calcDescuento('monto')"></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en %</label><input class="fi" type="number" inputmode="decimal" id="fn-desc-pct" placeholder="0" min="0" max="100" step="0.1" oninput="calcDescuento('pct')"></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en $</label><input class="fi" type="number" inputmode="numeric" id="fn-desc-monto" placeholder="0" min="0" oninput="calcDescuento('monto')"></div>
       </div>
       <div id="fn-desc-preview" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600"></div>
     </div>
@@ -765,7 +766,7 @@ input[type=number]{-moz-appearance:textfield}
       <div style="font-size:11px;color:var(--txm);margin-bottom:10px">Ingresa el precio del bulto y el sistema calcula el precio por unidad.</div>
       <div class="fr" style="margin-bottom:10px">
         <div class="fg" style="margin-bottom:0"><label class="fl">Nombre del bulto</label><input class="fi" type="text" id="pp-ucompra" placeholder="Ej: Caja, Saco" oninput="calcConversion()"></div>
-        <div class="fg" style="margin-bottom:0"><label class="fl">Unidades por bulto</label><input class="fi" type="number" id="pp-conv" placeholder="Ej: 5" min="1" step="1" oninput="calcConversion()"></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Unidades por bulto</label><input class="fi" type="number" inputmode="numeric" id="pp-conv" placeholder="Ej: 5" min="1" step="1" oninput="calcConversion()"></div>
       </div>
       <div id="conv-preview" style="display:none;background:var(--sf2);border-radius:8px;padding:10px;font-size:12px;color:var(--txm);line-height:1.8"></div>
     </div>
@@ -784,12 +785,12 @@ input[type=number]{-moz-appearance:textfield}
       <select class="fi" id="pp-bodega" onchange="calcConversion()"></select>
       <div style="font-size:10px;color:var(--txm);margin-top:4px" id="pp-bodega-hint"></div>
     </div>
-    <div class="fg"><label class="fl">Stock mínimo (alerta)</label><input class="fi" type="number" id="pp-min" value="5" min="0"></div>
+    <div class="fg"><label class="fl">Stock mínimo (alerta)</label><input class="fi" type="number" inputmode="numeric" id="pp-min" value="5" min="0"></div>
     <div class="divl"></div>
     <div style="font-size:10px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">💰 Precio e Impuestos</div>
     <div class="fg">
       <label class="fl" id="lbl-precio-neto">Precio neto *</label>
-      <input class="fi" type="number" id="pp-neto" placeholder="0" min="0" oninput="calcPrev()">
+      <input class="fi" type="number" inputmode="decimal" id="pp-neto" placeholder="0" min="0" oninput="calcPrev()">
       <div style="font-size:10px;color:var(--txm);margin-top:4px" id="lbl-precio-hint"></div>
     </div>
     <div class="fg"><label class="fl">Tipo de impuesto</label>
@@ -885,7 +886,7 @@ input[type=number]{-moz-appearance:textfield}
     <!-- 3. Cantidad -->
     <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">3 · Cantidad a mover</div>
     <div class="fg">
-      <input class="fi" type="number" id="tr-cant" min="0" step="1" placeholder="0"
+      <input class="fi" type="number" inputmode="decimal" id="tr-cant" min="0" step="1" placeholder="0"
         style="font-family:'Inter',sans-serif;font-size:28px;font-weight:900;text-align:center;padding:14px">
     </div>
 
@@ -903,7 +904,7 @@ input[type=number]{-moz-appearance:textfield}
     </div>
     <div class="fr" style="margin-bottom:11px">
       <div class="fg" style="margin-bottom:0"><label class="fl">Bodega</label><select class="fi" id="mer-bodega"></select></div>
-      <div class="fg" style="margin-bottom:0"><label class="fl">Cantidad</label><input class="fi" type="number" id="mer-cant" min="0.1" step="0.1" placeholder="0"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Cantidad</label><input class="fi" type="number" inputmode="decimal" id="mer-cant" min="0.1" step="0.1" placeholder="0"></div>
     </div>
     <div class="fg"><label class="fl">Motivo *</label>
       <select class="fi" id="mer-motivo">
@@ -1403,6 +1404,9 @@ function horarioBannerHTML(){
 }
 // ── LOGIN ────────────────────────────────────────────────────────────────────
 function selRole(r){
+  // Inicializar audio desde el toque del usuario (requerido en iOS y Android)
+  initAudio();
+  if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
   initAudio();
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));
   const pb=gPB();
@@ -1995,7 +1999,7 @@ function renderDesp(){
       </div>
 
       <!-- BOTONES DE ACCIÓN — fijos al fondo del card, siempre visibles -->
-      <div style="padding:12px 16px;border-top:1px solid var(--bd2);background:var(--sf);display:flex;gap:10px;position:sticky;bottom:calc(var(--sb) + 72px)">
+      <div style="padding:12px 16px;border-top:1px solid var(--bd2);background:var(--sf);display:flex;gap:10px;position:sticky;bottom:0;z-index:10;padding-bottom:calc(12px + env(safe-area-inset-bottom))">
         <button class="btn-rech" onclick="abrirRechazo('${sol.id}')" style="padding:14px 16px;font-size:13px">
           ✕
         </button>
@@ -2294,6 +2298,16 @@ function verFact(fid){
 function renderNotifStatus(){
   const card=document.getElementById('notif-status-card');
   if(!card||role!=='bodeguero')return;
+  // iOS Safari < 16.4 no soporta notificaciones web
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if(isIOS&&isSafari){
+    const ver=parseInt((navigator.userAgent.match(/OS (\d+)_/)||[])[1]||'0');
+    if(ver<16){
+      card.innerHTML=`<div class="st full" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:14px;padding:12px 16px"><div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:4px">⚠️ iOS ${ver} — sin notificaciones push</div><div style="font-size:12px;color:var(--txm)">Actualiza a iOS 16.4 o superior para recibir notificaciones. La alarma dentro de la app sí funciona.</div></div>`;
+      return;
+    }
+  }
   if(!('Notification' in window)){
     card.innerHTML=`<div class="st full" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:14px;text-align:center"><div style="font-size:13px;color:#ef4444;font-weight:600">⚠️ Tu navegador no soporta notificaciones push</div></div>`;
     return;
