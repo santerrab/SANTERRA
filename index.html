@@ -1060,20 +1060,20 @@ try{fcmMessaging=getMessaging(app);}catch(e){console.warn('FCM no disponible:',e
 // ── TOKEN FCM ─────────────────────────────────────────────────────────────────
 async function registrarTokenFCM(){
   if(!fcmMessaging){console.warn('FCM: messaging no inicializado');return;}
-  if(Notification.permission!=='granted'){console.warn('FCM: sin permiso de notificaciones');return;}
+  if(Notification.permission!=='granted'){console.warn('FCM: sin permiso');return;}
   try{
-    // Forzar actualización del SW antes de pedir token
     const reg=await navigator.serviceWorker.ready;
     await reg.update();
     const token=await getToken(fcmMessaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
-    if(!token){console.warn('FCM: no se obtuvo token');toast('No se pudo obtener token FCM','err');return;}
-    console.log('FCM token obtenido:',token.slice(0,20)+'...');
-    const tokenId='bodeguero_'+btoa(token).slice(0,20).replace(/[^a-zA-Z0-9]/g,'');
-    await setDoc(doc(db,'fcmTokens',tokenId),{
-      token,rol:'bodeguero',dispositivo:navigator.userAgent.slice(0,80),
+    if(!token){console.warn('FCM: no se obtuvo token');return;}
+    // Usar documento fijo por rol — siempre reemplaza el anterior
+    // Así solo hay UN token activo por rol en todo momento
+    await setDoc(doc(db,'fcmTokens','bodeguero_activo'),{
+      token,rol:'bodeguero',
+      dispositivo:navigator.userAgent.slice(0,80),
       actualizadoEn:serverTimestamp()
     });
-    console.log('FCM: token guardado en Firestore');
+    console.log('FCM token registrado (documento único)');
   }catch(e){
     console.error('FCM error:',e.code,e.message);
     toast('Error FCM: '+e.message,'err');
