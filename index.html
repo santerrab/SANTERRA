@@ -2459,6 +2459,19 @@ function fnAdd(pid){
   document.getElementById('fn-buscar').value='';document.getElementById('fn-res').style.display='none';
   renderFnItems();
 }
+function fnVarBadgeHTML(it){
+  const prod=prods.find(x=>x.id===it.pid);
+  const costoUnit=it.tieneBulto?Math.round((it.precio/(it.factorConversion||1))*100)/100:it.precio;
+  if(!prod||!prod.precioNeto||!costoUnit)return'';
+  const diffPct=Math.round((costoUnit-prod.precioNeto)/prod.precioNeto*100);
+  if(Math.abs(diffPct)<1)return'';
+  const subio=diffPct>0;
+  return`<div style="font-size:11px;font-weight:600;${subio?'color:#ef4444;background:rgba(239,68,68,.08)':'color:var(--green);background:var(--greend)'};border-radius:6px;padding:5px 8px;display:inline-flex;align-items:center;gap:5px">${subio?'▲':'▼'} ${Math.abs(diffPct)}% vs última compra (${clp(prod.precioNeto)} → ${clp(costoUnit)})</div>`;
+}
+function actualizarVarBadge(i){
+  const box=document.getElementById('var-badge-'+i);if(!box)return;
+  box.innerHTML=fnVarBadgeHTML(fnItems[i]);
+}
 function renderFnItems(){
   const el=document.getElementById('fn-items'),emp=document.getElementById('fn-empty');
   if(!fnItems.length){el.innerHTML='';emp.style.display='block';calcFnTotal();return;}
@@ -2490,6 +2503,7 @@ function renderFnItems(){
         </div>
         <span style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
       </div>
+      <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:11px;color:var(--txm);white-space:nowrap">→ Bodega destino:</span>
         <select style="flex:1;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;outline:none;-webkit-appearance:none" onchange="fnBodega(${i},this.value)">${bodSel}</select>
@@ -2501,7 +2515,7 @@ function renderFnItems(){
 }
 function fnChg(i,d){const it=fnItems[i];const isKg=['kg','g','lt','ml'].includes((it.unidad||'').toLowerCase());const step=isKg?0.1:1;fnItems[i].cantidad=Math.max(step,parseFloat((it.cantidad+d*step).toFixed(2)));renderFnItems();}
 function setCantFn(i,v){const val=parseFloat(v);if(!isNaN(val)&&val>0)fnItems[i].cantidad=val;calcFnTotal();}
-function fnPrecio(i,v){fnItems[i].precio=parseFloat(v)||0;calcFnTotal();}
+function fnPrecio(i,v){fnItems[i].precio=parseFloat(v)||0;calcFnTotal();actualizarVarBadge(i);}
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function fnBodega(i,bodId){fnItems[i].bodega=bodId;}
 function calcFnTotal(){
@@ -3044,13 +3058,23 @@ async function renderHistPrecios(){
     let items=snap.docs.map(d=>({id:d.id,...d.data()}));
     if(q)items=items.filter(i=>i.nombreProducto?.toLowerCase().includes(q));
     if(!items.length){lista.innerHTML='<div class="empty"><div class="ei">📊</div><div class="et">Sin historial de precios</div></div>';return;}
-    // Agrupar por producto
+    // Agrupar por producto (items viene ordenado de más reciente a más antiguo)
     const byProd={};
     items.forEach(i=>{if(!byProd[i.productoId])byProd[i.productoId]={nombre:i.nombreProducto,items:[]};byProd[i.productoId].items.push(i);});
-    lista.innerHTML=Object.values(byProd).map(g=>{
+    // Variación total acumulada: precio más reciente vs. el primer precio registrado de cada producto
+    const grupos=Object.values(byProd).map(g=>{
+      const newest=g.items[0],oldest=g.items[g.items.length-1];
+      const totalDiff=g.items.length>1?newest.precio-oldest.precio:0;
+      const totalPct=g.items.length>1&&oldest.precio>0?Math.round((totalDiff/oldest.precio)*100):0;
+      return{...g,newest,oldest,totalDiff,totalPct};
+    });
+    // Mostrar primero los productos que más han subido de precio
+    grupos.sort((a,b)=>b.totalPct-a.totalPct);
+    lista.innerHTML=grupos.map(g=>{
       const items=g.items.slice(0,5);
       return`<div class="prod-card" style="margin-bottom:10px">
-        <div class="prod-nom" style="margin-bottom:10px">📊 ${g.nombre}</div>
+        <div class="prod-nom" style="margin-bottom:6px">📊 ${g.nombre}</div>
+        ${g.items.length>1&&g.totalDiff!==0?`<div style="font-size:11px;font-weight:700;margin-bottom:10px;${g.totalDiff>0?'color:#ef4444':'color:var(--green)'}">${g.totalDiff>0?'📈 Subió':'📉 Bajó'} ${Math.abs(g.totalPct)}% en total · ${clp(g.oldest.precio)} → ${clp(g.newest.precio)} (desde ${fDateOnly(g.oldest.creadoEn)})</div>`:''}
         ${items.map((it,i)=>{
           const prev=items[i+1];
           const diff=prev?it.precio-prev.precio:0;
