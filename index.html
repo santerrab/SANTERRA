@@ -1200,11 +1200,15 @@ const IMPS={
 function calcImp(n,tipo){const t=IMPS[tipo]||IMPS.general;const i=n*t.t;return{neto:n,imp:i,total:Math.round(n+i),label:t.l};}
 
 // calcImpFactura: calcula impuestos de una factura con múltiples productos
-// IVA 19% aplica sobre el neto total; impuesto adicional solo sobre productos que lo tengan
+// El IVA se calcula producto por producto usando su tasa base (19% o 0% si es Exento),
+// y el impuesto adicional solo sobre los productos que lo tengan.
 function calcImpFactura(items){
   // items: [{netoItem, tipo}]
   const totalNeto=items.reduce((a,x)=>a+x.netoItem,0);
-  const iva=totalNeto*0.19; // IVA 19% sobre todo
+  const iva=items.reduce((a,x)=>{
+    const base=(IMPS[x.tipo]||IMPS.general).base;
+    return a+x.netoItem*(base!=null?base:.19);
+  },0);
   const adicional=items.reduce((a,x)=>{
     const adic=(IMPS[x.tipo]||IMPS.general).adic||0;
     return a+x.netoItem*adic;
@@ -2481,7 +2485,7 @@ function renderFnItems(){
           <span style="font-size:12px;color:var(--txm)">${unMostrar}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
-          <span style="font-size:11px;color:var(--txm);white-space:nowrap">Neto bulto $:</span>
+          <span style="font-size:11px;color:var(--txm);white-space:nowrap">${it.tieneBulto?'Neto '+it.unidadCompra+' $:':'Neto $:'}</span>
           <input type="number" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${it.precio}" min="0" oninput="fnPrecio(${i},this.value)">
         </div>
         <span style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
@@ -2524,7 +2528,7 @@ async function guardarFactura(){
   try{
     const items=fnItems.map(it=>{
       const cantStock=it.cantidad*(it.factorConversion||1);
-      // it.precio = neto del bulto (lo que dice la factura)
+      // it.precio = neto del bulto (lo que dice la factura, antes del descuento global)
       const netoUnitExacto=it.factorConversion>1?(it.precio/it.factorConversion):it.precio;
       const prod=prods.find(x=>x.id===it.pid);
       const tipo=prod?.tipoImpuesto||'general';
@@ -2533,7 +2537,8 @@ async function guardarFactura(){
         unidadCompra:it.unidadCompra||null,factorConversion:it.factorConversion||1,
         precioPorBulto:it.precio,precioNetoUnit:Math.round(netoUnitExacto*100)/100,
         precioUnitStock:c.total,subtotal:it.cantidad*it.precio,
-        tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca'};
+        tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca',
+        _netoUnitExacto:netoUnitExacto};
     });
     const tot=items.reduce((a,it)=>a+it.subtotal,0);
     const descMonto=parseFloat(document.getElementById('fn-desc-monto')?.value)||0;
@@ -2542,18 +2547,26 @@ async function guardarFactura(){
     const factorDesc=tot>0?netoConDesc/tot:1;
     const itemsCalc=items.map(it=>({netoItem:it.subtotal*factorDesc,tipo:it.tipoImpuesto||'general'}));
     const r=calcImpFactura(itemsCalc);
-    const totalConDesc=r.total;
+    // Costo real por unidad YA con el descuento del proveedor aplicado: es el valor que
+    // debe quedar reflejado en el producto (stock) y en el historial de precios, para que
+    // la valorización de inventario y el food cost reflejen lo que efectivamente se pagó.
+    const itemsConDescuento=items.map(it=>{
+      const netoUnitDesc=it._netoUnitExacto*factorDesc;
+      const cDesc=calcImp(netoUnitDesc,it.tipoImpuesto);
+      return{...it,precioNetoUnitDesc:Math.round(netoUnitDesc*100)/100,precioUnitStockDesc:cDesc.total};
+    });
+    const itemsParaGuardar=items.map(({_netoUnitExacto,...resto})=>resto);
     const ref=await addDoc(collection(db,'facturas'),{
       numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
       fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
-      items,totalNeto:r.totalNeto,totalIVA:r.iva,totalAdicional:r.adicional,totalImpuestos:r.iva+r.adicional,totalFactura:r.total,
+      items:itemsParaGuardar,totalNeto:r.totalNeto,totalIVA:r.iva,totalAdicional:r.adicional,totalImpuestos:r.iva+r.adicional,totalFactura:r.total,
       totalBruto:tot,descuentoPct:descPct||null,descuentoMonto:descMonto||null,
       ingresadoPor:role,creadoEn:serverTimestamp()
     });
     // Actualizar stock por bodega
     const batch=writeBatch(db);
-    for(const it of items){
-      const r=doc(db,'productos',it.productoId);const s=await getDoc(r);
+    for(const it of itemsConDescuento){
+      const productRef=doc(db,'productos',it.productoId);const s=await getDoc(productRef);
       if(s.exists()){
         const data=s.data();
         const spb={...(data.stockPorBodega||{})};
@@ -2561,22 +2574,22 @@ async function guardarFactura(){
         if(!data.stockPorBodega&&(data.stock||0)>0){spb[data.bodega||'seca']=(data.stock||0);}
         spb[it.bodegaDestino]=(spb[it.bodegaDestino]||0)+it.cantidadStock;
         const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-        batch.update(r,{stockPorBodega:spb,stock:newTotal,
-          precioNeto:Math.round(it.precioNetoUnit*100)/100,
-          precioTotal:it.precioUnitStock,
-          totalImpuestos:it.precioUnitStock-Math.round(it.precioNetoUnit),
+        batch.update(productRef,{stockPorBodega:spb,stock:newTotal,
+          precioNeto:it.precioNetoUnitDesc,
+          precioTotal:it.precioUnitStockDesc,
+          totalImpuestos:it.precioUnitStockDesc-it.precioNetoUnitDesc,
           actualizadoEn:serverTimestamp()});
-        // Guardar historial de precios
+        // Guardar historial de precios (con el descuento del proveedor ya aplicado)
         await addDoc(collection(db,'historialPrecios'),{
           productoId:it.productoId,nombreProducto:it.nombreProducto,
-          precio:it.precioUnitStock,precioNeto:Math.round(it.precioNetoUnit*100)/100,
+          precio:it.precioUnitStockDesc,precioNeto:it.precioNetoUnitDesc,
           tipoImpuesto:it.tipoImpuesto,
           proveedor:prov,facturaId:ref.id,creadoEn:serverTimestamp()
         });
       }
     }
     await batch.commit();
-    await addDoc(collection(db,'movimientos'),{tipo:'ingreso',facturaId:ref.id,proveedor:prov,items,realizadoPor:role,creadoEn:serverTimestamp()});
+    await addDoc(collection(db,'movimientos'),{tipo:'ingreso',facturaId:ref.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp()});
     toast('✓ '+fnItems.length+' productos ingresados');closeM('mo-fact');fnItems=[];
   }catch(e){toast('Error: '+e.message,'err');}
   btn.disabled=false;btn.textContent='✓ Ingresar al stock';
