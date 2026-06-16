@@ -2364,6 +2364,7 @@ window.diagnosticoFCM=async function(){
   console.log('DIAGNÓSTICO FCM:\n'+msg);
 };
 function filtrarProveedores(q){
+  const dd=document.getElementById('prov-dropdown');if(!dd)return;
   const todos=[...new Set([...facts.map(f=>f.proveedor),...prods.map(p=>p.proveedor)].filter(Boolean))].sort();
   const filtrado=q?todos.filter(p=>p.toLowerCase().includes(q.toLowerCase())):todos;
   if(!filtrado.length){dd.style.display='none';return;}
