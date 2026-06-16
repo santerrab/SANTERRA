@@ -1336,7 +1336,8 @@ function enviarNotifNativa(nombreArea,cantItems){
       navigator.serviceWorker.ready.then(reg=>{
         reg.showNotification('📦 Nuevo pedido — SANTERRA',{
           body:`${nombreArea} solicita ${cantItems} producto${cantItems!==1?'s':''}`,
-          icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230d1117"/><text x="96" y="130" font-size="100" text-anchor="middle">📦</text></svg>',
+          icon:'https://santerrab.github.io/SANTERRA/icon-192x192.png',
+          badge:'https://santerrab.github.io/SANTERRA/icon-192x192.png',
           tag:'pedido-santerra',renotify:true,requireInteraction:true,
           vibrate:[400,150,400,150,600,150,600],
           data:{url:location.href}
@@ -1464,7 +1465,7 @@ function enterApp(r){
   localStorage.setItem('saved_role',r==='bodeguero'?'bodeguero':'');
   buildNav(r);clk();startL();
   if(r==='encargado')setTimeout(autoSetup,1500);
-  if(r==='bodeguero'){pedirPermisoNotificaciones();activarWakeLock();}
+  if(r==='bodeguero'){if('vibrate' in navigator)navigator.vibrate([100]);pedirPermisoNotificaciones();activarWakeLock();}
 }
 function logout(){
   if(!confirm('¿Cerrar sesión?'))return;
