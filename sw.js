@@ -51,7 +51,8 @@ messaging.onBackgroundMessage(payload => {
   const { title, body } = payload.notification || {};
   self.registration.showNotification(title || '📦 Nuevo pedido — SANTERRA', {
     body: body || 'Hay una solicitud pendiente de despacho',
-    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230d1117"/><text x="96" y="130" font-size="100" text-anchor="middle">📦</text></svg>',
+    icon: 'https://santerrab.github.io/SANTERRA/icon-192x192.png',
+    badge: 'https://santerrab.github.io/SANTERRA/icon-192x192.png',
     tag: 'pedido-santerra',
     renotify: true,
     requireInteraction: true,
