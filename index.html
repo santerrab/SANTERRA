@@ -3458,18 +3458,5 @@ if('serviceWorker' in navigator){
 if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone)
   setTimeout(()=>toast('Safari → Compartir → "Añadir al inicio"'),4000);
 </script>
-
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').then(reg=>{
-    reg.update();
-    reg.addEventListener('updatefound',()=>{const nw=reg.installing;if(!nw)return;nw.addEventListener('statechange',()=>{if(nw.state==='installed')nw.postMessage('SKIP_WAITING');if(nw.state==='activated')window.location.reload();});});
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update();});
-  }).catch(()=>{});
-  navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
-}
-if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone)
-  setTimeout(()=>{ const t=document.getElementById('toast'); if(t){t.textContent='Safari → Compartir → "Añadir al inicio"';t.className='toast warn';t.classList.add('on');setTimeout(()=>t.classList.remove('on'),5000);} },4000);
-</script>
 </body>
 </html>
