@@ -2491,7 +2491,7 @@ function renderFnItems(){
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px">
           <button class="ci-btn ci-m" onclick="fnChg(${i},-1)">−</button>
-          <input type="number" min="${isKg?.1:1}" step="${isKg?.1:1}" value="${it.cantidad}"
+          <input id="fn-qty-${i}" type="number" min="${isKg?.1:1}" step="${isKg?.1:1}" value="${it.cantidad}"
             style="width:64px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'Inter',sans-serif;font-size:17px;font-weight:800;padding:5px 4px;text-align:center;outline:none;-webkit-appearance:none"
             oninput="setCantFn(${i},this.value)" onfocus="this.select()">
           <button class="ci-btn ci-p" onclick="fnChg(${i},1)">+</button>
@@ -2501,9 +2501,15 @@ function renderFnItems(){
           <span style="font-size:11px;color:var(--txm);white-space:nowrap">${it.tieneBulto?'Neto '+it.unidadCompra+' $:':'Neto $:'}</span>
           <input type="number" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${it.precio}" min="0" oninput="fnPrecio(${i},this.value)">
         </div>
-        <span style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
+        <span id="fn-subtotal-${i}" style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
       </div>
       <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
+      ${isKg?`<div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;color:var(--txm);white-space:nowrap">⚖️ Subtotal según factura (opcional):</span>
+        <input type="number" placeholder="${Math.round(it.cantidad*it.precio)}" min="0" step="1"
+          style="flex:1;min-width:70px;background:var(--sf);border:1.5px dashed var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:12px;padding:4px 8px;outline:none;text-align:right"
+          oninput="fnSubtotal(${i},this.value)">
+      </div>`:''}
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:11px;color:var(--txm);white-space:nowrap">→ Bodega destino:</span>
         <select style="flex:1;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;outline:none;-webkit-appearance:none" onchange="fnBodega(${i},this.value)">${bodSel}</select>
@@ -2516,6 +2522,17 @@ function renderFnItems(){
 function fnChg(i,d){const it=fnItems[i];const isKg=['kg','g','lt','ml'].includes((it.unidad||'').toLowerCase());const step=isKg?0.1:1;fnItems[i].cantidad=Math.max(step,parseFloat((it.cantidad+d*step).toFixed(2)));renderFnItems();}
 function setCantFn(i,v){const val=parseFloat(v);if(!isNaN(val)&&val>0)fnItems[i].cantidad=val;calcFnTotal();}
 function fnPrecio(i,v){fnItems[i].precio=parseFloat(v)||0;calcFnTotal();actualizarVarBadge(i);}
+// Ajusta la cantidad (peso) de forma precisa para que el subtotal de la línea coincida
+// exactamente con lo impreso en la factura (cantidad = subtotal / precio unitario).
+function fnSubtotal(i,v){
+  const it=fnItems[i];if(!it||!(it.precio>0))return;
+  const subtotal=parseFloat(v);
+  if(!(subtotal>0))return;
+  it.cantidad=subtotal/it.precio;
+  const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=Math.round(it.cantidad*10000)/10000;
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  calcFnTotal();actualizarVarBadge(i);
+}
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function fnBodega(i,bodId){fnItems[i].bodega=bodId;}
 function calcFnTotal(){
@@ -3474,7 +3491,7 @@ Object.assign(window,{
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
   togD,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
-  fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
+  fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnSubtotal,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
   guardarBodega,elimBodega,renderBodegasM,
