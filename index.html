@@ -2590,7 +2590,7 @@ function renderFnItems(){
       <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
       ${isKg?`<div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:10px;color:var(--txm);white-space:nowrap">⚖️ Subtotal según factura (opcional):</span>
-        <input type="number" placeholder="${Math.round(it.cantidad*it.precio)}" min="0" step="1"
+        <input id="fn-subplaceholder-${i}" type="number" placeholder="${Math.round(it.cantidad*it.precio)}" min="0" step="1"
           style="flex:1;min-width:70px;background:var(--sf);border:1.5px dashed var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:12px;padding:4px 8px;outline:none;text-align:right"
           oninput="fnSubtotal(${i},this.value)">
       </div>`:''}
@@ -2598,14 +2598,43 @@ function renderFnItems(){
         <span style="font-size:11px;color:var(--txm);white-space:nowrap">→ Bodega destino:</span>
         <select style="flex:1;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;outline:none;-webkit-appearance:none" onchange="fnBodega(${i},this.value)">${bodSel}</select>
       </div>
-      ${it.tieneBulto?`<div style="font-size:11px;color:var(--blue);background:var(--blued);border-radius:6px;padding:6px 8px">📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}</div>`:''}
+      ${it.tieneBulto?`<div id="fn-bulto-${i}" style="font-size:11px;color:var(--blue);background:var(--blued);border-radius:6px;padding:6px 8px">📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}</div>`:''}
     </div>`;
   }).join('');
   calcFnTotal();
 }
 function fnChg(i,d){const it=fnItems[i];const isKg=['kg','g','lt','ml'].includes((it.unidad||'').toLowerCase());const step=isKg?0.1:1;fnItems[i].cantidad=Math.max(step,parseFloat((it.cantidad+d*step).toFixed(2)));renderFnItems();}
-function setCantFn(i,v){const val=parseFloat(v);if(!isNaN(val)&&val>0)fnItems[i].cantidad=val;calcFnTotal();}
-function fnPrecio(i,v){fnItems[i].precio=parseFloat(v)||0;calcFnTotal();actualizarVarBadge(i);}
+function setCantFn(i,v){
+  const val=parseFloat(v);
+  if(isNaN(val)||val<=0)return;
+  const it=fnItems[i];if(!it)return;
+  it.cantidad=val;
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  actualizarVarBadge(i);
+  if(it.tieneBulto){
+    const stockAgregar=it.cantidad*(it.factorConversion||1);
+    const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
+    const bultoEl=document.getElementById('fn-bulto-'+i);
+    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
+  }
+  const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
+  if(subPlaceholderEl)subPlaceholderEl.placeholder=Math.round(it.cantidad*it.precio);
+  calcFnTotal();
+}
+function fnPrecio(i,v){
+  const it=fnItems[i];if(!it)return;
+  it.precio=parseFloat(v)||0;
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  if(it.tieneBulto){
+    const stockAgregar=it.cantidad*(it.factorConversion||1);
+    const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
+    const bultoEl=document.getElementById('fn-bulto-'+i);
+    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
+  }
+  const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
+  if(subPlaceholderEl)subPlaceholderEl.placeholder=Math.round(it.cantidad*it.precio);
+  calcFnTotal();actualizarVarBadge(i);
+}
 // Ajusta la cantidad (peso) de forma precisa para que el subtotal de la línea coincida
 // exactamente con lo impreso en la factura (cantidad = subtotal / precio unitario).
 function fnSubtotal(i,v){
