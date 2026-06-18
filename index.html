@@ -754,7 +754,7 @@ input[type=number]{-moz-appearance:textfield}
       <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏷️ Descuento del proveedor (opcional)</div>
       <div class="fr" style="margin-bottom:0">
         <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en %</label><input class="fi" type="number" inputmode="decimal" id="fn-desc-pct" placeholder="0" min="0" max="100" step="0.1" oninput="calcDescuento('pct')"></div>
-        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en $</label><input class="fi" type="number" inputmode="numeric" id="fn-desc-monto" placeholder="0" min="0" oninput="calcDescuento('monto')"></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en $</label><input class="fi" type="text" inputmode="numeric" id="fn-desc-monto" placeholder="0" oninput="calcDescuento('monto')"></div>
       </div>
       <div id="fn-desc-preview" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600"></div>
     </div>
@@ -1260,6 +1260,19 @@ function calcImpFactura(items){
 // ── FORMATO ──────────────────────────────────────────────────────────────────
 const clp=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(Math.round(v||0));
 const clpn=v=>new Intl.NumberFormat('es-CL',{minimumFractionDigits:0,maximumFractionDigits:2}).format(v||0);
+// Helpers para inputs de monto en $ que deben mostrar puntos de miles mientras se escribe
+// (ej: 20.000) sin perder el cursor ni romper el parseo numérico interno.
+const desfmtMiles=s=>{const n=parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
+const fmtMiles=v=>{const n=Math.round(v||0);return n?new Intl.NumberFormat('es-CL').format(n):'';};
+function onInputMiles(el){
+  const raw=desfmtMiles(el.value);
+  const start=el.selectionStart,len=el.value.length;
+  el.value=fmtMiles(raw);
+  const diff=el.value.length-len;
+  const pos=Math.max(0,(start||0)+diff);
+  el.setSelectionRange(pos,pos);
+  return raw;
+}
 function fDate(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
 function fDateOnly(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
 function getSemana(offset=0){
@@ -2504,10 +2517,11 @@ function calcDescuento(origen){
   if(origen==='pct'){
     const pct=parseFloat(document.getElementById('fn-desc-pct').value)||0;
     const monto=Math.round(totalNeto*pct/100);
-    document.getElementById('fn-desc-monto').value=monto||'';
+    document.getElementById('fn-desc-monto').value=fmtMiles(monto);
     preview(monto);
   }else{
-    const monto=parseFloat(document.getElementById('fn-desc-monto').value)||0;
+    const montoEl=document.getElementById('fn-desc-monto');
+    const monto=onInputMiles(montoEl);
     const pct=totalNeto>0?Math.round(monto/totalNeto*1000)/10:0;
     document.getElementById('fn-desc-pct').value=pct||'';
     preview(monto);
@@ -2583,16 +2597,16 @@ function renderFnItems(){
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
           <span style="font-size:11px;color:var(--txm);white-space:nowrap">${it.tieneBulto?'Neto '+it.unidadCompra+' $:':'Neto $:'}</span>
-          <input type="number" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${it.precio}" min="0" oninput="fnPrecio(${i},this.value)">
+          <input id="fn-precio-${i}" type="text" inputmode="numeric" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${fmtMiles(it.precio)}" oninput="fnPrecio(${i},this)">
         </div>
         <span id="fn-subtotal-${i}" style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
       </div>
       <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
       ${isKg?`<div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:10px;color:var(--txm);white-space:nowrap">⚖️ Subtotal según factura (opcional):</span>
-        <input id="fn-subplaceholder-${i}" type="number" placeholder="${Math.round(it.cantidad*it.precio)}" min="0" step="1"
+        <input id="fn-subplaceholder-${i}" type="text" inputmode="numeric" placeholder="${fmtMiles(it.cantidad*it.precio)}"
           style="flex:1;min-width:70px;background:var(--sf);border:1.5px dashed var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:12px;padding:4px 8px;outline:none;text-align:right"
-          oninput="fnSubtotal(${i},this.value)">
+          oninput="fnSubtotal(${i},this)">
       </div>`:''}
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:11px;color:var(--txm);white-space:nowrap">→ Bodega destino:</span>
@@ -2618,12 +2632,13 @@ function setCantFn(i,v){
     if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
   }
   const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
-  if(subPlaceholderEl)subPlaceholderEl.placeholder=Math.round(it.cantidad*it.precio);
+  if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMiles(it.cantidad*it.precio);
   calcFnTotal();
 }
-function fnPrecio(i,v){
+function fnPrecio(i,el){
   const it=fnItems[i];if(!it)return;
-  it.precio=parseFloat(v)||0;
+  const v=typeof el==='object'?onInputMiles(el):desfmtMiles(el);
+  it.precio=v;
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
@@ -2632,25 +2647,31 @@ function fnPrecio(i,v){
     if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
   }
   const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
-  if(subPlaceholderEl)subPlaceholderEl.placeholder=Math.round(it.cantidad*it.precio);
+  if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMiles(it.cantidad*it.precio);
   calcFnTotal();actualizarVarBadge(i);
 }
 // Ajusta la cantidad (peso) de forma precisa para que el subtotal de la línea coincida
 // exactamente con lo impreso en la factura (cantidad = subtotal / precio unitario).
-function fnSubtotal(i,v){
+function fnSubtotal(i,el){
   const it=fnItems[i];if(!it||!(it.precio>0))return;
-  const subtotal=parseFloat(v);
+  const subtotal=typeof el==='object'?onInputMiles(el):desfmtMiles(el);
   if(!(subtotal>0))return;
   it.cantidad=subtotal/it.precio;
   const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=Math.round(it.cantidad*10000)/10000;
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  if(it.tieneBulto){
+    const stockAgregar=it.cantidad*(it.factorConversion||1);
+    const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
+    const bultoEl=document.getElementById('fn-bulto-'+i);
+    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
+  }
   calcFnTotal();actualizarVarBadge(i);
 }
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function fnBodega(i,bodId){fnItems[i].bodega=bodId;}
 function calcFnTotal(){
   if(!fnItems.length){const el=document.getElementById('fn-total');if(el)el.innerHTML='$0';return;}
-  const descMonto=parseFloat(document.getElementById('fn-desc-monto')?.value)||0;
+  const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
   const itemsCalc=fnItems.map(it=>{
     const prod=prods.find(x=>x.id===it.pid);
     return{netoItem:it.cantidad*it.precio,tipo:prod?.tipoImpuesto||'general'};
@@ -2685,7 +2706,7 @@ async function guardarFactura(){
         _netoUnitExacto:netoUnitExacto};
     });
     const tot=items.reduce((a,it)=>a+it.subtotal,0);
-    const descMonto=parseFloat(document.getElementById('fn-desc-monto')?.value)||0;
+    const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
     const descPct=parseFloat(document.getElementById('fn-desc-pct')?.value)||0;
     const netoConDesc=Math.max(0,tot-descMonto);
     const factorDesc=tot>0?netoConDesc/tot:1;
