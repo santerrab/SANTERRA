@@ -537,6 +537,7 @@ input[type=number]{-moz-appearance:textfield}
     <div id="dash-trend-wrap"></div>
     <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:4px 0 8px">⚠️ Alertas de stock</div>
     <div id="dash-al"></div>
+    <div id="dash-gasto-prov"></div>
   </div>
   <div id="dash-stats-bod" style="display:none">
     <div class="sg"><div class="st full ac-y"><div class="sl">Solicitudes pendientes</div><div class="sv" style="color:var(--yellow)" id="d-pp2">0</div><div class="su">esperando despacho</div></div></div>
@@ -651,6 +652,30 @@ input[type=number]{-moz-appearance:textfield}
   <div id="rep-areas"></div>
 </div>
 
+<!-- VENTAS -->
+<div class="pg" id="pg-ventas">
+  <div class="pgt">Ventas</div><div class="pgs">Registro de ventas por área para calcular food cost</div>
+  <div class="fg">
+    <label class="fl">Fecha</label>
+    <input class="fi" type="date" id="vt-fecha">
+  </div>
+  <div class="fg">
+    <label class="fl">Área</label>
+    <div class="chips" id="vt-area-chips" style="margin-bottom:0"></div>
+  </div>
+  <div class="fg">
+    <label class="fl">Monto vendido ($)</label>
+    <input class="fi" type="number" id="vt-monto" min="0" placeholder="0">
+  </div>
+  <div class="fg">
+    <label class="fl">Nota (opcional)</label>
+    <input class="fi" type="text" id="vt-nota" placeholder="Ej: turno almuerzo">
+  </div>
+  <button class="btn bg-acc" onclick="guardarVenta()">+ Registrar venta</button>
+  <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:20px 0 10px">Ventas recientes</div>
+  <div id="ventas-lista"></div>
+</div>
+
 <!-- INVENTARIO -->
 <div class="pg" id="pg-inv">
   <div class="ph">
@@ -689,6 +714,7 @@ input[type=number]{-moz-appearance:textfield}
 <!-- MERMA -->
 <div class="pg" id="pg-merma">
   <div class="ph"><div><div class="pgt">Merma</div><div class="pgs">Registro de pérdidas y ajustes</div></div><button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirMerma()">+ Registrar merma</button></div>
+  <div class="chips" id="merma-fecha-chips"></div>
   <div id="merma-lista"></div>
 </div>
 
@@ -1096,8 +1122,8 @@ function initFCMForeground(){
 
 // ── ESTADO ──────────────────────────────────────────────────────────────────
 let role=null,pbuf='',pinTarget=null;
-let prods=[],cats=[],sols=[],facts=[],movs=[],invDocs=[],mermas=[],bodegas=[];
-let uP=null,uS=null,uF=null,uC=null,uM=null,uI=null,uMer=null,uBod=null,uCfg=null;
+let prods=[],cats=[],sols=[],facts=[],movs=[],invDocs=[],mermas=[],bodegas=[],ventas=[];
+let uP=null,uS=null,uF=null,uC=null,uM=null,uI=null,uMer=null,uBod=null,uCfg=null,uVt=null;
 let editProdId=null,rechazandoId=null,editCatId=null;
 let carrito=[],fnItems=[],despEst={},semOffset=0;
 let invActivo=null,conteoLocal={},csvData=[];
@@ -1107,6 +1133,7 @@ let subAreaActual='';
 let trProdId=null,merProdId=null,verifSolId=null;
 let fProdBodegaActual='',fStockBodega='',fStockCat='';
 let fPC='',fDE='pendiente',fSE='',fME='';
+let ventaAreaSel='c3';
 
 // ── BODEGAS POR DEFECTO ──────────────────────────────────────────────────────
 const BODEGAS_DEFAULT=[
@@ -1128,6 +1155,20 @@ function stockTotal(p){
 function stockEnBodega(p,bodId){
   if(!p.stockPorBodega)return bodId===p.bodega?(p.stock||0):0;
   return p.stockPorBodega[bodId]||0;
+}
+// Días de stock restantes al ritmo de consumo de los últimos `ventana` días (null = sin datos suficientes)
+function diasRestantes(p,movs,ventana=14){
+  const hoy=new Date();const desde=new Date(hoy);desde.setDate(hoy.getDate()-ventana);
+  let consumo=0;
+  movs.forEach(m=>{
+    if(m.tipo!=='salida')return;
+    const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;
+    if(!d||d<desde)return;
+    (m.items||[]).forEach(it=>{if(it.productoId===p.id)consumo+=(it.cantidadDespachada||it.cantidad||0);});
+  });
+  if(consumo<=0)return null;
+  const consumoDiario=consumo/ventana;
+  return consumoDiario>0?stockTotal(p)/consumoDiario:null;
 }
 
 // ── CATS BASE ────────────────────────────────────────────────────────────────
@@ -1226,6 +1267,12 @@ function getSemana(offset=0){
   const lunes=new Date(hoy);lunes.setDate(hoy.getDate()-(dia===0?6:dia-1)+(offset*7));lunes.setHours(0,0,0,0);
   const domingo=new Date(lunes);domingo.setDate(lunes.getDate()+6);domingo.setHours(23,59,59,999);
   return{lunes,domingo};
+}
+function getMes(offset=0){
+  const hoy=new Date();
+  const inicio=new Date(hoy.getFullYear(),hoy.getMonth()+offset,1,0,0,0,0);
+  const fin=new Date(hoy.getFullYear(),hoy.getMonth()+offset+1,0,23,59,59,999);
+  return{inicio,fin};
 }
 function getHorario(){try{return JSON.parse(localStorage.getItem('horario'))||{desde:'08:00',hasta:'18:00',colDesde:'13:00',colHasta:'14:00'};}catch{return{desde:'08:00',hasta:'18:00',colDesde:'13:00',colHasta:'14:00'};}}
 
@@ -1474,7 +1521,7 @@ function enterApp(r){
 function logout(){
   if(!confirm('¿Cerrar sesión?'))return;
   liberarWakeLock();
-  stopL();role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];mermas=[];bodegas=[];
+  stopL();role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];mermas=[];bodegas=[];ventas=[];
   carrito=[];fnItems=[];despEst={};solsPrevCount=null;alarmaActiva=false;invActivo=null;conteoLocal={};
   if(alarmaTimer){clearTimeout(alarmaTimer);alarmaTimer=null;}
   localStorage.removeItem('saved_role');
@@ -1490,6 +1537,7 @@ function buildNav(r){
     {id:'pg-dash',i:iD(),l:'Inicio'},{id:'pg-stock',i:iSt(),l:'Almacén'},
     {id:'pg-sols',i:iSo(),l:'Solicitudes'},{id:'pg-fact',i:iF(),l:'Facturas'},
     {id:'pg-prods',i:iPr(),l:'Productos'},{id:'pg-rep',i:iR(),l:'Reporte'},
+    {id:'pg-ventas',i:iVt(),l:'Ventas'},
     {id:'pg-inv',i:iInv(),l:'Inventario'},{id:'pg-merma',i:iMer(),l:'Merma'},
     {id:'pg-precios',i:iChart(),l:'Precios'},
   ];
@@ -1532,6 +1580,11 @@ function goTo(id){
   if(id==='pg-inv')renderInvHistorial();
   if(id==='pg-merma')renderMermas();
   if(id==='pg-precios')renderHistPrecios();
+  if(id==='pg-ventas'){
+    const vf=document.getElementById('vt-fecha');
+    if(vf&&!vf.value)vf.value=new Date().toISOString().split('T')[0];
+    renderVentaAreaChips();renderVentasLista();
+  }
   if(id==='pg-stock'){
     const sb=document.getElementById('stock-buscar');
     if(sb&&sb.value){sb.value='';renderStock();}
@@ -1558,6 +1611,7 @@ function iInv(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 function iMer(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`;}
 function iChart(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`;}
 function iTransfer(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>`;}
+function iVt(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`;}
 
 // ── LISTENERS ────────────────────────────────────────────────────────────────
 function startL(){
@@ -1605,8 +1659,13 @@ function startL(){
   uM=onSnapshot(query(collection(db,'movimientos'),orderBy('creadoEn','desc')),s=>{movs=s.docs.map(d=>({id:d.id,...d.data()}));renderDash();},err=>console.warn('movs:',err.message));
   uI=onSnapshot(query(collection(db,'inventarios'),orderBy('creadoEn','desc')),s=>{invDocs=s.docs.map(d=>({id:d.id,...d.data()}));renderInvHistorial();},err=>console.warn('inv:',err.message));
   uMer=onSnapshot(query(collection(db,'mermas'),orderBy('creadoEn','desc')),s=>{mermas=s.docs.map(d=>({id:d.id,...d.data()}));renderMermas();},err=>console.warn('mer:',err.message));
+  uVt=onSnapshot(query(collection(db,'ventas'),orderBy('creadoEn','desc')),s=>{
+    ventas=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderVentasLista();
+    if(document.getElementById('pg-rep')?.classList.contains('on'))renderReporte();
+  },err=>console.warn('ventas:',err.message));
 }
-function stopL(){[uP,uS,uF,uC,uM,uI,uMer,uBod,uCfg].forEach(u=>u&&u());uP=uS=uF=uC=uM=uI=uMer=uBod=uCfg=null;}
+function stopL(){[uP,uS,uF,uC,uM,uI,uMer,uBod,uCfg,uVt].forEach(u=>u&&u());uP=uS=uF=uC=uM=uI=uMer=uBod=uCfg=uVt=null;}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function renderDash(){
@@ -1628,11 +1687,23 @@ function renderDash(){
     document.getElementById('d-np').textContent=prods.length;document.getElementById('d-pp').textContent=pp;
     document.getElementById('d-hoy').textContent=clp(valHoy);document.getElementById('d-hoy-u').textContent=unHoy>0?unHoy+' uds.':'Sin despachos hoy';
     document.getElementById('d-sem').textContent=clp(valSem);document.getElementById('d-sem-u').textContent=movSem.length+' despachos esta semana';
+    const diasMap={};prods.forEach(p=>{diasMap[p.id]=diasRestantes(p,movs);});
     const low=prods.filter(p=>stockTotal(p)<=(p.stockMinimo||5));
-    document.getElementById('dash-al').innerHTML=low.length
-      ?low.map(p=>`<div class="li"><div><div class="lt">${p.nombre}</div><div class="ls">${p.categoria||''}</div></div><span class="badge ${stockTotal(p)===0?'bg-r-s':'bg-y-s'}">${stockTotal(p)===0?'Sin stock':'Bajo: '+clpn(stockTotal(p))+' '+(p.unidadMedida||'')}</span></div>`).join('')
+    const lowIds=new Set(low.map(p=>p.id));
+    const REPO_DIAS_ALERTA=3;
+    const reposicion=prods.filter(p=>!lowIds.has(p.id)&&diasMap[p.id]!==null&&diasMap[p.id]<=REPO_DIAS_ALERTA).sort((a,b)=>diasMap[a.id]-diasMap[b.id]);
+    const htmlLow=low.map(p=>{
+      const d=diasMap[p.id];
+      const dTxt=d!==null?' · '+Math.max(0,Math.round(d))+' día'+(Math.round(d)===1?'':'s')+' al ritmo actual':'';
+      return`<div class="li"><div><div class="lt">${p.nombre}</div><div class="ls">${p.categoria||''}${dTxt}</div></div><span class="badge ${stockTotal(p)===0?'bg-r-s':'bg-y-s'}">${stockTotal(p)===0?'Sin stock':'Bajo: '+clpn(stockTotal(p))+' '+(p.unidadMedida||'')}</span></div>`;
+    }).join('');
+    const htmlRepo=reposicion.length?`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 6px">📦 Se acaban pronto (aún sobre el mínimo)</div>`+
+      reposicion.map(p=>{const d=diasMap[p.id];return`<div class="li"><div><div class="lt">${p.nombre}</div><div class="ls">${p.categoria||''}</div></div><span class="badge bg-y-s">${Math.max(0,Math.round(d))} día${Math.round(d)===1?'':'s'} restantes</span></div>`;}).join(''):'';
+    document.getElementById('dash-al').innerHTML=(low.length||reposicion.length)
+      ?(htmlLow+htmlRepo)
       :'<div class="empty" style="padding:12px"><div class="et" style="font-size:12px">✅ Todo en niveles normales</div></div>';
     renderTendencia(movs,prods);
+    renderGastoProveedor();
   }else if(role==='bodeguero'){
     document.getElementById('dash-stats-bod').style.display='';
     document.getElementById('d-pp2').textContent=sols.filter(s=>s.estado==='pendiente').length;
@@ -1671,6 +1742,19 @@ function renderTendencia(movs,prods){
     ${alza.map(v=>`<div class="trend-item"><div class="trend-nom">${v.nombre}</div><div class="trend-nums"><span style="font-size:11px;color:var(--txm)">${clp(v.curr)}</span><span class="trend-badge trend-up">+${v.pct}%</span></div></div>`).join('')}
     ${baja.length?`<div style="margin-top:10px;border-top:1px solid var(--bd2);padding-top:10px"><div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:8px">📉 Baja de consumo</div>${baja.map(v=>`<div class="trend-item"><div class="trend-nom">${v.nombre}</div><div class="trend-nums"><span style="font-size:11px;color:var(--txm)">${clp(v.curr)}</span><span class="trend-badge trend-dn">${v.pct}%</span></div></div>`).join('')}</div>`:''}
   </div>`;
+}
+function renderGastoProveedor(){
+  const el=document.getElementById('dash-gasto-prov');if(!el)return;
+  const{inicio,fin}=getMes(0);
+  const facMes=facts.filter(f=>{const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;return d&&d>=inicio&&d<=fin;});
+  if(!facMes.length){el.innerHTML='';return;}
+  const porProv={};
+  facMes.forEach(f=>{const k=f.proveedor||'—';porProv[k]=(porProv[k]||0)+(f.totalFactura||0);});
+  const filas=Object.entries(porProv).sort((a,b)=>b[1]-a[1]);
+  const total=filas.reduce((a,[,v])=>a+v,0);
+  el.innerHTML=`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 8px">💰 Gasto por proveedor este mes</div>`+
+    filas.map(([prov,val])=>`<div class="li"><div><div class="lt">${prov}</div></div><span class="badge bg-b-s">${clp(val)}</span></div>`).join('')+
+    `<div class="li" style="border-top:1px solid var(--bd2);margin-top:4px;padding-top:8px"><div class="lt" style="font-weight:800">Total del mes</div><span class="badge bg-g-s">${clp(total)}</span></div>`;
 }
 
 // ── ALMACÉN con búsqueda + filtro bodega + categoría ─────────────────────────
@@ -3047,12 +3131,27 @@ async function confirmarMerma(){
     closeM('mo-merma');merProdId=null;
   }catch(e){toast('Error: '+e.message,'err');}
 }
+let mermaFiltroFecha='';
+function fMermaFecha(f,btn){mermaFiltroFecha=f;document.querySelectorAll('#merma-fecha-chips .chip').forEach(c=>c.classList.remove('on'));if(btn)btn.classList.add('on');renderMermas();}
+function renderMermaChips(){
+  const el=document.getElementById('merma-fecha-chips');if(!el)return;
+  el.innerHTML=`
+    <button class="chip ${!mermaFiltroFecha?'on':''}" onclick="fMermaFecha('',this)">Todo</button>
+    <button class="chip ${mermaFiltroFecha==='mes'?'on':''}" onclick="fMermaFecha('mes',this)">Este mes</button>
+    <button class="chip ${mermaFiltroFecha==='mesant'?'on':''}" onclick="fMermaFecha('mesant',this)">Mes anterior</button>`;
+}
 function renderMermas(){
+  renderMermaChips();
   const lista=document.getElementById('merma-lista');if(!lista)return;
-  if(!mermas.length){lista.innerHTML='<div class="empty"><div class="ei">📉</div><div class="et">Sin mermas registradas</div></div>';return;}
-  const totalMerma=mermas.reduce((a,m)=>a+(m.valorMerma||0),0);
+  let lst=mermas;
+  if(mermaFiltroFecha==='mes'||mermaFiltroFecha==='mesant'){
+    const{inicio,fin}=getMes(mermaFiltroFecha==='mesant'?-1:0);
+    lst=mermas.filter(m=>{const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=inicio&&d<=fin;});
+  }
+  if(!lst.length){lista.innerHTML='<div class="empty"><div class="ei">📉</div><div class="et">Sin mermas en este período</div></div>';return;}
+  const totalMerma=lst.reduce((a,m)=>a+(m.valorMerma||0),0);
   lista.innerHTML=`<div class="st full ac-r" style="margin-bottom:12px"><div class="sl">Valor total de mermas</div><div class="sv" style="color:var(--red)">${clp(totalMerma)}</div></div>`+
-    mermas.map(m=>{
+    lst.map(m=>{
       const b=getBodegaById(m.bodega||'seca');
       return`<div class="merma-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
@@ -3128,10 +3227,18 @@ function renderReporte(){
       totS+=val;totU+=cant;
     });
   });
+  // Ventas de la misma semana, por área (para food cost % y margen)
+  const dstr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const lunesStr=dstr(lunes),domingoStr=dstr(domingo);
+  const ventasSem=ventas.filter(v=>v.fecha>=lunesStr&&v.fecha<=domingoStr);
+  const ventasPorArea={};
+  ventasSem.forEach(v=>{ventasPorArea[v.area]=(ventasPorArea[v.area]||0)+(v.monto||0);});
+  const totalVentasSem=Object.values(ventasPorArea).reduce((a,v)=>a+v,0);
   document.getElementById('rep-stats').innerHTML=`
     <div class="st full ac-r"><div class="sl">Consumo total semana</div><div class="sv" style="color:var(--accent)">${clp(totS)}</div><div class="su">${totU.toLocaleString('es-CL')} unidades</div></div>
     <div class="st ac-b"><div class="sl">Despachos</div><div class="sv" style="color:var(--blue)">${movSem.length}</div></div>
-    <div class="st ac-g"><div class="sl">Áreas activas</div><div class="sv" style="color:var(--green)">${Object.values(areas).filter(a=>Object.keys(a.items).length>0).length}</div></div>`;
+    <div class="st ac-g"><div class="sl">Áreas activas</div><div class="sv" style="color:var(--green)">${Object.values(areas).filter(a=>Object.keys(a.items).length>0).length}</div></div>
+    ${totalVentasSem>0?`<div class="st full ac-y"><div class="sl">Food cost % de la semana</div><div class="sv" style="color:var(--yellow)">${Math.round((totS/totalVentasSem)*100)}%</div><div class="su">Ventas: ${clp(totalVentasSem)}</div></div>`:''}`;
   // Indicador tendencia
   if(semOffset===0||semOffset===-1){
     const{lunes:l1,domingo:d1}=getSemana(semOffset-1);
@@ -3189,11 +3296,19 @@ function renderReporte(){
     </div>`;
   ac.appendChild(invCard);
 
-  Object.values(areas).forEach(area=>{
+  Object.entries(areas).forEach(([key,area])=>{
     const items=Object.values(area.items).sort((a,b)=>b.valor-a.valor);
     const tot=items.reduce((s,i)=>s+i.valor,0);
+    const ventaArea=ventasPorArea[key]||0;
+    const fc=ventaArea>0?Math.round((tot/ventaArea)*100):null;
+    const margen=ventaArea>0?ventaArea-tot:null;
     const card=document.createElement('div');card.className='area-card';
     card.innerHTML=`<div class="area-titulo"><span>${area.icono} ${area.nombre}</span><span class="area-total">${clp(tot)}</span></div>
+      ${ventaArea>0?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0 10px;padding:8px;background:var(--sf);border-radius:10px">
+        <div style="text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase">Ventas</div><div style="font-size:13px;font-weight:800;color:var(--green)">${clp(ventaArea)}</div></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase">Food cost</div><div style="font-size:13px;font-weight:800;color:${fc>35?'var(--red)':'var(--accent)'}">${fc}%</div></div>
+        <div style="text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase">Margen</div><div style="font-size:13px;font-weight:800;color:var(--blue)">${clp(margen)}</div></div>
+      </div>`:''}
       ${items.length?items.map(it=>`<div class="rep-item"><div class="rep-item-nom">${it.nombre}</div><span class="rep-item-cant">${clpn(it.cantidad)} ${it.unidad}</span><span class="rep-item-val">${clp(it.valor)}</span></div>`).join(''):'<div style="text-align:center;padding:10px;color:var(--txd);font-size:12px">Sin consumo</div>'}`;
     ac.appendChild(card);
   });
@@ -3231,6 +3346,39 @@ function exportarPDF(){
   a.click();URL.revokeObjectURL(url);
   toast('✓ Reporte descargado (ábrelo en Chrome e imprime como PDF)');
 }
+
+// ── VENTAS ─────────────────────────────────────────────────────────────────────
+function renderVentaAreaChips(){
+  const el=document.getElementById('vt-area-chips');if(!el)return;
+  const n=gN();
+  const areas=[{k:'c1',ic:'🌅'},{k:'c3',ic:'🍽️'},{k:'c2',ic:'🍮'},{k:'c4',ic:'🍹'}];
+  el.innerHTML=areas.map(a=>`<button class="chip ${ventaAreaSel===a.k?'on':''}" onclick="selVentaArea('${a.k}',this)">${a.ic} ${n[a.k]}</button>`).join('');
+}
+function selVentaArea(k,btn){ventaAreaSel=k;document.querySelectorAll('#vt-area-chips .chip').forEach(c=>c.classList.remove('on'));if(btn)btn.classList.add('on');}
+async function guardarVenta(){
+  const fecha=document.getElementById('vt-fecha').value;
+  const monto=parseFloat(document.getElementById('vt-monto').value)||0;
+  const nota=document.getElementById('vt-nota').value.trim();
+  if(!fecha){toast('Selecciona la fecha','err');return;}
+  if(!ventaAreaSel){toast('Selecciona el área','err');return;}
+  if(monto<=0){toast('Ingresa el monto vendido','err');return;}
+  try{
+    await addDoc(collection(db,'ventas'),{fecha,area:ventaAreaSel,monto,nota:nota||null,registradoPor:role,creadoEn:serverTimestamp()});
+    toast('✓ Venta registrada');
+    document.getElementById('vt-monto').value='';document.getElementById('vt-nota').value='';
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+function renderVentasLista(){
+  const el=document.getElementById('ventas-lista');if(!el)return;
+  if(!ventas.length){el.innerHTML='<div class="empty"><div class="ei">💵</div><div class="et">Sin ventas registradas</div></div>';return;}
+  const n=gN();
+  const areaInfo={c1:{ic:'🌅',n:n.c1},c2:{ic:'🍮',n:n.c2},c3:{ic:'🍽️',n:n.c3},c4:{ic:'🍹',n:n.c4}};
+  el.innerHTML=ventas.slice(0,40).map(v=>{
+    const a=areaInfo[v.area]||{ic:'📍',n:v.area};
+    return`<div class="li"><div><div class="lt">${a.ic} ${a.n} · ${v.fecha}</div>${v.nota?`<div class="ls">${v.nota}</div>`:''}</div><div style="display:flex;align-items:center;gap:8px"><span class="badge bg-g-s">${clp(v.monto)}</span><button class="dbtn" onclick="elimVenta('${v.id}')">✕</button></div></div>`;
+  }).join('');
+}
+async function elimVenta(id){if(!confirm('¿Eliminar este registro de venta?'))return;try{await deleteDoc(doc(db,'ventas',id));toast('Eliminado');}catch(e){toast('Error: '+e.message,'err');}}
 
 // ── INVENTARIO ─────────────────────────────────────────────────────────────────
 let invFiltroCategoria='',invFiltroBodega='';
@@ -3331,17 +3479,31 @@ async function confirmarAjuste(){
     for(const p of prods){
       const fisico=conteoLocal[p.id];if(fisico===undefined)continue;
       const r=doc(db,'productos',p.id);
+      const sistemaAntes=stockTotal(p);
       // Distribuir el stock físico a la bodega principal del producto
       const spb={...(p.stockPorBodega||{})};
       const bodPrincipal=p.bodega||'seca';
       // Calcular proporcional si hay múltiples bodegas
-      const totalSistema=stockTotal(p)||0;
+      const totalSistema=sistemaAntes||0;
       if(totalSistema>0&&Object.keys(spb).length>1){
         const factor=fisico/totalSistema;
         Object.keys(spb).forEach(k=>{spb[k]=Math.round((spb[k]||0)*factor*10)/10;});
       }else{spb[bodPrincipal]=fisico;}
       batch.update(r,{stockPorBodega:spb,stock:fisico,actualizadoEn:serverTimestamp()});
-      items.push({productoId:p.id,nombreProducto:p.nombre,stockAnterior:stockTotal(p),stockFisico:fisico,diferencia:fisico-stockTotal(p),unidadMedida:p.unidadMedida||''});
+      const diferencia=fisico-sistemaAntes;
+      items.push({productoId:p.id,nombreProducto:p.nombre,stockAnterior:sistemaAntes,stockFisico:fisico,diferencia,unidadMedida:p.unidadMedida||''});
+      // Si el conteo físico es menor que el sistema, es una pérdida descubierta al contar:
+      // se registra como merma valorizada para que no quede fuera del total de pérdidas.
+      if(diferencia<0){
+        const mref=doc(collection(db,'mermas'));
+        batch.set(mref,{
+          productoId:p.id,nombreProducto:p.nombre,cantidad:Math.abs(diferencia),unidadMedida:p.unidadMedida||'',
+          bodega:bodPrincipal,motivo:'Diferencia de inventario',
+          observacion:'Detectado al finalizar: '+(invActivo.nombre||'inventario físico'),
+          valorMerma:Math.abs(diferencia)*(p.precioTotal||0),
+          origen:'inventario',realizadoPor:role,creadoEn:serverTimestamp()
+        });
+      }
     }
     await batch.commit();
     const valFisico=prods.reduce((a,p)=>{const f=conteoLocal[p.id];return a+(f!==undefined?f:stockTotal(p))*(p.precioTotal||0);},0);
@@ -3492,6 +3654,7 @@ Object.assign(window,{
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
   togD,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnSubtotal,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
+  selVentaArea,guardarVenta,elimVenta,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
   guardarBodega,elimBodega,renderBodegasM,
