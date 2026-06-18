@@ -1294,7 +1294,17 @@ const clpn=v=>new Intl.NumberFormat('es-CL',{minimumFractionDigits:0,maximumFrac
 // Helpers para inputs de monto en $ que deben mostrar puntos de miles mientras se escribe
 // (ej: 20.000) sin perder el cursor ni romper el parseo numérico interno.
 const desfmtMiles=s=>{const n=parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
+// fmtMiles: formato entero (puntos de miles, sin decimales) — para descuentos en $
 const fmtMiles=v=>{const n=Math.round(v||0);return n?new Intl.NumberFormat('es-CL').format(n):'';};
+// fmtMilesDec: formato con hasta 4 decimales — para precios netos y subtotales de factura
+const fmtMilesDec=v=>{
+  if(!v&&v!==0)return'';
+  const parts=String(v).split('.');
+  const entero=parseInt(parts[0]||0);
+  const dec=parts[1]?parts[1].replace(/0+$/,''):''; // quita ceros finales
+  const entFmt=entero?new Intl.NumberFormat('es-CL').format(entero):'0';
+  return dec?entFmt+','+dec:entFmt;
+};
 function onInputMiles(el){
   const raw=desfmtMiles(el.value);
   const start=el.selectionStart,len=el.value.length;
@@ -1303,6 +1313,40 @@ function onInputMiles(el){
   const pos=Math.max(0,(start||0)+diff);
   el.setSelectionRange(pos,pos);
   return raw;
+}
+// onInputMilesDec: igual que onInputMiles pero conserva decimales mientras se escribe
+// Lógica especial: si el usuario está escribiendo la parte decimal (el valor termina en
+// coma, o en coma+dígitos), no reformatea los decimales para no interrumpir el tipeo.
+function onInputMilesDec(el){
+  const raw=el.value;
+  const startsWithMinus=raw.startsWith('-');
+  // Detectar si el usuario está en medio de escribir decimales
+  const tieneComaAlFinal=/[,.]$/.test(raw); // terminó en separador decimal
+  const tieneDecimales=/[,.]\d+/.test(raw);  // ya tiene dígitos decimales
+  const num=desfmtMiles(raw);
+  if(isNaN(num)||(!num&&!tieneComaAlFinal))return 0;
+  const start=el.selectionStart,len=raw.length;
+  if(tieneComaAlFinal){
+    // Solo formatear la parte entera, conservar la coma al final para que el usuario continúe
+    const entFmt=num?new Intl.NumberFormat('es-CL').format(Math.trunc(num)):'0';
+    el.value=entFmt+',';
+    el.setSelectionRange(el.value.length,el.value.length);
+  } else if(tieneDecimales){
+    // Tiene decimales escritos — formatear entero y conservar la parte decimal tal como está
+    const comaIdx=raw.lastIndexOf(',')!==-1?raw.lastIndexOf(','):raw.lastIndexOf('.');
+    const parteEntera=num<0?-Math.trunc(-num):Math.trunc(num);
+    const parteDec=raw.slice(comaIdx+1); // los dígitos después de la coma, tal como los escribió
+    const entFmt=new Intl.NumberFormat('es-CL').format(parteEntera);
+    el.value=entFmt+','+(parteDec||'');
+    el.setSelectionRange(el.value.length,el.value.length);
+  } else {
+    // Sin decimales — formato normal de entero con puntos de miles
+    el.value=fmtMilesDec(num);
+    const diff=el.value.length-len;
+    const pos=Math.max(0,(start||0)+diff);
+    el.setSelectionRange(pos,pos);
+  }
+  return num;
 }
 function fDate(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
 function fDateOnly(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
@@ -2655,14 +2699,14 @@ function renderFnItems(){
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
           <span style="font-size:11px;color:var(--txm);white-space:nowrap">${it.tieneBulto?'Neto '+it.unidadCompra+' $:':'Neto $:'}</span>
-          <input id="fn-precio-${i}" type="text" inputmode="numeric" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${fmtMiles(it.precio)}" oninput="fnPrecio(${i},this)">
+          <input id="fn-precio-${i}" type="text" inputmode="decimal" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${fmtMilesDec(it.precio)}" oninput="fnPrecio(${i},this)">
         </div>
         <span id="fn-subtotal-${i}" style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
       </div>
       <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
       ${isKg?`<div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:10px;color:var(--txm);white-space:nowrap">⚖️ Subtotal según factura (opcional):</span>
-        <input id="fn-subplaceholder-${i}" type="text" inputmode="numeric" placeholder="${fmtMiles(it.cantidad*it.precio)}"
+        <input id="fn-subplaceholder-${i}" type="text" inputmode="decimal" placeholder="${fmtMilesDec(it.cantidad*it.precio)}"
           style="flex:1;min-width:70px;background:var(--sf);border:1.5px dashed var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:12px;padding:4px 8px;outline:none;text-align:right"
           oninput="fnSubtotal(${i},this)">
       </div>`:''}
@@ -2690,12 +2734,12 @@ function setCantFn(i,v){
     if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
   }
   const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
-  if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMiles(it.cantidad*it.precio);
+  if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMilesDec(it.cantidad*it.precio);
   calcFnTotal();
 }
 function fnPrecio(i,el){
   const it=fnItems[i];if(!it)return;
-  const v=typeof el==='object'?onInputMiles(el):desfmtMiles(el);
+  const v=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   it.precio=v;
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
@@ -2705,14 +2749,14 @@ function fnPrecio(i,el){
     if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
   }
   const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
-  if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMiles(it.cantidad*it.precio);
+  if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMilesDec(it.cantidad*it.precio);
   calcFnTotal();actualizarVarBadge(i);
 }
 // Ajusta la cantidad (peso) de forma precisa para que el subtotal de la línea coincida
 // exactamente con lo impreso en la factura (cantidad = subtotal / precio unitario).
 function fnSubtotal(i,el){
   const it=fnItems[i];if(!it||!(it.precio>0))return;
-  const subtotal=typeof el==='object'?onInputMiles(el):desfmtMiles(el);
+  const subtotal=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!(subtotal>0))return;
   it.cantidad=subtotal/it.precio;
   const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=Math.round(it.cantidad*10000)/10000;
