@@ -485,6 +485,10 @@ input[type=number]{-moz-appearance:textfield}
       <div class="pd" id="pd0"></div><div class="pd" id="pd1"></div>
       <div class="pd" id="pd2"></div><div class="pd" id="pd3"></div>
     </div>
+    <label id="pin-remember-wrap" style="display:none;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;cursor:pointer;user-select:none">
+      <input type="checkbox" id="pin-remember" style="width:17px;height:17px;accent-color:var(--accent);cursor:pointer">
+      <span style="font-size:13px;color:var(--txm);font-weight:600">Recordarme en este dispositivo</span>
+    </label>
     <div class="ppad">
       <div class="pk" onclick="pi(1)">1</div><div class="pk" onclick="pi(2)">2</div><div class="pk" onclick="pi(3)">3</div>
       <div class="pk" onclick="pi(4)">4</div><div class="pk" onclick="pi(5)">5</div><div class="pk" onclick="pi(6)">6</div>
@@ -1210,18 +1214,37 @@ async function autoSetup(){
 
 // ── CONFIG ───────────────────────────────────────────────────────────────────
 let _cfg={pinE:'1234',pinB:null,c1:'Desayuno',c2:'Postres',c3:'Buffet',c4:'Barra'};
+let _cfgReady=false; // true cuando el primer snapshot real de Firestore ya llegó
+let _onCfgReady=[]; // callbacks que esperan ese primer snapshot
 function startCfgListener(){
   uCfg=onSnapshot(doc(db,'config','app'),snap=>{
     if(snap.exists()){
       const d=snap.data();
       _cfg={pinE:d.pinE||'1234',pinB:d.pinB||null,c1:d.c1||'Desayuno',c2:d.c2||'Postres',c3:d.c3||'Buffet',c4:d.c4||'Barra'};
       ['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('lbl-'+k);if(el)el.textContent=_cfg[k];});
+      if(!_cfgReady){_cfgReady=true;_onCfgReady.forEach(fn=>fn());_onCfgReady=[];}
+      else if(role==='encargado'){
+        // PIN cambió mientras ya estabas logueado — no invalida la sesión activa,
+        // pero sí borra el "recordarme" para que la próxima apertura exija el PIN nuevo.
+        if(!checkSesionEncRecordada()){}// checkSesionEncRecordada ya limpió el localStorage
+      }
     }
   },err=>console.warn('cfg:',err.message));
 }
 const gPE=()=>_cfg.pinE||'1234';
 const gPB=()=>_cfg.pinB||null;
 const gN=()=>({c1:_cfg.c1,c2:_cfg.c2,c3:_cfg.c3,c4:_cfg.c4});
+// Hash simple (no criptográfico) para no guardar el PIN de Encargado en texto plano
+// dentro de localStorage al usar "Recordarme en este dispositivo". Si el PIN cambia
+// en Config (sincronizado vía Firestore a todos los dispositivos), el hash guardado
+// deja de coincidir y la sesión recordada se invalida automáticamente — ver checkSesionEncRecordada().
+function hashPin(pin){let h=0;const s='santerra_salt_'+String(pin||'');for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return String(h);}
+function checkSesionEncRecordada(){
+  const savedHash=localStorage.getItem('saved_role_enc');
+  if(!savedHash)return false;
+  if(savedHash!==hashPin(gPE())){localStorage.removeItem('saved_role_enc');return false;}
+  return true;
+}
 
 // ── IMPUESTOS ────────────────────────────────────────────────────────────────
 const IMPS={
@@ -1486,6 +1509,10 @@ function abrirPin(target,titulo,sub,tipo){
   document.getElementById('pin-sub').textContent=sub;
   document.querySelectorAll('.pd').forEach(d=>d.classList.remove('f','fb'));
   document.getElementById('pin-ovl').dataset.tipo=tipo;
+  const rememberWrap=document.getElementById('pin-remember-wrap');
+  const rememberChk=document.getElementById('pin-remember');
+  if(rememberWrap)rememberWrap.style.display=target==='encargado'?'flex':'none';
+  if(rememberChk)rememberChk.checked=false;
   updPD();document.getElementById('pin-ovl').classList.add('on');
 }
 function pi(d){
@@ -1493,7 +1520,13 @@ function pi(d){
   if(pbuf.length===4){
     setTimeout(()=>{
       const pin=pinTarget==='encargado'?gPE():gPB();
-      if(pbuf===pin){document.getElementById('pin-ovl').classList.remove('on');enterApp(pinTarget);}
+      if(pbuf===pin){
+        if(pinTarget==='encargado'){
+          const rememberChk=document.getElementById('pin-remember');
+          if(rememberChk&&rememberChk.checked)localStorage.setItem('saved_role_enc',hashPin(pin));
+        }
+        document.getElementById('pin-ovl').classList.remove('on');enterApp(pinTarget);
+      }
       else{
         toast('PIN incorrecto','err');
         const dots=document.getElementById('pdots');dots.style.animation='none';
@@ -1538,6 +1571,7 @@ function logout(){
   carrito=[];fnItems=[];despEst={};solsPrevCount=null;alarmaActiva=false;invActivo=null;conteoLocal={};
   if(alarmaTimer){clearTimeout(alarmaTimer);alarmaTimer=null;}
   localStorage.removeItem('saved_role');
+  localStorage.removeItem('saved_role_enc');
   document.getElementById('lscreen').style.display='flex';
   document.getElementById('app').style.display='none';
   document.body.classList.add('login-active');
@@ -3695,6 +3729,19 @@ startCfgListener();
   if(saved==='bodeguero'&&!gPB()){
     setTimeout(()=>{if(!role){role='bodeguero';document.getElementById('lscreen').style.display='none';document.getElementById('app').style.display='block';const info={l:'🚚 Bodeguero',cls:'r-bod',sub:'Despachos'};document.getElementById('rbadge').textContent=info.l;document.getElementById('rbadge').className='rbadge '+info.cls;document.getElementById('hdr-sub').innerHTML=info.sub;buildNav('bodeguero');clk();startL();}},800);
   }
+})();
+
+// PERSISTENCIA SESIÓN ENCARGADO — solo si el usuario marcó explícitamente
+// "Recordarme en este dispositivo" tras ingresar el PIN correcto (ver función pi()).
+// Espera a que el primer snapshot real de Firestore llegue (_cfgReady) antes de
+// verificar, para evitar comparar el hash contra el valor por defecto '1234' en vez
+// del PIN real — lo que causaría una falsa invalidación si el PIN es distinto.
+// Si el PIN se cambia en Config, checkSesionEncRecordada() lo detecta y exige PIN.
+(()=>{
+  if(!localStorage.getItem('saved_role_enc'))return;
+  const tryAutoLogin=()=>{if(!role&&checkSesionEncRecordada())enterApp('encargado');};
+  if(_cfgReady)tryAutoLogin();
+  else _onCfgReady.push(tryAutoLogin);
 })();
 
 Object.assign(window,{
