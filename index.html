@@ -734,6 +734,14 @@ input[type=number]{-moz-appearance:textfield}
 </div><!-- /app -->
 
 <!-- MODALES -->
+<div class="ovl" id="mo-logout">
+  <div class="modal"><div class="mh"></div><div class="mt">👤 Cambiar perfil</div>
+    <p style="font-size:13px;color:var(--txm);margin-bottom:18px;line-height:1.5">¿Qué quieres hacer?</p>
+    <button class="btn bg-blue" onclick="logoutCambiarPerfil()">🔄 Cambiar perfil</button>
+    <button class="btn bg-red" style="margin-top:8px" onclick="logoutCompleto()">🔒 Cerrar sesión y olvidar dispositivo</button>
+    <button class="btn bg-ghost" style="margin-top:8px" onclick="closeM('mo-logout')">Cancelar</button>
+  </div>
+</div>
 <div class="ovl" id="mo-rechazo">
   <div class="modal"><div class="mh"></div><div class="mt">✕ Rechazar solicitud</div>
     <div class="fg"><label class="fl">Motivo *</label><textarea class="fi" id="f-motivo" rows="3" placeholder="Indica el motivo..."></textarea></div>
@@ -1498,7 +1506,11 @@ function selRole(r){
   initAudio();
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));
   const pb=gPB();
-  if(r==='encargado'){document.getElementById('rc-enc').classList.add('on');abrirPin('encargado','👑 Encargado','Ingresa tu PIN de 4 dígitos','enc');}
+  if(r==='encargado'){
+    document.getElementById('rc-enc').classList.add('on');
+    if(checkSesionEncRecordada()){enterApp('encargado');}
+    else{abrirPin('encargado','👑 Encargado','Ingresa tu PIN de 4 dígitos','enc');}
+  }
   else if(r==='bodeguero'&&pb){document.getElementById('rc-bod').classList.add('on-blue');abrirPin('bodeguero','🚚 Bodeguero','Ingresa tu PIN','bod');}
   else if(r==='bodeguero'){document.getElementById('rc-bod').classList.add('on-blue');enterApp('bodeguero');}
   else{document.getElementById('rc-'+r)?.classList.add('on-purple');enterApp(r);}
@@ -1565,17 +1577,29 @@ function enterApp(r){
   if(r==='bodeguero'){if('vibrate' in navigator)navigator.vibrate([100]);pedirPermisoNotificaciones();activarWakeLock();}
 }
 function logout(){
-  if(!confirm('¿Cerrar sesión?'))return;
+  if(localStorage.getItem('saved_role_enc'))openM('mo-logout');
+  else if(confirm('¿Cerrar sesión?'))logoutCompleto();
+}
+function _logoutBase(){
   liberarWakeLock();
   stopL();role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];mermas=[];bodegas=[];ventas=[];
   carrito=[];fnItems=[];despEst={};solsPrevCount=null;alarmaActiva=false;invActivo=null;conteoLocal={};
   if(alarmaTimer){clearTimeout(alarmaTimer);alarmaTimer=null;}
   localStorage.removeItem('saved_role');
-  localStorage.removeItem('saved_role_enc');
   document.getElementById('lscreen').style.display='flex';
   document.getElementById('app').style.display='none';
   document.body.classList.add('login-active');
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));pbuf='';
+}
+function logoutCambiarPerfil(){
+  closeM('mo-logout');
+  // Conserva saved_role_enc — al volver a Encargado entrará directo sin PIN
+  _logoutBase();
+}
+function logoutCompleto(){
+  closeM('mo-logout');
+  localStorage.removeItem('saved_role_enc');
+  _logoutBase();
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
