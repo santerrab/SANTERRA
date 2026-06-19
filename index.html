@@ -636,8 +636,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="pg" id="pg-prods">
   <div class="ph"><div><div class="pgt">Productos</div><div class="pgs" id="prods-sub">Base de datos maestra</div></div><button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirProd()">+ Nuevo</button></div>
   <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="prod-buscar" type="text" placeholder="Buscar por nombre, código o proveedor..." autocomplete="off" oninput="onProdBuscar(this.value)"></div>
-  <div class="chips" id="prod-bodega-chips"></div>
-  <div class="chips" id="prod-chips"></div>
+  <button id="prod-filtros-btn" class="btn bg-ghost" style="width:auto;padding:9px 16px;font-size:12.5px;margin-bottom:14px;display:inline-flex;align-items:center;gap:6px" onclick="abrirFiltrosProd()">🔧 Filtros</button>
   <div id="prods-lista"></div>
 </div>
 
@@ -741,6 +740,18 @@ input[type=number]{-moz-appearance:textfield}
     <button class="btn bg-blue" onclick="logoutCambiarPerfil()">🔄 Cambiar perfil</button>
     <button class="btn bg-red" style="margin-top:8px" onclick="logoutCompleto()">🔒 Cerrar sesión y olvidar dispositivo</button>
     <button class="btn bg-ghost" style="margin-top:8px" onclick="closeM('mo-logout')">Cancelar</button>
+  </div>
+</div>
+<div class="ovl" id="mo-prod-filtros">
+  <div class="modal"><div class="mh"></div><div class="mt">🔧 Filtrar productos</div>
+    <div class="fg"><label class="fl">Bodega</label>
+      <select class="fi" id="pf-bodega" onchange="onCambioFiltroBodega()"></select>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Categoría</label>
+      <select class="fi" id="pf-categoria"></select>
+    </div>
+    <button class="btn bg-acc" style="margin-top:18px" onclick="aplicarFiltrosProd()">✓ Aplicar</button>
+    <button class="btn bg-ghost" style="margin-top:8px" onclick="limpiarFiltrosProd()">Limpiar filtros</button>
   </div>
 </div>
 <div class="ovl" id="mo-rechazo">
@@ -1735,11 +1746,13 @@ function startL(){
   startCfgListener();
   uBod=onSnapshot(query(collection(db,'bodegas'),orderBy('orden')),s=>{
     bodegas=s.docs.map(d=>({id:d.id,...d.data()}));
-    renderBodegaChipsAll();renderProdBodegaChips();renderBodegaSelects();
+    renderBodegaChipsAll();renderBodegaSelects();
+    if(document.getElementById('mo-prod-filtros')?.classList.contains('on'))abrirFiltrosProd();
   },err=>console.warn('bodegas:',err.message));
   uC=onSnapshot(query(collection(db,'categorias'),orderBy('nombre')),s=>{
     cats=s.docs.map(d=>({id:d.id,...d.data()}));
-    renderProdChips();renderStockCatChips();
+    renderStockCatChips();
+    if(document.getElementById('mo-prod-filtros')?.classList.contains('on'))abrirFiltrosProd();
   },err=>console.warn('cats:',err.message));
   uP=onSnapshot(query(collection(db,'productos'),orderBy('nombre')),s=>{
     prods=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -2912,32 +2925,55 @@ function renderBodegaSelects(){
   const merSel=document.getElementById('mer-bodega');
   if(merSel){const cur=merSel.value;merSel.innerHTML=opts;if(cur)merSel.value=cur;}
 }
-function renderProdBodegaChips(){
-  const el=document.getElementById('prod-bodega-chips');if(!el)return;
-  el.innerHTML=`<button class="chip ${!fProdBodegaActual?'on':''}" onclick="fProdBodega('',this)">Todas las bodegas</button>`+
-    bodegas.map(b=>`<button class="chip ${fProdBodegaActual===b.id?'on':''}" onclick="fProdBodega('${b.id}',this)">${b.icono} ${b.nombre}</button>`).join('');
+// Abre el modal de filtros y carga los selects con el estado actual
+function abrirFiltrosProd(){
+  const selB=document.getElementById('pf-bodega');
+  selB.innerHTML=`<option value="">Todas las bodegas</option>`+
+    bodegas.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
+  selB.value=fProdBodegaActual;
+  renderFiltroCategoria(fProdBodegaActual,fPC);
+  openM('mo-prod-filtros');
 }
-function fProdBodega(b,btn){
-  fProdBodegaActual=b;document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));if(btn)btn.classList.add('on');
-  fPC='';renderProdChips();renderProds();
+// Al cambiar la bodega dentro del modal, refresca las categorías disponibles para esa bodega
+// (sin aplicar el filtro todavía — eso ocurre al tocar "Aplicar")
+function onCambioFiltroBodega(){
+  const b=document.getElementById('pf-bodega').value;
+  renderFiltroCategoria(b,'');
 }
-function renderProdChips(){
-  const prodsFilt=fProdBodegaActual?prods.filter(p=>(p.bodega||'seca')===fProdBodegaActual):prods;
+function renderFiltroCategoria(bodegaId,catSeleccionada){
+  const prodsFilt=bodegaId?prods.filter(p=>(p.bodega||'seca')===bodegaId):prods;
   const cs=[...new Set(prodsFilt.map(p=>p.categoria).filter(Boolean))];
-  document.getElementById('prod-chips').innerHTML=
-    `<button class="chip ${!fPC?'on':''}" onclick="fProds('',this)">Todas las categorías</button>`+
-    cs.map(c=>`<button class="chip ${fPC===c?'on':''}" onclick="fProds('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
+  const selC=document.getElementById('pf-categoria');
+  selC.innerHTML=`<option value="">Todas las categorías</option>`+
+    cs.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
+  selC.value=catSeleccionada||'';
 }
-function fProds(c,btn){fPC=c;document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));btn.classList.add('on');renderProds();}
+function aplicarFiltrosProd(){
+  fProdBodegaActual=document.getElementById('pf-bodega').value;
+  fPC=document.getElementById('pf-categoria').value;
+  document.getElementById('prod-buscar').value='';
+  actualizarBadgeFiltrosProd();
+  closeM('mo-prod-filtros');
+  renderProds();
+}
+function limpiarFiltrosProd(){
+  fProdBodegaActual='';fPC='';
+  document.getElementById('pf-bodega').value='';
+  renderFiltroCategoria('','');
+  actualizarBadgeFiltrosProd();
+  closeM('mo-prod-filtros');
+  renderProds();
+}
+// Muestra un indicador (●) en el botón "Filtros" cuando hay algún filtro activo,
+// para que el bodeguero/encargado sepa de un vistazo que la lista está filtrada.
+function actualizarBadgeFiltrosProd(){
+  const btn=document.getElementById('prod-filtros-btn');if(!btn)return;
+  const activo=fProdBodegaActual||fPC;
+  btn.innerHTML=activo?'🔧 Filtros <span style="color:var(--accent)">●</span>':'🔧 Filtros';
+}
 function onProdBuscar(q){
   // Si hay texto: quitar filtros para buscar en todo
-  if(q.trim()){
-    fProdBodegaActual='';fPC='';
-    document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));
-    document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));
-    const t=document.querySelector('#prod-bodega-chips .chip');if(t)t.classList.add('on');
-    const t2=document.querySelector('#prod-chips .chip');if(t2)t2.classList.add('on');
-  }
+  if(q.trim()){fProdBodegaActual='';fPC='';actualizarBadgeFiltrosProd();}
   renderProds();
 }
 function renderProds(){
@@ -3857,7 +3893,7 @@ startCfgListener();
 
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,navSem,toggleMode,
-  fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
+  fStockBod,fStockCat2,fDesp,fSols,fMis,abrirFiltrosProd,onCambioFiltroBodega,aplicarFiltrosProd,limpiarFiltrosProd,onProdBuscar,fInv,fDiff,fDetalle,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
   togD,aceptarTodo,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
