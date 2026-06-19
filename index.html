@@ -2831,9 +2831,12 @@ async function guardarFactura(){
       ingresadoPor:role,creadoEn:serverTimestamp()
     });
     // Actualizar stock por bodega
+    // Fase 1: leer todos los productos en paralelo (antes eran lecturas secuenciales)
+    const docs=await Promise.all(itemsConDescuento.map(it=>getDoc(doc(db,'productos',it.productoId))));
     const batch=writeBatch(db);
-    for(const it of itemsConDescuento){
-      const productRef=doc(db,'productos',it.productoId);const s=await getDoc(productRef);
+    const historialPendiente=[];
+    itemsConDescuento.forEach((it,idx)=>{
+      const s=docs[idx];
       if(s.exists()){
         const data=s.data();
         const spb={...(data.stockPorBodega||{})};
@@ -2841,22 +2844,28 @@ async function guardarFactura(){
         if(!data.stockPorBodega&&(data.stock||0)>0){spb[data.bodega||'seca']=(data.stock||0);}
         spb[it.bodegaDestino]=(spb[it.bodegaDestino]||0)+it.cantidadStock;
         const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+        const productRef=doc(db,'productos',it.productoId);
         batch.update(productRef,{stockPorBodega:spb,stock:newTotal,
           precioNeto:it.precioNetoUnitDesc,
           precioTotal:it.precioUnitStockDesc,
           totalImpuestos:it.precioUnitStockDesc-it.precioNetoUnitDesc,
           actualizadoEn:serverTimestamp()});
-        // Guardar historial de precios (con el descuento del proveedor ya aplicado)
-        await addDoc(collection(db,'historialPrecios'),{
+        // Historial de precios (con el descuento del proveedor ya aplicado), incluyendo
+        // cantidad y unidad de esta compra puntual para poder ver cuánto se gastó en total.
+        historialPendiente.push({
           productoId:it.productoId,nombreProducto:it.nombreProducto,
           precio:it.precioUnitStockDesc,precioNeto:it.precioNetoUnitDesc,
           tipoImpuesto:it.tipoImpuesto,
+          cantidadStock:it.cantidadStock,cantidadBultos:it.cantidadBultos,unidadMedida:it.unidadMedida,
           proveedor:prov,facturaId:ref.id,creadoEn:serverTimestamp()
         });
       }
-    }
+    });
     await batch.commit();
+    // Fase 2: escribir el historial de precios en paralelo (antes era secuencial)
+    await Promise.all(historialPendiente.map(h=>addDoc(collection(db,'historialPrecios'),h)));
     await addDoc(collection(db,'movimientos'),{tipo:'ingreso',facturaId:ref.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp()});
+    histPreciosCache=null; // invalidar cache: hay registros nuevos
     toast('✓ '+fnItems.length+' productos ingresados');closeM('mo-fact');fnItems=[];
   }catch(e){toast('Error: '+e.message,'err');}
   btn.disabled=false;btn.textContent='✓ Ingresar al stock';
@@ -3317,14 +3326,24 @@ function renderMermas(){
 }
 
 // ── HISTORIAL PRECIOS ─────────────────────────────────────────────────────────
+// Cache en memoria del historial de precios — evita ir a Firestore en cada letra
+// que el usuario escribe en el buscador. Se invalida (histPreciosCache=null) cada vez
+// que se guarda una factura nueva, para que el historial recién agregado aparezca.
+let histPreciosCache=null;
+async function fetchHistPrecios(forzar){
+  if(histPreciosCache&&!forzar)return histPreciosCache;
+  const snap=await getDocs(query(collection(db,'historialPrecios'),orderBy('creadoEn','desc')));
+  histPreciosCache=snap.docs.map(d=>({id:d.id,...d.data()}));
+  return histPreciosCache;
+}
 async function renderHistPrecios(){
   const lista=document.getElementById('precio-hist-lista');if(!lista)return;
   const q=(document.getElementById('precio-buscar')?.value||'').toLowerCase();
-  lista.innerHTML='<div style="text-align:center;padding:16px;color:var(--txm)">Cargando...</div>';
+  const yaTeniaCache=!!histPreciosCache;
+  if(!yaTeniaCache)lista.innerHTML='<div style="text-align:center;padding:16px;color:var(--txm)">Cargando...</div>';
   try{
-    const snap=await getDocs(query(collection(db,'historialPrecios'),orderBy('creadoEn','desc')));
-    let items=snap.docs.map(d=>({id:d.id,...d.data()}));
-    if(q)items=items.filter(i=>i.nombreProducto?.toLowerCase().includes(q));
+    const all=await fetchHistPrecios(false);
+    let items=q?all.filter(i=>i.nombreProducto?.toLowerCase().includes(q)):all;
     if(!items.length){lista.innerHTML='<div class="empty"><div class="ei">📊</div><div class="et">Sin historial de precios</div></div>';return;}
     // Agrupar por producto (items viene ordenado de más reciente a más antiguo)
     const byProd={};
@@ -3340,6 +3359,7 @@ async function renderHistPrecios(){
     grupos.sort((a,b)=>b.totalPct-a.totalPct);
     lista.innerHTML=grupos.map(g=>{
       const items=g.items.slice(0,5);
+      const restantes=g.items.length-items.length;
       return`<div class="prod-card" style="margin-bottom:10px">
         <div class="prod-nom" style="margin-bottom:6px">📊 ${g.nombre}</div>
         ${g.items.length>1&&g.totalDiff!==0?`<div style="font-size:11px;font-weight:700;margin-bottom:10px;${g.totalDiff>0?'color:#ef4444':'color:var(--green)'}">${g.totalDiff>0?'📈 Subió':'📉 Bajó'} ${Math.abs(g.totalPct)}% en total · ${clp(g.oldest.precio)} → ${clp(g.newest.precio)} (desde ${fDateOnly(g.oldest.creadoEn)})</div>`:''}
@@ -3347,11 +3367,13 @@ async function renderHistPrecios(){
           const prev=items[i+1];
           const diff=prev?it.precio-prev.precio:0;
           const pct=prev&&prev.precio>0?Math.round((diff/prev.precio)*100):0;
+          const cantTxt=it.cantidadStock?`${it.cantidadStock} ${it.unidadMedida||''}`.trim():'';
           return`<div class="precio-hist-item">
-            <div><div style="font-size:12px;font-weight:600">${clp(it.precio)}/unit</div><div style="font-size:10px;color:var(--txm)">${it.proveedor||'—'} · ${fDateOnly(it.creadoEn)}</div></div>
+            <div><div style="font-size:12px;font-weight:600">${clp(it.precio)}/unit${cantTxt?` · ${cantTxt}`:''}</div><div style="font-size:10px;color:var(--txm)">${it.proveedor||'—'} · ${fDateOnly(it.creadoEn)}</div></div>
             ${diff!==0?`<span class="badge ${diff>0?'bg-r-s':'bg-g-s'}">${diff>0?'▲':'▼'} ${Math.abs(pct)}%</span>`:'<span class="badge" style="background:var(--sf2);color:var(--txm)">= Sin cambio</span>'}
           </div>`;
         }).join('')}
+        ${restantes>0?`<div style="text-align:center;font-size:11px;color:var(--txm);padding-top:8px;font-weight:600">+ ${restantes} compra${restantes>1?'s':''} más</div>`:''}
       </div>`;
     }).join('');
   }catch(e){lista.innerHTML='<div class="empty"><div class="et">Error al cargar</div></div>';}
