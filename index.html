@@ -133,6 +133,7 @@ body.light .nav{background:rgba(255,255,255,.92)}
 .st.ac-b{border-color:var(--blueb);background:var(--blued)}.st.ac-b::before{background:var(--blue)}
 .st.ac-g{border-color:var(--greenb);background:var(--greend)}.st.ac-g::before{background:var(--green)}
 .st.ac-y{border-color:var(--yellowb);background:var(--yellowd)}.st.ac-y::before{background:var(--yellow)}
+.st.ac-p{border-color:var(--purpleb);background:var(--purpled)}.st.ac-p::before{background:var(--purple)}
 .st.ac-o{border-color:var(--orangeb);background:var(--oranged)}.st.ac-o::before{background:var(--orange)}
 .sl{font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px}
 .sv{font-family:'Inter',sans-serif;font-size:26px;font-weight:900;line-height:1;letter-spacing:-.5px}
@@ -2110,42 +2111,42 @@ function renderDesp(){
       const chkIcon=est.tipo==='ok'?'✓':est.tipo==='ss'?'✗':'○';
       const badgeClr=sinStock?'bg-r-s':bajStock?'bg-y-s':'bg-g-s';
       const badgeTxt=sinStock?'Sin stock':bajStock?'Stock bajo: '+clpn(stockTot)+' '+it.unidadMedida:'Stock: '+clpn(stockTot)+' '+it.unidadMedida;
-      return`<div style="padding:14px 0;border-bottom:1px solid var(--bd3)">
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--bd3)">
         <!-- Fila 1: check + nombre + badge -->
-        <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="display:flex;align-items:flex-start;gap:10px">
           <button
             onclick="togD('${sol.id}','${it.productoId}',${it.cantidad})"
-            style="width:52px;height:52px;border-radius:14px;border:2px solid;flex-shrink:0;font-size:22px;font-weight:900;cursor:pointer;transition:all .18s;${chkClr}">
+            style="width:42px;height:42px;border-radius:12px;border:2px solid;flex-shrink:0;font-size:18px;font-weight:900;cursor:pointer;transition:all .18s;${chkClr}">
             ${chkIcon}
           </button>
-          <div style="flex:1;min-width:0;padding-top:2px">
-            <div style="font-family:'Inter',sans-serif;font-size:15px;font-weight:800;line-height:1.2;margin-bottom:5px">${it.nombreProducto}</div>
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span class="badge ${badgeClr}">${sinStock?'⚠️ ':bajStock?'⚠️ ':''}${badgeTxt}</span>
-              <span style="font-size:12px;color:var(--txm);font-weight:600">Pedido: ${clpn(it.cantidad)} ${it.unidadMedida||''}</span>
+          <div style="flex:1;min-width:0;padding-top:1px">
+            <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;line-height:1.2;margin-bottom:4px">${it.nombreProducto}</div>
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+              <span class="badge ${badgeClr}" style="font-size:8px;padding:3px 7px">${sinStock?'⚠️ ':bajStock?'⚠️ ':''}${badgeTxt}</span>
+              <span style="font-size:10.5px;color:var(--txm);font-weight:600">Pedido: ${clpn(it.cantidad)} ${it.unidadMedida||''}</span>
             </div>
           </div>
         </div>
         <!-- Fila 2: cantidad + bodega (solo si no es sin stock) -->
-        ${sinStock?`<div style="margin-top:8px;margin-left:64px;font-size:11px;color:var(--red);font-weight:700">No hay stock disponible en ninguna bodega</div>`:`
-        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px;margin-left:64px;align-items:end">
+        ${sinStock?`<div style="margin-top:6px;margin-left:52px;font-size:10px;color:var(--red);font-weight:700">No hay stock disponible en ninguna bodega</div>`:`
+        <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px;margin-left:52px;align-items:end">
           <div>
-            <div style="font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:5px">Bodega</div>
-            <select class="di-bodega-sel" style="width:100%;font-size:13px;padding:9px 10px;border-radius:11px"
+            <div style="font-size:8px;color:var(--txm);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Bodega</div>
+            <select class="di-bodega-sel" style="width:100%;font-size:11.5px;padding:7px 8px;border-radius:9px"
               onchange="setBodegaD('${sol.id}','${it.productoId}',this.value)">
               ${bodegas.map(b=>`<option value="${b.id}" ${(est.bodega||p?.bodega||'seca')===b.id?'selected':''}>${b.icono} ${b.nombre} — ${clpn(p?stockEnBodega(p,b.id):0)} ${it.unidadMedida||''}</option>`).join('')}
             </select>
           </div>
           <div style="text-align:center">
-            <div style="font-size:9px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:5px">Cantidad</div>
+            <div style="font-size:8px;color:var(--txm);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Cantidad</div>
             <div style="display:flex;align-items:center;gap:0">
-              <button onclick="stepCant('${sol.id}','${it.productoId}',${isKg?-0.1:-1})" style="width:36px;height:44px;border:1.5px solid var(--bd2);border-right:none;border-radius:10px 0 0 10px;background:var(--sf2);color:var(--txm);font-size:20px;cursor:pointer;font-weight:700">−</button>
+              <button onclick="stepCant('${sol.id}','${it.productoId}',${isKg?-0.1:-1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-right:none;border-radius:9px 0 0 9px;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">−</button>
               <input class="di-cin" type="number" min="0" step="${isKg?'0.1':'1'}" value="${est.cant}"
-                style="width:64px;height:44px;border-radius:0;border-left:none;border-right:none;font-size:17px;font-weight:900;text-align:center"
+                style="width:52px;height:36px;border-radius:0;border-left:none;border-right:none;font-size:14px;font-weight:900;text-align:center"
                 oninput="setD('${sol.id}','${it.productoId}',this.value)" onfocus="this.select()">
-              <button onclick="stepCant('${sol.id}','${it.productoId}',${isKg?0.1:1})" style="width:36px;height:44px;border:1.5px solid var(--bd2);border-left:none;border-radius:0 10px 10px 0;background:var(--sf2);color:var(--txm);font-size:20px;cursor:pointer;font-weight:700">+</button>
+              <button onclick="stepCant('${sol.id}','${it.productoId}',${isKg?0.1:1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-left:none;border-radius:0 9px 9px 0;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">+</button>
             </div>
-            <div style="font-size:10px;color:var(--txd);margin-top:3px;font-weight:600">${it.unidadMedida||''}</div>
+            <div style="font-size:9px;color:var(--txd);margin-top:2px;font-weight:600">${it.unidadMedida||''}</div>
           </div>
         </div>`}
       </div>`;
@@ -2173,15 +2174,16 @@ function renderDesp(){
       <div style="padding:16px 16px 12px;border-bottom:1px solid var(--bd2)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
           <div>
-            <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:900;letter-spacing:-.3px;line-height:1.1">
+            <div style="font-family:'Inter',sans-serif;font-size:16px;font-weight:800;letter-spacing:-.2px;line-height:1.15">
               ${sol.nombreSolicitante||sol.creadoPor||'—'}
             </div>
-            ${sol.subArea?`<div style="font-size:12px;color:var(--blue);font-weight:700;margin-top:3px">📍 ${sol.subArea}</div>`:''}
-            <div style="font-size:11px;color:var(--txm);margin-top:3px;font-weight:500">${fDate(sol.creadoEn)}</div>
+            ${sol.subArea?`<div style="font-size:11px;color:var(--blue);font-weight:700;margin-top:2px">📍 ${sol.subArea}</div>`:''}
+            <div style="font-size:10px;color:var(--txm);margin-top:2px;font-weight:500">${fDate(sol.creadoEn)}</div>
           </div>
           ${estadoBadge}
         </div>
-        ${sol.nota?`<div style="font-size:12px;color:var(--txm);background:var(--sf2);border-radius:10px;padding:8px 12px;border-left:3px solid var(--bd);line-height:1.5">📝 ${sol.nota}</div>`:''}
+        ${sol.nota?`<div style="font-size:11px;color:var(--txm);background:var(--sf2);border-radius:10px;padding:7px 11px;border-left:3px solid var(--bd);line-height:1.4">📝 ${sol.nota}</div>`:''}
+        ${nItems>1?`<button onclick="aceptarTodo('${sol.id}')" style="margin-top:10px;width:100%;padding:10px;border-radius:11px;border:1.5px solid var(--greenb);background:var(--greend);color:var(--green);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:800;cursor:pointer">✓✓ Aceptar pedido completo</button>`:''}
       </div>
 
       <!-- BARRA DE PROGRESO -->
@@ -2233,6 +2235,21 @@ function togD(sid,pid,cantSol){
   const bodId=e.bodega||p?.bodega||'seca';
   const stockDispo=p?Math.min(stockEnBodega(p,bodId),cantSol):cantSol;
   despEst[sid][pid]={tipo:c,cant:c==='ss'?0:stockDispo,bodega:bodId};
+  renderDesp();
+}
+// Acepta el pedido completo de una solicitud en un solo toque: marca cada producto
+// como OK con la cantidad pedida, ajustada al stock disponible en su bodega habitual
+// (si no alcanza el stock, deja la cantidad máxima disponible en vez de marcar 'sin stock',
+// para que el bodeguero solo tenga que revisar/ajustar manualmente esos casos puntuales).
+function aceptarTodo(sid){
+  const sol=sols.find(x=>x.id===sid);if(!sol)return;
+  if(!despEst[sid])despEst[sid]={};
+  (sol.items||[]).forEach(it=>{
+    const p=prods.find(x=>x.id===it.productoId);
+    const bodId=despEst[sid][it.productoId]?.bodega||p?.bodega||'seca';
+    const stockDispo=p?Math.min(stockEnBodega(p,bodId),it.cantidad):it.cantidad;
+    despEst[sid][it.productoId]={tipo:stockDispo>0?'ok':'ss',cant:stockDispo,bodega:bodId};
+  });
   renderDesp();
 }
 function setD(sid,pid,v){if(!despEst[sid])despEst[sid]={};const p=prods.find(x=>x.id===pid);const bodId=despEst[sid][pid]?.bodega||p?.bodega||'seca';const maxStock=p?stockEnBodega(p,bodId):Infinity;const c=Math.min(parseFloat(v)||0,maxStock);despEst[sid][pid]={...despEst[sid][pid],tipo:c===0?'ss':'parcial',cant:c};}
@@ -3408,10 +3425,14 @@ function renderReporte(){
   const ventasPorArea={};
   ventasSem.forEach(v=>{ventasPorArea[v.area]=(ventasPorArea[v.area]||0)+(v.monto||0);});
   const totalVentasSem=Object.values(ventasPorArea).reduce((a,v)=>a+v,0);
+  // Facturas ingresadas en la semana (compras a proveedores, no despachos)
+  const factSem=facts.filter(f=>{const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;return d&&d>=lunes&&d<=domingo;});
+  const totFact=factSem.reduce((a,f)=>a+(f.totalFactura||0),0);
   document.getElementById('rep-stats').innerHTML=`
     <div class="st full ac-r"><div class="sl">Consumo total semana</div><div class="sv" style="color:var(--accent)">${clp(totS)}</div><div class="su">${totU.toLocaleString('es-CL')} unidades</div></div>
     <div class="st ac-b"><div class="sl">Despachos</div><div class="sv" style="color:var(--blue)">${movSem.length}</div></div>
     <div class="st ac-g"><div class="sl">Áreas activas</div><div class="sv" style="color:var(--green)">${Object.values(areas).filter(a=>Object.keys(a.items).length>0).length}</div></div>
+    <div class="st full ac-p"><div class="sl">Facturas ingresadas en la semana</div><div class="sv" style="color:var(--purple)">${clp(totFact)}</div><div class="su">${factSem.length} factura${factSem.length===1?'':'s'}</div></div>
     ${totalVentasSem>0?`<div class="st full ac-y"><div class="sl">Food cost % de la semana</div><div class="sv" style="color:var(--yellow)">${Math.round((totS/totalVentasSem)*100)}%</div><div class="su">Ventas: ${clp(totalVentasSem)}</div></div>`:''}`;
   // Indicador tendencia
   if(semOffset===0||semOffset===-1){
@@ -3839,7 +3860,7 @@ Object.assign(window,{
   fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,
-  togD,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
+  togD,aceptarTodo,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnSubtotal,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
   selVentaArea,guardarVenta,elimVenta,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
