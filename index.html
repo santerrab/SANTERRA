@@ -423,6 +423,37 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 .stock-bod-tag.no-stock{border-color:var(--redb);color:var(--red);background:var(--redd)}
 
 /* ── CHIPS ───────────────────────────────────────────────────── */
+/* ── MÓDULO ALMACÉN: FILTROS COMPACTOS ────────────────────────────────────── */
+/* Barra superior buscador + botón filtros */
+.stk-topbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.stk-buscar-wrap{flex:1;position:relative;display:flex;align-items:center}
+.stk-buscar-wrap .sicon{position:absolute;left:12px;font-size:15px;pointer-events:none;z-index:1}
+.stk-input{padding:10px 12px 10px 38px!important;font-size:14px!important;border-radius:12px!important;margin-bottom:0!important}
+.stk-filtros-btn{display:flex;align-items:center;gap:5px;padding:10px 13px;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:12px;color:var(--tx);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;touch-action:manipulation;transition:border-color .15s,background .15s}
+.stk-filtros-btn.active{border-color:var(--accent);background:var(--accentd);color:var(--accent)}
+.stk-filtros-badge{background:var(--accent);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:2px}
+/* Panel colapsable */
+.stk-filtros-panel{overflow:hidden;max-height:0;opacity:0;transition:max-height .28s cubic-bezier(.4,0,.2,1),opacity .2s;pointer-events:none}
+.stk-filtros-panel.open{max-height:200px;opacity:1;pointer-events:auto}
+.stk-filtros-seccion{margin-bottom:8px}
+.stk-filtros-label-sm{font-size:10px;color:var(--txd);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+/* Scroll horizontal de bodegas — 1 sola fila, sin wrap */
+.stk-bod-scroll{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.stk-bod-scroll::-webkit-scrollbar{display:none}
+.stk-bod-scroll .chip{white-space:nowrap;flex-shrink:0}
+/* Fila de selects */
+.stk-filtros-fila{display:flex;gap:8px;margin-bottom:8px}
+.stk-select-wrap{position:relative;display:flex;align-items:center;min-width:0}
+.stk-select-ico{position:absolute;left:9px;font-size:13px;pointer-events:none;z-index:1}
+.stk-select{width:100%;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:10px;color:var(--tx);font-family:inherit;font-size:12px;font-weight:600;padding:8px 8px 8px 28px;outline:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s}
+.stk-select:focus{border-color:var(--accent)}
+/* Resumen de filtros activos */
+.stk-filtros-resumen{display:flex;align-items:center;justify-content:space-between;background:var(--accentd);border:1px solid var(--accentb);border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:11px}
+.stk-filtros-resumen span{color:var(--accent);font-weight:700}
+.stk-filtros-resumen button{background:none;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;touch-action:manipulation}
+/* Contador de resultados */
+.stk-resultados{font-size:11px;color:var(--txd);font-weight:600;margin-bottom:8px;min-height:16px}
+
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
 .chip{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid var(--bd2);color:var(--txm);cursor:pointer;background:var(--sf2);font-family:'DM Sans',sans-serif;transition:border-color .18s,color .18s,background .18s,transform .12s;letter-spacing:.2px}
 .chip.on{border-color:var(--accent);color:var(--accent);background:var(--accd)}
@@ -629,21 +660,61 @@ input[type=number]{-moz-appearance:textfield}
 
 <!-- ALMACÉN -->
 <div class="pg" id="pg-stock">
-  <div class="pgt">Almacén</div><div class="pgs">Stock en tiempo real</div>
-  <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="stock-buscar" type="text" placeholder="Buscar producto..." autocomplete="off" oninput="renderStock()" onsearch="renderStock()"></div>
-  <div class="chips" id="stock-bod-chips"></div>
-  <div class="chips" id="stock-chips"></div>
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;padding:0 2px">
-    <select id="stock-sort" onchange="renderStock()" style="flex:1;font-size:13px;padding:9px 12px;border-radius:12px;border:1.5px solid var(--bd2);background:var(--sf2);color:var(--tx);font-family:inherit">
-      <option value="">Ordenar por nombre / categoría</option>
-      <option value="precio-desc">Precio bruto mayor → menor</option>
-      <option value="precio-asc">Precio bruto menor → mayor</option>
-      <option value="neto-desc">Precio neto mayor → menor</option>
-      <option value="neto-asc">Precio neto menor → mayor</option>
-      <option value="stock-desc">Stock mayor → menor</option>
-      <option value="stock-asc">Stock menor → mayor</option>
-    </select>
+  <!-- Barra superior: buscador + botón filtros -->
+  <div class="stk-topbar">
+    <div class="stk-buscar-wrap">
+      <span class="sicon">🔍</span>
+      <input class="sinput stk-input" id="stock-buscar" type="text"
+        placeholder="Buscar producto..." autocomplete="off"
+        oninput="renderStock()" onsearch="renderStock()">
+    </div>
+    <button class="stk-filtros-btn" id="stk-filtros-btn" onclick="toggleStockFiltros()">
+      <span>⚙️</span>
+      <span class="stk-filtros-label">Filtros</span>
+      <span class="stk-filtros-badge" id="stk-filtros-badge" style="display:none">0</span>
+    </button>
   </div>
+
+  <!-- Panel de filtros colapsable -->
+  <div class="stk-filtros-panel" id="stk-filtros-panel">
+    <!-- Bodegas: scroll horizontal, 1 sola fila -->
+    <div class="stk-filtros-seccion">
+      <div class="stk-filtros-label-sm">🏪 Bodega</div>
+      <div class="stk-bod-scroll" id="stock-bod-chips"></div>
+    </div>
+    <!-- Categoría + Ordenar: 2 selects en la misma fila -->
+    <div class="stk-filtros-fila">
+      <div class="stk-select-wrap" style="flex:1.4">
+        <span class="stk-select-ico">🏷️</span>
+        <select id="stk-cat-sel" onchange="fStockCatSel(this.value)" class="stk-select">
+          <option value="">Todas las categorías</option>
+        </select>
+      </div>
+      <div class="stk-select-wrap" style="flex:1">
+        <span class="stk-select-ico">↕️</span>
+        <select id="stock-sort" onchange="renderStock()" class="stk-select">
+          <option value="">Nombre / Cat.</option>
+          <option value="precio-desc">Precio ↓</option>
+          <option value="precio-asc">Precio ↑</option>
+          <option value="neto-desc">Neto ↓</option>
+          <option value="neto-asc">Neto ↑</option>
+          <option value="stock-desc">Stock ↓</option>
+          <option value="stock-asc">Stock ↑</option>
+        </select>
+      </div>
+    </div>
+    <!-- Chips de categorías ocultos (solo para compatibilidad con funciones existentes) -->
+    <div id="stock-chips" style="display:none"></div>
+    <!-- Resumen de filtros activos + limpiar -->
+    <div class="stk-filtros-resumen" id="stk-filtros-resumen" style="display:none">
+      <span id="stk-filtros-resumen-txt"></span>
+      <button onclick="limpiarFiltrosStock()">✕ Limpiar</button>
+    </div>
+  </div>
+
+  <!-- Contador de resultados -->
+  <div class="stk-resultados" id="stk-resultados"></div>
+
   <div id="stock-lista"></div>
 </div>
 
@@ -2027,13 +2098,81 @@ function renderBodegaChipsAll(){
 }
 function renderStockCatChips(){
   const prodsFilt=fStockBodega?prods.filter(p=>(p.stockPorBodega?p.stockPorBodega[fStockBodega]>0:p.bodega===fStockBodega)):prods;
-  const cs=[...new Set(prodsFilt.map(p=>p.categoria).filter(Boolean))];
-  const el=document.getElementById('stock-chips');if(!el)return;
-  el.innerHTML=`<button class="chip ${!fStockCat?'on':''}" onclick="fStockCat2('',this)">Todas las categorías</button>`+
-    cs.map(c=>`<button class="chip ${fStockCat===c?'on':''}" onclick="fStockCat2('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
+  const cs=[...new Set(prodsFilt.map(p=>p.categoria).filter(Boolean))].sort();
+  // Chips ocultos para compatibilidad interna
+  const el=document.getElementById('stock-chips');if(el){
+    el.innerHTML=`<button class="chip ${!fStockCat?'on':''}" onclick="fStockCat2('',this)">Todas</button>`+
+      cs.map(c=>`<button class="chip ${fStockCat===c?'on':''}" onclick="fStockCat2('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
+  }
+  // Poblar select visible
+  const catSel=document.getElementById('stk-cat-sel');
+  if(catSel){
+    catSel.innerHTML='<option value="">Todas las categorías</option>'+
+      cs.map(c=>`<option value="${c}" ${fStockCat===c?'selected':''}>${c}</option>`).join('');
+  }
 }
-function fStockBod(b,btn){fStockBodega=b;document.querySelectorAll('#stock-bod-chips .chip').forEach(x=>x.classList.remove('on'));btn.classList.add('on');fStockCat='';renderStockCatChips();_renderStockNow();}
-function fStockCat2(c,btn){fStockCat=c;document.querySelectorAll('#stock-chips .chip').forEach(x=>x.classList.remove('on'));btn.classList.add('on');_renderStockNow();}
+function fStockBod(b,btn){
+  fStockBodega=b;
+  document.querySelectorAll('#stock-bod-chips .chip').forEach(x=>x.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  fStockCat='';
+  // Resetear el select de categorías
+  const catSel=document.getElementById('stk-cat-sel');if(catSel)catSel.value='';
+  renderStockCatChips();
+  actualizarFiltrosStock();
+  _renderStockNow();
+}
+function fStockCat2(c,btn){
+  fStockCat=c;
+  document.querySelectorAll('#stock-chips .chip').forEach(x=>x.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  actualizarFiltrosStock();
+  _renderStockNow();
+}
+function fStockCatSel(c){
+  fStockCat=c;
+  // Sincronizar chips ocultos
+  document.querySelectorAll('#stock-chips .chip').forEach(x=>x.classList.remove('on'));
+  const chip=document.querySelector('#stock-chips .chip[onclick*="'+c.replace(/'/g,"\\'")+'"]');
+  if(chip)chip.classList.add('on');
+  actualizarFiltrosStock();
+  _renderStockNow();
+}
+function toggleStockFiltros(){
+  const panel=document.getElementById('stk-filtros-panel');
+  const btn=document.getElementById('stk-filtros-btn');
+  if(!panel||!btn)return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('active',open);
+}
+function actualizarFiltrosStock(){
+  let n=0;
+  const partes=[];
+  if(fStockBodega){n++;const b=getBodegaById(fStockBodega);partes.push(b.icono+' '+b.nombre);}
+  if(fStockCat){n++;partes.push('🏷️ '+fStockCat);}
+  const sortEl=document.getElementById('stock-sort');
+  if(sortEl&&sortEl.value){n++;partes.push('↕️ '+sortEl.selectedOptions[0]?.text);}
+  const badge=document.getElementById('stk-filtros-badge');
+  if(badge){badge.textContent=n;badge.style.display=n?'inline':'none';}
+  const resumen=document.getElementById('stk-filtros-resumen');
+  const resumenTxt=document.getElementById('stk-filtros-resumen-txt');
+  if(resumen&&resumenTxt){
+    resumen.style.display=n?'flex':'none';
+    resumenTxt.textContent=partes.join(' · ');
+  }
+}
+function limpiarFiltrosStock(){
+  fStockBodega='';fStockCat='';
+  document.querySelectorAll('#stock-bod-chips .chip').forEach(x=>x.classList.remove('on'));
+  const primera=document.querySelector('#stock-bod-chips .chip');if(primera)primera.classList.add('on');
+  document.querySelectorAll('#stock-chips .chip').forEach(x=>x.classList.remove('on'));
+  const primeraC=document.querySelector('#stock-chips .chip');if(primeraC)primeraC.classList.add('on');
+  const catSel=document.getElementById('stk-cat-sel');if(catSel)catSel.value='';
+  const sortEl=document.getElementById('stock-sort');if(sortEl)sortEl.value='';
+  actualizarFiltrosStock();
+  renderStockCatChips();
+  _renderStockNow();
+}
 
 let _renderStockTimer=null;
 function renderStock(){
@@ -2061,9 +2200,10 @@ function _renderStockNow(){
     (p.proveedor||'').toLowerCase().includes(q)
   );
 
+  const _updResCount=(n)=>{const r=document.getElementById('stk-resultados');if(r)r.textContent=n===prods.length?n+' productos':n+' de '+prods.length+' productos';};
   if(!pp.length){
     lista.innerHTML='<div class="empty"><div class="ei">📦</div><div class="et">Sin resultados</div></div>';
-    return;
+    _updResCount(0);return;
   }
 
   // Ordenar — parseFloat para evitar errores con valores guardados como string
@@ -2100,7 +2240,7 @@ function _renderStockNow(){
   // Si hay búsqueda o sort activo → lista plana
   if(q||sortMode){
     lista.innerHTML=pp.map(p=>prodCard(p)).join('');
-    return;
+    _updResCount(pp.length);return;
   }
 
   // Sin búsqueda ni sort → agrupar por categoría
@@ -2110,6 +2250,7 @@ function _renderStockNow(){
     `<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 6px">${c}</div>`
     +ps.map(p=>prodCard(p)).join('')
   ).join('');
+  _updResCount(pp.length);
 }
 // ── PEDIR ─────────────────────────────────────────────────────────────────────
 function limpiarBuscar(){
@@ -4035,7 +4176,7 @@ startCfgListener();
 
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,navSem,toggleMode,
-  fStockBod,fStockCat2,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
+  fStockBod,fStockCat2,fStockCatSel,toggleStockFiltros,limpiarFiltrosStock,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,limpiarBuscar,
   togD,aceptarTodo,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
