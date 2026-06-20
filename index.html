@@ -500,6 +500,275 @@ input[type=number]{-moz-appearance:textfield}
 .ovl{will-change:opacity}
 .nb svg{will-change:auto}
 .dsc,.solc,.prod-card,.li{contain:layout style}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DISEÑO VISUAL DE MÓDULOS — SANTERRA
+   CSS puro, sin tocar JS. Todo usa clases ya existentes en el HTML renderizado.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── ENCABEZADO DE PÁGINA (.pgt / .pgs / .ph) ─────────────────────────────── */
+.pg>.pgt,.pg>.ph>.pgt{
+  font-family:'Inter',sans-serif;font-size:20px;font-weight:900;
+  letter-spacing:-.4px;line-height:1.1;color:var(--tx)
+}
+.pg>.pgs,.pg>.ph>div>.pgs{
+  font-size:11px;color:var(--txm);font-weight:500;
+  margin-top:3px;margin-bottom:14px
+}
+/* Línea separadora sutil bajo el título cuando está solo */
+.pg>.pgt::after{
+  content:'';display:block;width:32px;height:3px;
+  background:var(--accent);border-radius:2px;margin-top:6px;margin-bottom:14px
+}
+/* No duplicar la línea cuando hay .ph */
+.ph>.pgt::after{display:none}
+
+/* ── SECCIÓN LABEL (categorizador dentro de módulo) ───────────────────────── */
+.sec-lbl{
+  font-size:10px;color:var(--txd);font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  margin:14px 0 7px;padding-left:2px
+}
+
+/* ── PROD-CARD (Almacén y Productos) ──────────────────────────────────────── */
+.prod-card{
+  background:var(--sf);border:1px solid var(--bd);border-radius:16px;
+  padding:14px;margin-bottom:8px;
+  transition:border-color .18s,background .18s;
+  contain:layout style
+}
+.prod-card:active{background:var(--sf2)}
+.prod-hdr{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:10px;margin-bottom:0
+}
+.prod-hdr>div{flex:1;min-width:0}
+.prod-nom{
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:800;
+  letter-spacing:-.2px;line-height:1.2;color:var(--tx);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.prod-cat{
+  font-size:10px;color:var(--txm);font-weight:500;
+  margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+/* Tags de stock por bodega */
+.stock-bodegas{
+  display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:10px;
+  border-top:1px solid var(--bd3)
+}
+.stock-bod-tag{
+  font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;
+  border:1px solid var(--bd2);background:var(--sf2);color:var(--txm)
+}
+.stock-bod-tag.no-stock{background:var(--redd);color:var(--red);border-color:var(--redb)}
+.stock-bod-tag.low-stock{background:var(--yellowd);color:var(--yellow);border-color:var(--yellowb)}
+.stock-bod-tag.has-stock{background:var(--greend);color:var(--green);border-color:var(--greenb)}
+/* Precios del producto */
+.prod-precios{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--bd3)
+}
+.prod-precio-item{
+  background:var(--sf2);border-radius:10px;padding:7px 8px;text-align:center
+}
+.prod-precio-lbl{
+  font-size:9px;color:var(--txd);font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px
+}
+.prod-precio-val{
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:800;
+  color:var(--tx);letter-spacing:-.2px
+}
+
+/* ── LIST ITEM (.li / .lt / .ls) — Facturas, Solicitudes, Merma ─────────── */
+.li{
+  background:var(--sf2);border:1px solid var(--bd2);border-radius:14px;
+  padding:13px 14px;margin-bottom:7px;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  transition:border-color .15s,background .15s;
+  contain:layout style
+}
+.li[onclick]{cursor:pointer;touch-action:manipulation}
+.li[onclick]:active{background:var(--sf);border-color:var(--bd)}
+.lt{font-weight:700;font-size:14px;color:var(--tx);line-height:1.2}
+.ls{font-size:11px;color:var(--txm);margin-top:4px;line-height:1.5}
+
+/* ── DISPATCH CARD (.dsc) — Despachos ─────────────────────────────────────── */
+.dsc{
+  background:var(--sf);border:1.5px solid var(--bd);border-radius:18px;
+  margin-bottom:12px;overflow:hidden;
+  transition:border-color .2s,box-shadow .2s;
+  contain:layout style
+}
+.dsc-hdr{padding:14px 16px 12px;border-bottom:1px solid var(--bd2)}
+.dsc-solicitante{
+  font-family:'Inter',sans-serif;font-size:16px;font-weight:800;
+  letter-spacing:-.2px;line-height:1.15;color:var(--tx)
+}
+.dsc-meta{font-size:10px;color:var(--txm);margin-top:3px;font-weight:500}
+.dsc-nota{
+  font-size:11px;color:var(--txm);background:var(--sf2);
+  border-radius:10px;padding:7px 11px;border-left:3px solid var(--accent);
+  line-height:1.4;margin-top:8px
+}
+
+/* ── SOLICITUD CARD (.solc) — Mis Pedidos y Solicitudes ──────────────────── */
+.solc{
+  background:var(--sf);border:1.5px solid var(--bd);border-radius:16px;
+  padding:14px;margin-bottom:8px;
+  transition:border-color .18s;scroll-margin-top:72px;
+  contain:layout style
+}
+.solc-hdr{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:8px;margin-bottom:8px
+}
+.solc-info{flex:1;min-width:0}
+.solc-titulo{
+  font-size:14px;font-weight:800;color:var(--tx);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.solc-meta{font-size:10px;color:var(--txm);margin-top:3px;font-weight:500}
+
+/* ── MERMA CARD ────────────────────────────────────────────────────────────── */
+.merma-card{
+  background:var(--sf);border:1px solid var(--bd);border-radius:16px;
+  padding:14px;margin-bottom:8px;
+  contain:layout style
+}
+
+/* ── REPORTE SEMANAL ──────────────────────────────────────────────────────── */
+.rep-header{
+  background:var(--sf2);border:1px solid var(--bd2);border-radius:16px;
+  padding:14px;margin-bottom:14px;
+  display:flex;flex-direction:column;gap:6px
+}
+.rep-semana{
+  font-family:'Inter',sans-serif;font-size:16px;font-weight:800;
+  color:var(--tx);letter-spacing:-.2px
+}
+.rep-rango{font-size:11px;color:var(--txm);font-weight:500}
+.rep-nav{display:flex;align-items:center;gap:8px;margin-top:4px}
+.rep-nav button{
+  background:var(--sf);border:1.5px solid var(--bd2);border-radius:10px;
+  color:var(--tx);font-size:18px;width:36px;height:36px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;font-family:inherit;
+  transition:border-color .15s,background .15s;flex-shrink:0
+}
+.rep-nav button:active{background:var(--accentd);border-color:var(--accentb)}
+#rep-nav-lbl{
+  font-size:12px;font-weight:700;color:var(--txm);flex:1;text-align:center
+}
+/* Cards de área en reporte */
+.trend-card{
+  background:var(--sf);border:1px solid var(--bd);border-radius:16px;
+  padding:14px;margin-bottom:10px;
+  contain:layout style
+}
+.trend-hdr{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;font-weight:800;color:var(--tx);margin-bottom:10px
+}
+
+/* ── HISTORIAL DE PRECIOS ──────────────────────────────────────────────────── */
+.hist-precio-card{
+  background:var(--sf2);border:1px solid var(--bd2);border-radius:14px;
+  padding:12px 14px;margin-bottom:7px;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:10px;contain:layout style
+}
+.hist-precio-nom{font-size:13px;font-weight:700;color:var(--tx)}
+.hist-precio-meta{font-size:10px;color:var(--txm);margin-top:3px}
+.hist-precio-val{
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:800;
+  color:var(--accent);letter-spacing:-.2px;text-align:right;flex-shrink:0
+}
+.hist-precio-diff{font-size:10px;font-weight:700;text-align:right;margin-top:2px}
+
+/* ── CHIPS GLOBALES ──────────────────────────────────────────────────────── */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{
+  padding:5px 13px;border-radius:20px;font-size:11px;font-weight:700;
+  border:1.5px solid var(--bd2);color:var(--txm);cursor:pointer;
+  background:var(--sf2);font-family:'DM Sans',sans-serif;
+  transition:border-color .15s,color .15s,background .15s,transform .12s;
+  touch-action:manipulation
+}
+.chip.on{
+  background:var(--accentd);color:var(--accent);border-color:var(--accentb)
+}
+.chip:active{transform:scale(.94)}
+
+/* ── BADGE ────────────────────────────────────────────────────────────────── */
+.badge{
+  padding:4px 11px;border-radius:20px;font-size:10px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.6px;cursor:default;
+  white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center
+}
+
+/* ── STATS CARDS (.st / .sg) ─────────────────────────────────────────────── */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sg>.st.full{grid-column:1/-1}
+.st{
+  background:var(--sf);border:1px solid var(--bd);border-radius:16px;
+  padding:14px 13px;position:relative;overflow:hidden
+}
+.sl{
+  font-size:9px;color:var(--txm);text-transform:uppercase;
+  letter-spacing:1px;font-weight:700;margin-bottom:5px
+}
+.sv{
+  font-family:'Inter',sans-serif;font-size:24px;font-weight:900;
+  line-height:1;letter-spacing:-.5px
+}
+.su{font-size:10px;color:var(--txm);margin-top:4px;font-weight:500}
+
+/* ── FORMULARIOS INTERNOS (.fg / .fl / .fi) ──────────────────────────────── */
+.fg{margin-bottom:12px}
+.fl{
+  font-size:11px;color:var(--txm);font-weight:700;
+  margin-bottom:6px;display:block;letter-spacing:.3px;text-transform:uppercase
+}
+.fi{
+  width:100%;background:var(--sf2);border:1.5px solid var(--bd2);
+  border-radius:12px;color:var(--tx);font-family:'DM Sans',sans-serif;
+  font-size:16px;padding:11px 14px;
+  appearance:none;-webkit-appearance:none;outline:none;
+  transition:border-color .2s,background .2s;box-sizing:border-box
+}
+.fi:focus{border-color:var(--accent);background:var(--sf)}
+select.fi{cursor:pointer}
+textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
+
+/* ── EMPTY STATE ─────────────────────────────────────────────────────────── */
+.empty{text-align:center;padding:40px 20px}
+.ei{font-size:42px;margin-bottom:10px;line-height:1}
+.et{font-size:15px;font-weight:700;color:var(--txm)}
+
+/* ── BOTONES (.btn) ─────────────────────────────────────────────────────── */
+.btn{
+  width:100%;padding:14px;border-radius:14px;border:none;
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:800;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  gap:8px;letter-spacing:-.1px;touch-action:manipulation;
+  transition:opacity .18s,transform .15s,box-shadow .18s
+}
+.btn:active{transform:scale(.97);opacity:.85}
+.btn+.btn{margin-top:8px}
+
+/* ── SEPARADOR DE SECCIÓN ────────────────────────────────────────────────── */
+.mod-sep{
+  height:1px;background:var(--bd3);margin:14px 0;border:none
+}
+
+/* Responsive: en pantallas más anchas, cards de productos en 2 col */
+@media(min-width:600px){
+  .prod-precios{grid-template-columns:repeat(3,1fr)}
+  .sg{grid-template-columns:repeat(3,1fr)}
+}
+
 </style>
 </head>
 <body class="login-active">
@@ -2195,7 +2464,7 @@ function _renderStockNow(){
   const gc={};
   pp.forEach(p=>{const c=p.categoria||'Sin categoría';if(!gc[c])gc[c]=[];gc[c].push(p);});
   lista.innerHTML=Object.entries(gc).map(([c,ps])=>
-    `<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 6px">${c}</div>`
+    `<div class="sec-lbl">${c}</div>`
     +ps.map(p=>prodCard(p)).join('')
   ).join('');
   _updResCount(pp.length);
