@@ -257,6 +257,53 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 
 /* ── BUSCADOR ────────────────────────────────────────────────── */
+/* ── REPORTE: KPIs JERÁRQUICOS ───────────────────────────────────────────── */
+/* KPI principal — gasto total, el más importante */
+.rep-kpi-principal{
+  background:linear-gradient(135deg,var(--sf) 0%,var(--accentd) 100%)!important;
+  border-color:var(--accentb)!important;border-radius:16px!important;
+  padding:16px 14px!important
+}
+.rep-kpi-eyebrow{
+  font-size:10px;color:var(--txm);font-weight:700;
+  text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px
+}
+.rep-kpi-valor{
+  font-family:'Inter',sans-serif;font-size:28px;font-weight:900;
+  color:var(--accent);letter-spacing:-.5px;line-height:1;margin-bottom:4px
+}
+.rep-kpi-meta{font-size:11px;color:var(--txm);font-weight:500}
+
+/* KPIs de ritmo — 2 columnas */
+.rep-kpi-ritmo{border-radius:14px!important}
+.rep-kpi-daily{font-size:20px!important;letter-spacing:-.3px}
+
+/* Food cost card */
+.rep-kpi-fc{border-radius:14px!important;border-width:2px!important}
+.rep-fc-grid{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.rep-fc-main{display:flex;flex-direction:column;align-items:center;gap:4px;padding-right:12px;border-right:1px solid var(--bd3)}
+.rep-fc-pct{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;letter-spacing:-.5px;line-height:1}
+.rep-fc-badge{font-size:10px;font-weight:800;border-radius:8px;padding:3px 8px;letter-spacing:.3px}
+.rep-fc-detalle{display:flex;flex-direction:column;gap:5px}
+.rep-fc-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rep-fc-row span{font-size:11px;color:var(--txm);font-weight:500}
+.rep-fc-row strong{font-family:'Inter',sans-serif;font-size:13px;font-weight:800}
+.rep-fc-margen{padding-top:5px;border-top:1px solid var(--bd3);margin-top:2px}
+
+/* Barras: card contenedora */
+.rep-barras-card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:16px;margin-bottom:12px}
+.rep-barras-svg{width:100%;overflow:visible;display:block}
+
+/* Encabezado del gráfico de barras */
+.rep-barras-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.rep-barras-titulo{font-size:13px;font-weight:800;color:var(--tx)}
+.rep-barras-total{font-family:'Inter',sans-serif;font-size:12px;font-weight:800;color:var(--txm)}
+
+/* Leyenda rápida del gráfico */
+.rep-barras-leyenda{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+.rep-barras-ley-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txd);font-weight:600}
+.rep-barras-ley-dot{width:8px;height:8px;border-radius:2px}
+
 /* ── MÓDULO FACTURAS ─────────────────────────────────────────────────────── */
 /* Header modal con total pill */
 .fact-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
@@ -1320,8 +1367,25 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 
   <!-- Gasto diario de la semana (barras) -->
   <div class="rep-barras-card" id="rep-barras-wrap" style="display:none">
-    <div class="rep-dona-titulo"><span>📅 Consumo diario</span></div>
+    <div class="rep-barras-hdr">
+      <span class="rep-barras-titulo">📅 Gasto diario en compras</span>
+      <span class="rep-barras-total" id="rep-barras-total"></span>
+    </div>
     <div id="rep-barras-svg-wrap"></div>
+    <div class="rep-barras-leyenda">
+      <div class="rep-barras-ley-item">
+        <div class="rep-barras-ley-dot" style="background:#6c63ff"></div>
+        <span>Hoy</span>
+      </div>
+      <div class="rep-barras-ley-item">
+        <div class="rep-barras-ley-dot" style="background:#45aaf2"></div>
+        <span>Día con facturas</span>
+      </div>
+      <div class="rep-barras-ley-item">
+        <div class="rep-barras-ley-dot" style="background:var(--yellow)"></div>
+        <span>── Promedio diario</span>
+      </div>
+    </div>
   </div>
 
   <!-- Detalle proveedor seleccionado -->
@@ -4548,28 +4612,60 @@ function buildBarrasDiarias(desde, hasta, factsRango){
   const porDia=dias.map(dia=>{
     const sig=new Date(dia);sig.setHours(23,59,59,999);
     const val=factsRango.filter(f=>{const fd=f.creadoEn?.toDate?f.creadoEn.toDate():null;return fd&&fd>=dia&&fd<=sig;}).reduce((a,f)=>a+(f.totalFactura||0),0);
-    return{dia,val,lbl:dia.toLocaleDateString('es-CL',{weekday:'short',day:'numeric'})};
+    return{dia,val};
   });
 
   const maxVal=Math.max(...porDia.map(d=>d.val),1);
-  const W=300,H=80,barW=Math.max(4,Math.floor(W/dias.length)-3),gap=Math.floor(W/dias.length);
   const hoy=new Date();hoy.setHours(0,0,0,0);
+  const totalGasto=porDia.reduce((a,d)=>a+d.val,0);
+  const promDiario=totalGasto/Math.max(1,porDia.filter(d=>d.val>0).length);
+
+  // Formato compacto de pesos
+  const fmtK=v=>v>=1000000?'$'+(v/1000000).toFixed(1)+'M':v>=1000?'$'+Math.round(v/1000)+'k':'$'+v;
+
+  // Dimensiones
+  const BAR_W=dias.length<=7?32:dias.length<=14?20:12;
+  const GAP=dias.length<=7?10:dias.length<=14?6:4;
+  const H=90; // altura área de barras
+  const LABEL_H=28; // espacio para labels bajo las barras
+  const TOP_PAD=20; // espacio sobre las barras para etiquetas de valor
+
+  const STEP=BAR_W+GAP;
+  const VB_W=dias.length*STEP+GAP;
+
+  // Línea de promedio
+  const avgY=TOP_PAD+H-Math.round((promDiario/maxVal)*H);
 
   const bars=porDia.map((d,i)=>{
-    const bH=Math.round((d.val/maxVal)*H);
-    const x=i*gap,y=H-bH;
+    const bH=Math.max(d.val>0?3:0,Math.round((d.val/maxVal)*H));
+    const x=GAP/2+i*STEP;
+    const y=TOP_PAD+H-bH;
     const esHoy=d.dia.toDateString()===hoy.toDateString();
-    const color=esHoy?'var(--accent)':d.val>0?'var(--blue)':'var(--bd2)';
-    const lbl=d.dia.toLocaleDateString('es-CL',{weekday:'short'}).slice(0,2);
+    const esFinSemana=d.dia.getDay()===0||d.dia.getDay()===6;
+    const color=esHoy?'#6c63ff':d.val>0?'#45aaf2':'var(--bd2)';
+    const opacity=d.val>0?'1':'0.4';
+    const diaNom=d.dia.toLocaleDateString('es-CL',{weekday:'short'}).replace('.','').slice(0,2);
+    const diaNum=d.dia.getDate();
+    // Valor sobre la barra (solo si hay gasto)
+    const valorLabel=d.val>0?`<text x="${x+BAR_W/2}" y="${Math.max(y-4,TOP_PAD-2)}" text-anchor="middle" font-size="9" font-weight="700" fill="${esHoy?'#6c63ff':'var(--txm)'}">${fmtK(d.val)}</text>`:'';
+    // Fondo sutil para fin de semana
+    const fsBg=esFinSemana&&d.val>0?`<rect x="${x-2}" y="${TOP_PAD}" width="${BAR_W+4}" height="${H}" rx="4" fill="rgba(108,99,255,.06)"/>`:'';
     return`<g>
-      <rect x="${x}" y="${y}" width="${barW}" height="${bH}" rx="3" fill="${color}" opacity="0.85"/>
-      <text x="${x+barW/2}" y="${H+14}" text-anchor="middle" font-size="9" fill="var(--txd)">${lbl}</text>
-      ${d.val>0?`<text x="${x+barW/2}" y="${Math.max(y-4,8)}" text-anchor="middle" font-size="8" fill="var(--txm)">${Math.round(d.val/1000)}k</text>`:''}
+      ${fsBg}
+      <rect x="${x}" y="${y}" width="${BAR_W}" height="${bH}" rx="${Math.min(5,BAR_W/2)}" fill="${color}" opacity="${opacity}"/>
+      ${valorLabel}
+      <text x="${x+BAR_W/2}" y="${TOP_PAD+H+14}" text-anchor="middle" font-size="9" font-weight="${esHoy?'800':'400'}" fill="${esHoy?'#6c63ff':esFinSemana?'var(--txm)':'var(--txd)'}">${diaNom}</text>
+      ${dias.length<=14?`<text x="${x+BAR_W/2}" y="${TOP_PAD+H+24}" text-anchor="middle" font-size="8" fill="var(--txd)">${diaNum}</text>`:''}
     </g>`;
   }).join('');
 
-  const vbW=dias.length*gap+barW;
-  wrap.innerHTML=`<svg viewBox="0 0 ${vbW} ${H+20}" class="rep-barras-svg" style="height:${H+24}px">${bars}</svg>`;
+  // Línea de promedio (solo si hay más de 1 día con gasto)
+  const avgLine=porDia.filter(d=>d.val>0).length>1
+    ?`<line x1="0" y1="${avgY}" x2="${VB_W}" y2="${avgY}" stroke="var(--yellow)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+       <text x="${VB_W-4}" y="${avgY-4}" text-anchor="end" font-size="8" fill="var(--yellow)" font-weight="700">prom ${fmtK(promDiario)}/día</text>`
+    :'';
+
+  wrap.innerHTML=`<svg viewBox="0 0 ${VB_W} ${TOP_PAD+H+LABEL_H}" class="rep-barras-svg" style="height:${TOP_PAD+H+LABEL_H+4}px;display:block">${bars}${avgLine}</svg>`;
 }
 
 function renderReporte(){
@@ -4608,17 +4704,51 @@ function renderReporte(){
   // Facturas ingresadas en la semana (compras a proveedores, no despachos)
   const factSem=facts.filter(f=>{const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;return d&&d>=desde&&d<=hasta;});
   const totFact=factSem.reduce((a,f)=>a+(f.totalFactura||0),0);
-  // KPIs principales
+  // ── KPIs — orden de mayor a menor importancia ────────────────────────────
   const dias=Math.max(1,Math.round((hasta-desde)/(1000*60*60*24))+1);
   const costoDiario=Math.round(totFact/dias);
   const costoSemanal=Math.round(costoDiario*7);
   const fc=totalVentasSem>0?Math.round((totS/totalVentasSem)*100):null;
   const margenTotal=totalVentasSem>0?totalVentasSem-totS:null;
+  const fcColor=fc===null?'var(--tx)':fc>38?'var(--red)':fc>30?'var(--yellow)':'var(--green)';
+  const fcLabel=fc===null?'—':(fc>38?'⚠️ Alto':'✓ Ok');
+
   document.getElementById('rep-stats').innerHTML=`
-    <div class="st full ac-r"><div class="sl">Gasto en compras (facturas)</div><div class="sv" style="color:var(--red)">${clp(totFact)}</div><div class="su">${factSem.length} factura${factSem.length===1?'':'s'} · ${clp(costoDiario)}/día</div></div>
-    <div class="st ac-p"><div class="sl">Consumo despachado</div><div class="sv" style="color:var(--purple);font-size:18px">${clp(totS)}</div><div class="su">${movSem.length} despachos</div></div>
-    <div class="st ac-b"><div class="sl">Costo semanal prom.</div><div class="sv" style="color:var(--blue);font-size:18px">${clp(costoSemanal)}</div></div>
-    ${fc!==null?`<div class="st ac-y full"><div class="sl">Food cost %</div><div class="sv" style="color:${fc>38?'var(--red)':fc>30?'var(--yellow)':'var(--green)'}">${fc}%</div><div class="su">Ventas: ${clp(totalVentasSem)} · Margen: ${clp(margenTotal)}</div></div>`:''}`;
+    <!-- 1. GASTO TOTAL — lo más importante -->
+    <div class="st full rep-kpi-principal">
+      <div class="rep-kpi-eyebrow">💰 Gasto total en compras</div>
+      <div class="rep-kpi-valor">${clp(totFact)}</div>
+      <div class="rep-kpi-meta">${factSem.length} factura${factSem.length===1?'':'s'} ingresada${factSem.length===1?'':'s'}</div>
+    </div>
+
+    <!-- 2. RITMO DIARIO y SEMANAL — lado a lado -->
+    <div class="st ac-r rep-kpi-ritmo">
+      <div class="sl">Costo diario promedio</div>
+      <div class="sv rep-kpi-daily" style="color:var(--red)">${clp(costoDiario)}</div>
+      <div class="su">por día · ${clp(costoSemanal)}/semana</div>
+    </div>
+    <div class="st ac-p rep-kpi-ritmo">
+      <div class="sl">Consumo despachado</div>
+      <div class="sv" style="color:var(--purple);font-size:18px">${clp(totS)}</div>
+      <div class="su">${movSem.length} despacho${movSem.length===1?'':'s'}</div>
+    </div>
+
+    <!-- 3. FOOD COST (solo si hay ventas) -->
+    ${fc!==null?`
+    <div class="st full rep-kpi-fc" style="border-color:${fcColor}20">
+      <div class="rep-fc-grid">
+        <div class="rep-fc-main">
+          <div class="rep-kpi-eyebrow">📊 Food cost</div>
+          <div class="rep-fc-pct" style="color:${fcColor}">${fc}%</div>
+          <div class="rep-fc-badge" style="background:${fcColor}18;color:${fcColor}">${fcLabel}</div>
+        </div>
+        <div class="rep-fc-detalle">
+          <div class="rep-fc-row"><span>Ventas</span><strong>${clp(totalVentasSem)}</strong></div>
+          <div class="rep-fc-row"><span>Consumo</span><strong style="color:var(--red)">${clp(totS)}</strong></div>
+          <div class="rep-fc-row rep-fc-margen"><span>Margen</span><strong style="color:var(--green)">${clp(margenTotal)}</strong></div>
+        </div>
+      </div>
+    </div>`:''}`;
 
   // ── DONA DE PROVEEDORES ─────────────────────────────────────────────────────
   const porProv={};
@@ -4634,7 +4764,11 @@ function renderReporte(){
   const barrasWrap=document.getElementById('rep-barras-wrap');
   if(barrasWrap){
     barrasWrap.style.display=dias<=31?'':'none';
-    if(dias<=31)buildBarrasDiarias(desde,hasta,factSem);
+    if(dias<=31){
+      buildBarrasDiarias(desde,hasta,factSem);
+      const totalEl=document.getElementById('rep-barras-total');
+      if(totalEl)totalEl.textContent=clp(totFact)+' total';
+    }
   }
 
   // Resetear detalle proveedor al cambiar rango
