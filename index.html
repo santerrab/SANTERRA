@@ -742,6 +742,27 @@ input[type=number]{-moz-appearance:textfield}
 select.fi{cursor:pointer}
 textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 
+/* ── ALERTAS AGRUPADAS POR BODEGA ───────────────────────────────────────── */
+.al-bod-grupo{margin-bottom:10px}
+.al-bod-grupo:last-child{margin-bottom:0}
+.al-bod-hdr{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 4px 5px 2px;margin-bottom:5px;
+  border-bottom:1.5px solid var(--bd2);
+}
+.al-bod-hdr>span:first-child{font-size:16px;line-height:1}
+.al-bod-hdr>span:nth-child(2){
+  font-size:11px;font-weight:800;color:var(--txm);
+  text-transform:uppercase;letter-spacing:.6px;flex:1
+}
+.al-bod-cnt{
+  background:var(--redd);color:var(--red);
+  border-radius:20px;padding:2px 8px;
+  font-size:10px;font-weight:800;min-width:18px;text-align:center
+}
+/* Cuando todos están en verde (sobre mínimo pero próximos a agotarse) */
+.al-bod-cnt.warn{background:var(--yellowd);color:var(--yellow)}
+
 /* ── EMPTY STATE ─────────────────────────────────────────────────────────── */
 .empty{text-align:center;padding:40px 20px}
 .ei{font-size:42px;margin-bottom:10px;line-height:1}
@@ -2240,15 +2261,44 @@ function _renderDashNow(){
     const lowIds=new Set(low.map(p=>p.id));
     const REPO_DIAS_ALERTA=3;
     const reposicion=prods.filter(p=>!lowIds.has(p.id)&&diasMap[p.id]!==null&&diasMap[p.id]<=REPO_DIAS_ALERTA).sort((a,b)=>diasMap[a.id]-diasMap[b.id]);
-    const htmlLow=low.map(p=>{
-      const d=diasMap[p.id];
-      const dTxt=d!==null?' · '+Math.max(0,Math.round(d))+' día'+(Math.round(d)===1?'':'s')+' al ritmo actual':'';
-      return`<div class="li"><div><div class="lt">${p.nombre}</div><div class="ls">${p.categoria||''}${dTxt}</div></div><span class="badge ${stockTotal(p)===0?'bg-r-s':'bg-y-s'}">${stockTotal(p)===0?'Sin stock':'Bajo: '+clpn(stockTotal(p))+' '+(p.unidadMedida||'')}</span></div>`;
-    }).join('');
-    const htmlRepo=reposicion.length?`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:12px 0 6px">📦 Se acaban pronto (aún sobre el mínimo)</div>`+
-      reposicion.map(p=>{const d=diasMap[p.id];return`<div class="li"><div><div class="lt">${p.nombre}</div><div class="ls">${p.categoria||''}</div></div><span class="badge bg-y-s">${Math.max(0,Math.round(d))} día${Math.round(d)===1?'':'s'} restantes</span></div>`;}).join(''):'';
-    document.getElementById('dash-al').innerHTML=(low.length||reposicion.length)
-      ?(htmlLow+htmlRepo)
+    // ── Alertas agrupadas por bodega (encargado) ────────────────────────────
+    // Juntar low-stock + próximos a agotarse en un solo conjunto
+    const alertas=[
+      ...low.map(p=>({p,tipo:'low',d:diasMap[p.id]})),
+      ...reposicion.map(p=>({p,tipo:'repo',d:diasMap[p.id]}))
+    ];
+    let htmlAlertas='';
+    if(alertas.length){
+      // Agrupar por bodega principal del producto
+      const porBodega={};
+      alertas.forEach(({p,tipo,d})=>{
+        const bodId=p.bodega||'seca';
+        if(!porBodega[bodId])porBodega[bodId]=[];
+        porBodega[bodId].push({p,tipo,d});
+      });
+      // Ordenar bodegas según orden definido
+      const bodOrder=bodegas.length?bodegas.map(b=>b.id):['seca','refrigeracion','congelacion'];
+      const bodsSorted=Object.keys(porBodega).sort((a,b)=>bodOrder.indexOf(a)-bodOrder.indexOf(b));
+      htmlAlertas=bodsSorted.map(bodId=>{
+        const bod=getBodegaById(bodId);
+        const items=porBodega[bodId];
+        const itemsHtml=items.map(({p,tipo,d})=>{
+          const st=stockTotal(p);
+          const dTxt=d!==null?' · '+Math.max(0,Math.round(d))+'d':' · sin historial';
+          const badgeCls=st===0?'bg-r-s':'bg-y-s';
+          const badgeTxt=st===0?'Sin stock':tipo==='repo'
+            ?(Math.max(0,Math.round(d))+'d restantes')
+            :(clpn(st)+' '+(p.unidadMedida||''));
+          return`<div class="li"><div><div class="lt">${p.nombre}</div><div class="ls">${p.categoria||'Sin categoría'}${tipo==='low'?dTxt:''}</div></div><span class="badge ${badgeCls}">${badgeTxt}</span></div>`;
+        }).join('');
+        return`<div class="al-bod-grupo">
+  <div class="al-bod-hdr"><span>${bod.icono||'📦'}</span><span>${bod.nombre}</span><span class="al-bod-cnt">${items.length}</span></div>
+  ${itemsHtml}
+</div>`;
+      }).join('');
+    }
+    document.getElementById('dash-al').innerHTML=alertas.length
+      ?htmlAlertas
       :'<div class="empty" style="padding:12px"><div class="et" style="font-size:12px">✅ Todo en niveles normales</div></div>';
     renderTendencia(movs,prods);
     renderGastoProveedor();
@@ -2257,8 +2307,34 @@ function _renderDashNow(){
     document.getElementById('d-pp2').textContent=sols.filter(s=>s.estado==='pendiente').length;
     const alBod=document.getElementById('dash-al-bod');alBod.innerHTML='';
     renderHorarioBanner('dash-al-bod');
+    // ── Alertas agrupadas por bodega (bodeguero) ────────────────────────────
     const low=prods.filter(p=>stockTotal(p)<=(p.stockMinimo||5));
-    if(low.length)alBod.innerHTML+=`<div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:8px 0 6px">⚠️ Alertas de stock</div>`+low.map(p=>`<div class="li"><div><div class="lt">${p.nombre}</div></div><span class="badge ${stockTotal(p)===0?'bg-r-s':'bg-y-s'}">${stockTotal(p)===0?'Sin stock':clpn(stockTotal(p))+' '+(p.unidadMedida||'')}</span></div>`).join('');
+    if(low.length){
+      const diasMapBod={};prods.forEach(p=>{diasMapBod[p.id]=diasRestantes(p,movs);});
+      // Agrupar por bodega
+      const porBodega={};
+      low.forEach(p=>{
+        const bodId=p.bodega||'seca';
+        if(!porBodega[bodId])porBodega[bodId]=[];
+        porBodega[bodId].push(p);
+      });
+      const bodOrder=bodegas.length?bodegas.map(b=>b.id):['seca','refrigeracion','congelacion'];
+      const bodsSorted=Object.keys(porBodega).sort((a,b)=>bodOrder.indexOf(a)-bodOrder.indexOf(b));
+      alBod.innerHTML+=bodsSorted.map(bodId=>{
+        const bod=getBodegaById(bodId);
+        const items=porBodega[bodId];
+        const itemsHtml=items.map(p=>{
+          const st=stockTotal(p);
+          const d=diasMapBod[p.id];
+          const dTxt=d!==null?' · '+Math.max(0,Math.round(d))+'d restantes':'';
+          return`<div class="li"><div><div class="lt">${p.nombre}</div><div class="ls">${p.unidadMedida||''}${dTxt}</div></div><span class="badge ${st===0?'bg-r-s':'bg-y-s'}">${st===0?'Sin stock':clpn(st)}</span></div>`;
+        }).join('');
+        return`<div class="al-bod-grupo">
+  <div class="al-bod-hdr"><span>${bod.icono||'📦'}</span><span>${bod.nombre}</span><span class="al-bod-cnt">${items.length}</span></div>
+  ${itemsHtml}
+</div>`;
+      }).join('');
+    }
     renderNotifStatus();
   }else{
     document.getElementById('dash-stats-coc').style.display='';
