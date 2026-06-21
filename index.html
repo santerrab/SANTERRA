@@ -257,6 +257,123 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 
 /* ── BUSCADOR ────────────────────────────────────────────────── */
+/* ── MÓDULO FACTURAS ─────────────────────────────────────────────────────── */
+/* Header modal con total pill */
+.fact-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.fact-total-pill{background:var(--greend);color:var(--green);border:1px solid var(--greenb);border-radius:20px;padding:4px 14px;font-family:'Inter',sans-serif;font-size:15px;font-weight:900;white-space:nowrap;transition:all .2s}
+/* Cabecera de factura */
+.fact-cabecera{background:var(--sf2);border:1px solid var(--bd2);border-radius:14px;padding:12px;margin-bottom:10px}
+/* Descuento colapsable */
+.fact-desc-toggle{background:var(--greend);border:1px solid var(--greenb);border-radius:12px;padding:0;margin-bottom:10px;overflow:hidden}
+.fact-desc-toggle summary{padding:10px 14px;font-size:11px;color:var(--green);font-weight:800;text-transform:uppercase;letter-spacing:.6px;cursor:pointer;touch-action:manipulation;list-style:none;display:flex;align-items:center;gap:6px}
+.fact-desc-toggle summary::-webkit-details-marker{display:none}
+.fact-desc-toggle[open] summary::after{content:'▲';font-size:9px;margin-left:auto}
+.fact-desc-toggle:not([open]) summary::after{content:'▼';font-size:9px;margin-left:auto}
+.fact-desc-body{padding:0 12px 12px}
+/* Label buscador */
+.fact-buscador-lbl{font-size:10px;color:var(--txd);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+/* Empty state */
+.fact-empty{text-align:center;padding:18px;color:var(--txd);font-size:13px;font-weight:500}
+/* Footer */
+.fact-footer{border-top:1.5px solid var(--bd2);padding-top:12px;margin-top:8px}
+.fact-footer-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.fact-footer-total span{font-size:12px;color:var(--txm);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.fact-footer-total strong{font-family:'Inter',sans-serif;font-size:22px;font-weight:900;color:var(--green)}
+
+/* ── ITEM CARD DE FACTURA ──────────────────────────────────────────────────── */
+.fn-item-card{
+  background:var(--sf2);border:1.5px solid var(--bd2);border-radius:14px;
+  padding:12px;margin-bottom:8px;transition:border-color .2s;
+  contain:layout style
+}
+.fn-item-card:focus-within{border-color:var(--accent)}
+/* Header del item */
+.fn-item-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.fn-item-num{
+  flex-shrink:0;width:20px;height:20px;border-radius:50%;
+  background:var(--accentd);color:var(--accent);
+  font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center
+}
+.fn-item-nom{
+  flex:1;font-size:14px;font-weight:800;color:var(--tx);
+  min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px
+}
+.fn-bulto-tag{
+  font-size:10px;color:var(--blue);background:var(--blued);
+  border-radius:6px;padding:2px 6px;font-weight:700;white-space:nowrap;margin-left:4px
+}
+
+/* ── GRID DE CONFIRMACIÓN DE PRECIO ────────────────────────────────────────── */
+/* 2 columnas: label | control. Se lee como una tabla clara */
+.fn-precio-grid{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:6px 10px;
+  align-items:center
+}
+.fn-pg-lbl{
+  font-size:10px;color:var(--txd);font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;
+  white-space:nowrap;padding-right:4px
+}
+.fn-pg-lbl-acento{color:var(--accent)!important}
+/* Control: fila de elementos */
+.fn-pg-ctrl{display:flex;align-items:center;gap:6px;min-width:0}
+.fn-pg-signo{font-size:13px;color:var(--txm);font-weight:700;flex-shrink:0}
+.fn-pg-unit{font-size:11px;color:var(--txm);font-weight:600;white-space:nowrap}
+/* Resultado calculado: no editable, destacado */
+.fn-pg-resultado{
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:800;
+  color:var(--green);letter-spacing:-.2px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap
+}
+.fn-costo-unit{color:var(--tx)!important}
+/* Bodega destino */
+.fn-pg-bod{flex:1}
+.fn-bod-select{
+  flex:1;background:var(--sf);border:1.5px solid var(--bd2);
+  border-radius:9px;color:var(--tx);font-family:'DM Sans',sans-serif;
+  font-size:13px;padding:6px 10px;outline:none;-webkit-appearance:none;
+  cursor:pointer;transition:border-color .15s;width:100%
+}
+.fn-bod-select:focus{border-color:var(--accent)}
+/* Inputs de cantidad y precio */
+.fn-qty-input{
+  width:60px;background:var(--sf);border:2px solid var(--bd2);
+  border-radius:9px;color:var(--tx);font-family:'Inter',sans-serif;
+  font-size:16px;font-weight:800;padding:5px 4px;
+  text-align:center;outline:none;-webkit-appearance:none;-moz-appearance:textfield;
+  transition:border-color .15s;flex-shrink:0
+}
+.fn-qty-input::-webkit-outer-spin-button,.fn-qty-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.fn-qty-input:focus{border-color:var(--accent)}
+.fn-precio-input{
+  flex:1;min-width:80px;background:var(--sf);border:2px solid var(--bd2);
+  border-radius:8px;color:var(--tx);font-family:'Inter',sans-serif;
+  font-size:16px;font-weight:700;padding:5px 8px;
+  outline:none;text-align:right;transition:border-color .15s;
+  -webkit-appearance:none
+}
+.fn-precio-input:focus{border-color:var(--accent)}
+/* Campo de subtotal real (para cuadre por peso) — borde punteado distinto */
+.fn-subtotal-real{
+  border-style:dashed!important;border-color:var(--accent)!important;
+  color:var(--accent)!important;background:var(--accentd)!important
+}
+.fn-subtotal-real::placeholder{color:var(--txd)!important}
+/* Texto de conversión bulto */
+.fn-conv-txt{font-size:11px;color:var(--blue);font-weight:600;background:var(--blued);border-radius:7px;padding:4px 8px}
+/* Badges de variación de precio */
+.fn-diff-badge{
+  font-size:10px;font-weight:800;border-radius:6px;
+  padding:2px 7px;white-space:nowrap
+}
+.fn-diff-sube{background:var(--redd);color:var(--red)}
+.fn-diff-baja{background:var(--greend);color:var(--green)}
+
+/* Separador visual entre item header y grid */
+.fn-item-hdr{border-bottom:1px solid var(--bd3);padding-bottom:8px}
+
 /* ── REPORTE / DASHBOARD FINANCIERO ─────────────────────────────────────── */
 :root{
   --prov-0:#6c63ff;--prov-1:#00c9a7;--prov-2:#f7b731;--prov-3:#fc5c65;
@@ -1317,37 +1434,67 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 </div>
 
 <div class="ovl" id="mo-fact">
-  <div class="modal"><div class="mh"></div><div class="mt">📄 Nueva Factura</div>
-    <div class="fr" style="margin-bottom:11px">
-      <div class="fg" style="margin-bottom:0"><label class="fl">N° Factura</label><input class="fi" type="text" id="fn-num" placeholder="123456"></div>
-      <div class="fg" style="margin-bottom:0"><label class="fl">Fecha</label><input class="fi" type="date" id="fn-fecha"></div>
+  <div class="modal">
+    <div class="mh"></div>
+    <div class="fact-modal-hdr">
+      <div class="mt" style="margin:0">📄 Nueva Factura</div>
+      <div class="fact-total-pill" id="fn-total-pill">$0</div>
     </div>
-    <div class="fg">
-      <label class="fl">Proveedor *</label>
-      <input class="fi" type="text" id="fn-prov" placeholder="Escribe o selecciona..." autocomplete="off" oninput="filtrarProveedores(this.value)" onfocus="filtrarProveedores(this.value)">
-      <div id="prov-dropdown" style="display:none;background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-top:4px;max-height:160px;overflow-y:auto;z-index:10"></div>
-    </div>
-    <div class="fg"><label class="fl">Observación</label><input class="fi" type="text" id="fn-obs" placeholder="Notas opcionales..."></div>
-    <div style="background:var(--greend);border:1px solid var(--greenb);border-radius:10px;padding:12px;margin-bottom:11px">
-      <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏷️ Descuento del proveedor (opcional)</div>
-      <div class="fr" style="margin-bottom:0">
-        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en %</label><input class="fi" type="number" inputmode="decimal" id="fn-desc-pct" placeholder="0" min="0" max="100" step="0.1" oninput="calcDescuento('pct')"></div>
-        <div class="fg" style="margin-bottom:0"><label class="fl">Descuento en $</label><input class="fi" type="text" inputmode="numeric" id="fn-desc-monto" placeholder="0" oninput="calcDescuento('monto')"></div>
+
+    <!-- Datos de cabecera: num + fecha + proveedor en 1 bloque compacto -->
+    <div class="fact-cabecera">
+      <div class="fr" style="margin-bottom:8px">
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">N° Factura</label>
+          <input class="fi" type="text" inputmode="numeric" id="fn-num" placeholder="123456">
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Fecha</label>
+          <input class="fi" type="date" id="fn-fecha">
+        </div>
       </div>
-      <div id="fn-desc-preview" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600"></div>
+      <div class="fg" style="margin-bottom:8px">
+        <label class="fl">Proveedor *</label>
+        <input class="fi" type="text" id="fn-prov" placeholder="Escribe o selecciona..." autocomplete="off"
+          oninput="filtrarProveedores(this.value)" onfocus="filtrarProveedores(this.value)">
+        <div id="prov-dropdown" style="display:none;background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-top:4px;max-height:150px;overflow-y:auto;z-index:10"></div>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Observación (opcional)</label>
+        <input class="fi" type="text" id="fn-obs" placeholder="Notas...">
+      </div>
     </div>
-    <div class="divl"></div>
-    <div style="font-size:11px;color:var(--txm);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:8px">Busca y agrega productos</div>
-    <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="fn-buscar" type="text" placeholder="Nombre del producto..." autocomplete="off" oninput="fnBuscar(this.value)"></div>
+
+    <!-- Descuento colapsable -->
+    <details class="fact-desc-toggle">
+      <summary>🏷️ Descuento del proveedor</summary>
+      <div class="fact-desc-body">
+        <div class="fr" style="margin-bottom:0">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Descuento %</label><input class="fi" type="number" inputmode="decimal" id="fn-desc-pct" placeholder="0" min="0" max="100" step="0.1" oninput="calcDescuento('pct')"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Descuento $</label><input class="fi" type="text" inputmode="numeric" id="fn-desc-monto" placeholder="0" oninput="calcDescuento('monto')"></div>
+        </div>
+        <div id="fn-desc-preview" style="display:none;margin-top:6px;font-size:12px;color:var(--green);font-weight:600"></div>
+      </div>
+    </details>
+
+    <!-- Buscador de productos -->
+    <div class="fact-buscador-lbl">Agrega productos de la factura</div>
+    <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="fn-buscar" type="text" placeholder="Nombre o código del producto..." autocomplete="off" oninput="fnBuscar(this.value)"></div>
     <div class="sres" id="fn-res"></div>
+
+    <!-- Items ingresados -->
     <div id="fn-items"></div>
-    <div id="fn-empty" style="text-align:center;padding:14px;color:var(--txd);font-size:13px">🔍 Busca productos para agregar</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--bd2);margin-top:6px">
-      <span style="font-size:13px;color:var(--txm)">Total factura:</span>
-      <strong style="font-family:'Inter',sans-serif;font-size:20px;color:var(--green)" id="fn-total">$0</strong>
+    <div id="fn-empty" class="fact-empty">🔍 Busca productos para comenzar</div>
+
+    <!-- Footer con total y botones -->
+    <div class="fact-footer">
+      <div class="fact-footer-total">
+        <span>Total neto factura</span>
+        <strong id="fn-total">$0</strong>
+      </div>
+      <button class="btn bg-acc" id="btn-gfact" onclick="guardarFactura()">✓ Ingresar al stock</button>
+      <button class="btn bg-ghost" onclick="closeM('mo-fact')">Cancelar</button>
     </div>
-    <button class="btn bg-acc" id="btn-gfact" onclick="guardarFactura()">✓ Ingresar al stock</button>
-    <button class="btn bg-ghost" onclick="closeM('mo-fact')">Cancelar</button>
   </div>
 </div>
 
@@ -3412,7 +3559,15 @@ function calcDescuento(origen){
     const r=calcImpFactura(itemsCalc);
     const el=document.getElementById('fn-desc-preview');
     if(el){el.style.display=monto?'block':'none';
-      el.textContent=`Desc. ${clp(monto)} → Neto ${clp(r.totalNeto)} + IVA ${clp(r.iva)}${r.adicional?` + Adic. ${clp(r.adicional)}`:''} = ${clp(r.total)}`;}
+      el.textContent=`Desc. ${clp(monto)} → Neto ${clp(r.totalNeto)} + IVA ${clp(r.iva)}${r.adicional?` + Adic. ${clp(r.adicional)}`:''} = ${clp(r.total)}`;
+  const pill=document.getElementById('fn-total-pill');
+  if(pill){
+    pill.textContent=r.total>0?clp(r.total):'$0';
+    const hasItems=r.total>0;
+    pill.style.background=hasItems?'var(--accentd)':'var(--greend)';
+    pill.style.color=hasItems?'var(--accent)':'var(--green)';
+    pill.style.borderColor=hasItems?'var(--accentb)':'var(--greenb)';
+  }}
   }
   if(origen==='pct'){
     const pct=parseFloat(document.getElementById('fn-desc-pct').value)||0;
@@ -3478,42 +3633,57 @@ function renderFnItems(){
     const unMostrar=it.tieneBulto?it.unidadCompra:it.unidad;
     const stockAgregar=it.cantidad*(it.factorConversion||1);
     const costoUnit=it.tieneBulto?Math.round((it.precio/(it.factorConversion||1))*100)/100:it.precio;
-    const isKg=['kg','g','lt','ml'].includes(it.unidad.toLowerCase());
-    // Selector de bodega por item
+    const isKg=['kg','g','lt','ml'].includes((it.unidad||'').toLowerCase());
     const bodSel=bodegas.map(b=>`<option value="${b.id}" ${it.bodega===b.id?'selected':''}>${b.icono} ${b.nombre}</option>`).join('');
-    return`<div class="ci" style="flex-direction:column;align-items:stretch;gap:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="ci-nom">${it.nombre}${it.tieneBulto?` <span style="font-size:10px;color:var(--blue)">[${it.unidadCompra}]</span>`:''}</div>
-        <button class="ci-del" onclick="fnDel(${i})">✕</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px">
-          <button class="ci-btn ci-m" onclick="fnChg(${i},-1)">−</button>
-          <input id="fn-qty-${i}" type="number" min="${isKg?.1:1}" step="${isKg?.1:1}" value="${it.cantidad}"
-            style="width:64px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'Inter',sans-serif;font-size:17px;font-weight:800;padding:5px 4px;text-align:center;outline:none;-webkit-appearance:none"
-            oninput="setCantFn(${i},this.value)" onfocus="this.select()">
-          <button class="ci-btn ci-p" onclick="fnChg(${i},1)">+</button>
-          <span style="font-size:12px;color:var(--txm)">${unMostrar}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:140px">
-          <span style="font-size:11px;color:var(--txm);white-space:nowrap">${it.tieneBulto?'Neto '+it.unidadCompra+' $:':'Neto $:'}</span>
-          <input id="fn-precio-${i}" type="text" inputmode="decimal" style="flex:1;min-width:80px;background:var(--sf);border:1.5px solid var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:5px 8px;outline:none;text-align:right" value="${fmtMilesDec(it.precio)}" oninput="fnPrecio(${i},this)">
-        </div>
-        <span id="fn-subtotal-${i}" style="font-size:14px;color:var(--green);font-weight:700">${clp(it.cantidad*it.precio)}</span>
-      </div>
-      <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
-      ${isKg?`<div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:10px;color:var(--txm);white-space:nowrap">⚖️ Subtotal según factura (opcional):</span>
-        <input id="fn-subplaceholder-${i}" type="text" inputmode="decimal" placeholder="${fmtMilesDec(it.cantidad*it.precio)}"
-          style="flex:1;min-width:70px;background:var(--sf);border:1.5px dashed var(--bd2);border-radius:7px;color:var(--tx);font-family:'Inter',sans-serif;font-size:12px;padding:4px 8px;outline:none;text-align:right"
-          oninput="fnSubtotal(${i},this)">
-      </div>`:''}
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:var(--txm);white-space:nowrap">→ Bodega destino:</span>
-        <select style="flex:1;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;outline:none;-webkit-appearance:none" onchange="fnBodega(${i},this.value)">${bodSel}</select>
-      </div>
-      ${it.tieneBulto?`<div id="fn-bulto-${i}" style="font-size:11px;color:var(--blue);background:var(--blued);border-radius:6px;padding:6px 8px">📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}</div>`:''}
-    </div>`;
+    const subtotalCalc=it.cantidad*it.precio;
+    const prod=prods.find(x=>x.id===it.pid);
+    const precioRef=prod?.precioNeto||0;
+    const diffPct=precioRef&&costoUnit?Math.round((costoUnit-precioRef)/precioRef*100):null;
+    const diffStr=diffPct!==null&&Math.abs(diffPct)>=1
+      ?`<span class="fn-diff-badge ${diffPct>0?'fn-diff-sube':'fn-diff-baja'}">${diffPct>0?'▲':'▼'}${Math.abs(diffPct)}%</span>`:''
+    ;
+    return`
+<div class="fn-item-card" id="fn-card-${i}">
+  <div class="fn-item-hdr">
+    <span class="fn-item-num">${i+1}</span>
+    <span class="fn-item-nom">${it.nombre}${it.tieneBulto?` <span class="fn-bulto-tag">${it.unidadCompra}</span>`:''}</span>
+    <button class="ci-del" onclick="fnDel(${i})">✕</button>
+  </div>
+  <div class="fn-precio-grid">
+    <div class="fn-pg-lbl">${it.tieneBulto?'Bultos':'Cantidad'}</div>
+    <div class="fn-pg-ctrl">
+      <button class="ci-btn ci-m" onclick="fnChg(${i},-1)">−</button>
+      <input id="fn-qty-${i}" type="number" inputmode="decimal" min="${isKg?.1:1}" step="${isKg?.1:1}" value="${it.cantidad}" class="fn-qty-input" oninput="setCantFn(${i},this.value)" onfocus="this.select()">
+      <span class="fn-pg-unit">${unMostrar}</span>
+      <button class="ci-btn ci-p" onclick="fnChg(${i},1)">+</button>
+    </div>
+    <div class="fn-pg-lbl">${it.tieneBulto?'Neto/'+it.unidadCompra:'Precio neto'}</div>
+    <div class="fn-pg-ctrl">
+      <span class="fn-pg-signo">$</span>
+      <input id="fn-precio-${i}" type="text" inputmode="decimal" class="fn-precio-input" value="${fmtMilesDec(it.precio)}" oninput="fnPrecio(${i},this)" onfocus="this.select()">
+    </div>
+    <div class="fn-pg-lbl">Subtotal calculado</div>
+    <div class="fn-pg-resultado" id="fn-subtotal-${i}">${clp(subtotalCalc)}</div>
+    ${isKg?`
+    <div class="fn-pg-lbl fn-pg-lbl-acento">⚖️ Subtotal en factura</div>
+    <div class="fn-pg-ctrl">
+      <span class="fn-pg-signo">$</span>
+      <input id="fn-subplaceholder-${i}" type="text" inputmode="decimal" class="fn-precio-input fn-subtotal-real" placeholder="${fmtMilesDec(subtotalCalc)}" oninput="fnSubtotal(${i},this)" onfocus="this.select()">
+    </div>`:''}
+    ${it.tieneBulto?`
+    <div class="fn-pg-lbl">Stock que ingresa</div>
+    <div class="fn-pg-ctrl"><span id="fn-bulto-${i}" class="fn-conv-txt">📦 ${it.cantidad}×${it.factorConversion} = +${stockAgregar} ${it.unidad} · ${clp(costoUnit)}/${it.unidad}</span></div>`:''}
+    <div class="fn-pg-lbl">Costo/${it.tieneBulto?it.unidad:'unidad'}</div>
+    <div class="fn-pg-resultado fn-costo-unit" id="fn-cunit-${i}">
+      ${clp(costoUnit)}${diffStr}
+    </div>
+    <div class="fn-pg-lbl">Bodega destino</div>
+    <div class="fn-pg-ctrl fn-pg-bod">
+      <select class="fn-bod-select" onchange="fnBodega(${i},this.value)">${bodSel}</select>
+    </div>
+  </div>
+  <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
+</div>`;
   }).join('');
   calcFnTotal();
 }
@@ -3525,6 +3695,9 @@ function setCantFn(i,v){
   it.cantidad=val;
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
   actualizarVarBadge(i);
+  // Actualizar subtotal en tabla
+  const subEl2=document.getElementById('fn-subtotal-'+i);
+  if(subEl2)subEl2.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
     const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
@@ -3548,6 +3721,14 @@ function fnPrecio(i,el){
   }
   const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
   if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMilesDec(it.cantidad*it.precio);
+  // Actualizar costo unitario en la tabla de confirmación
+  const prod2=prods.find(x=>x.id===it.pid);
+  const precioRef2=prod2?.precioNeto||0;
+  const costoUnit2=it.tieneBulto?Math.round((it.precio/(it.factorConversion||1))*100)/100:it.precio;
+  const diffPct2=precioRef2&&costoUnit2?Math.round((costoUnit2-precioRef2)/precioRef2*100):null;
+  const diffStr2=diffPct2!==null&&Math.abs(diffPct2)>=1?`<span class="fn-diff-badge ${diffPct2>0?'fn-diff-sube':'fn-diff-baja'}">${diffPct2>0?'▲':'▼'}${Math.abs(diffPct2)}%</span>`:'';
+  const cunitEl=document.getElementById('fn-cunit-'+i);
+  if(cunitEl)cunitEl.innerHTML=clp(costoUnit2)+diffStr2;
   calcFnTotal();actualizarVarBadge(i);
 }
 // Ajusta la cantidad (peso) de forma precisa para que el subtotal de la línea coincida
@@ -3570,7 +3751,7 @@ function fnSubtotal(i,el){
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function fnBodega(i,bodId){fnItems[i].bodega=bodId;}
 function calcFnTotal(){
-  if(!fnItems.length){const el=document.getElementById('fn-total');if(el)el.innerHTML='$0';return;}
+  if(!fnItems.length){const el=document.getElementById('fn-total');if(el)el.innerHTML='$0';const pill=document.getElementById('fn-total-pill');if(pill)pill.textContent='$0';return;}
   const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
   const itemsCalc=fnItems.map(it=>{
     const prod=prods.find(x=>x.id===it.pid);
