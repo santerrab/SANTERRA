@@ -257,6 +257,74 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 
 /* ── BUSCADOR ────────────────────────────────────────────────── */
+/* ── REPORTE / DASHBOARD FINANCIERO ─────────────────────────────────────── */
+:root{
+  --prov-0:#6c63ff;--prov-1:#00c9a7;--prov-2:#f7b731;--prov-3:#fc5c65;
+  --prov-4:#45aaf2;--prov-5:#fd9644;--prov-6:#a55eea;--prov-7:#26de81;
+  --prov-8:#eb3b5a;--prov-9:#2bcbba;
+}
+/* Topbar */
+.rep-topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.rep-topbar .pgt{font-size:20px;font-weight:900;margin-bottom:0}
+.rep-topbar .pgt::after{display:none}
+.rep-topbar .pgs{margin-bottom:0}
+.rep-pdf-btn{width:auto!important;padding:8px 14px!important;font-size:12px!important;border-radius:10px!important;flex-shrink:0}
+/* Tabs */
+.rep-tabs{display:flex;gap:0;background:var(--sf2);border:1.5px solid var(--bd2);border-radius:12px;padding:3px;margin-bottom:12px}
+.rep-tab{flex:1;padding:7px 4px;background:none;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;color:var(--txm);cursor:pointer;transition:background .18s,color .18s;touch-action:manipulation}
+.rep-tab.on{background:var(--accent);color:#fff}
+/* Nav wraps */
+.rep-nav-wrap{margin-bottom:10px}
+.rep-rango-custom{margin-bottom:12px;background:var(--sf2);border:1px solid var(--bd2);border-radius:14px;padding:12px}
+/* KPIs */
+.rep-kpis .st{border-radius:14px}
+/* ── DONA ────────────────────────────────────────────────────────────────── */
+.rep-dona-card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:16px;margin-bottom:12px}
+.rep-dona-titulo{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:800;color:var(--tx);margin-bottom:14px}
+.rep-dona-total{font-family:'Inter',sans-serif;font-size:13px;font-weight:800;color:var(--accent)}
+.rep-dona-body{display:flex;gap:16px;align-items:flex-start}
+.rep-dona-svg-wrap{position:relative;flex-shrink:0;width:140px;height:140px}
+.rep-dona-svg{width:140px;height:140px;transform:rotate(-90deg)}
+.rep-dona-svg path{transition:opacity .2s,filter .2s;cursor:pointer}
+.rep-dona-svg path:hover,.rep-dona-svg path.sel{filter:brightness(1.25)}
+/* Centro de la dona */
+.rep-dona-centro{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.rep-dona-c-val{font-family:'Inter',sans-serif;font-size:14px;font-weight:900;color:var(--tx);letter-spacing:-.3px;line-height:1}
+.rep-dona-c-lbl{font-size:9px;color:var(--txm);font-weight:600;margin-top:3px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Leyenda */
+.rep-dona-leyenda{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.rep-prov-row{display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 6px;border-radius:8px;transition:background .15s;touch-action:manipulation}
+.rep-prov-row:active,.rep-prov-row.sel{background:var(--sf2)}
+.rep-prov-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.rep-prov-info{flex:1;min-width:0}
+.rep-prov-nom{font-size:11px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-prov-pct{font-size:10px;color:var(--txm);font-weight:500}
+.rep-prov-val{font-family:'Inter',sans-serif;font-size:11px;font-weight:800;color:var(--tx);white-space:nowrap;flex-shrink:0}
+/* Barras diarias */
+.rep-barras-card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:16px;margin-bottom:12px}
+.rep-barras-svg{width:100%;overflow:visible}
+/* Detalle proveedor */
+.rep-prov-detalle{background:var(--sf);border:1.5px solid var(--accentb);border-radius:18px;padding:14px;margin-bottom:12px}
+.rep-prov-detalle-hdr{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800;color:var(--tx);margin-bottom:12px}
+.rep-prov-detalle-hdr button{background:none;border:none;color:var(--txd);font-size:18px;cursor:pointer;touch-action:manipulation}
+/* Trend items */
+.trend-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd3)}
+.trend-item:last-child{border-bottom:none}
+.trend-nom{font-size:13px;font-weight:600;color:var(--tx);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trend-nums{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.trend-badge{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:800}
+.trend-up{background:var(--redd);color:var(--red)}
+.trend-dn{background:var(--greend);color:var(--green)}
+/* Area cards */
+.area-card{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:10px}
+.area-titulo{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800;color:var(--tx);margin-bottom:8px}
+.area-total{font-family:'Inter',sans-serif;font-size:14px;font-weight:900;color:var(--accent)}
+.rep-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd3)}
+.rep-item:last-child{border-bottom:none}
+.rep-item-nom{flex:1;font-size:12px;font-weight:600;color:var(--tx);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-item-cant{font-size:10px;color:var(--txm);white-space:nowrap;flex-shrink:0}
+.rep-item-val{font-family:'Inter',sans-serif;font-size:12px;font-weight:800;color:var(--tx);white-space:nowrap;flex-shrink:0}
+
 /* ── BUSCADORES GLOBALES ─────────────────────────────────────────────────── */
 .swrap{position:relative;margin-bottom:10px}
 .sicon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;z-index:1;pointer-events:none;line-height:1}
@@ -1056,18 +1124,102 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 
 <!-- REPORTE -->
 <div class="pg" id="pg-rep">
-  <div class="pgt">Reporte Semanal</div><div class="pgs">Consumo e indicadores por área</div>
-  <div class="rep-header">
-    <div class="rep-semana" id="rep-semana-lbl">Semana actual</div>
-    <div class="rep-rango" id="rep-rango">—</div>
-    <div class="rep-nav"><button onclick="navSem(-1)">‹</button><span id="rep-nav-lbl">Esta semana</span><button onclick="navSem(1)">›</button></div>
+
+  <!-- Título + selector de rango -->
+  <div class="rep-topbar">
+    <div>
+      <div class="pgt">Finanzas</div>
+      <div class="pgs">Dashboard financiero del local</div>
+    </div>
+    <button class="btn bg-acc rep-pdf-btn" onclick="exportarPDF()">📄 PDF</button>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <button class="btn bg-acc" style="flex:1;padding:10px;font-size:12px" onclick="exportarPDF()">📄 Exportar PDF</button>
+
+  <!-- Tabs de período -->
+  <div class="rep-tabs" id="rep-tabs">
+    <button class="rep-tab on" onclick="setRepTab('semana',this)">Semana</button>
+    <button class="rep-tab" onclick="setRepTab('mes',this)">Mes</button>
+    <button class="rep-tab" onclick="setRepTab('rango',this)">Rango</button>
   </div>
-  <div class="sg" id="rep-stats" style="margin-bottom:14px"></div>
+
+  <!-- Navegación semanal (visible solo en tab semana) -->
+  <div class="rep-nav-wrap" id="rep-nav-wrap">
+    <div class="rep-header">
+      <div class="rep-semana" id="rep-semana-lbl">Semana actual</div>
+      <div class="rep-rango" id="rep-rango">—</div>
+      <div class="rep-nav">
+        <button onclick="navSem(-1)">‹</button>
+        <span id="rep-nav-lbl">Esta semana</span>
+        <button onclick="navSem(1)">›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegación mensual -->
+  <div class="rep-nav-wrap" id="rep-mes-wrap" style="display:none">
+    <div class="rep-header">
+      <div class="rep-semana" id="rep-mes-lbl">Mes actual</div>
+      <div class="rep-nav">
+        <button onclick="navMes(-1)">‹</button>
+        <span id="rep-mes-nav-lbl">Este mes</span>
+        <button onclick="navMes(1)">›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selector de rango personalizado -->
+  <div class="rep-rango-custom" id="rep-rango-wrap" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fg" style="margin:0">
+        <label class="fl">Desde</label>
+        <input class="fi" type="date" id="rep-desde" onchange="renderReporte()">
+      </div>
+      <div class="fg" style="margin:0">
+        <label class="fl">Hasta</label>
+        <input class="fi" type="date" id="rep-hasta" onchange="renderReporte()">
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs principales -->
+  <div class="sg rep-kpis" id="rep-stats" style="margin-bottom:12px"></div>
+
+  <!-- Gráfico dona: distribución por proveedor -->
+  <div class="rep-dona-card" id="rep-dona-wrap">
+    <div class="rep-dona-titulo">
+      <span>💰 Gasto por proveedor</span>
+      <span class="rep-dona-total" id="rep-dona-total"></span>
+    </div>
+    <div class="rep-dona-body">
+      <div class="rep-dona-svg-wrap">
+        <svg class="rep-dona-svg" id="rep-dona-svg" viewBox="0 0 200 200"></svg>
+        <div class="rep-dona-centro" id="rep-dona-centro">
+          <div class="rep-dona-c-val" id="rep-dona-c-val">—</div>
+          <div class="rep-dona-c-lbl" id="rep-dona-c-lbl">Total</div>
+        </div>
+      </div>
+      <div class="rep-dona-leyenda" id="rep-dona-leyenda"></div>
+    </div>
+  </div>
+
+  <!-- Gasto diario de la semana (barras) -->
+  <div class="rep-barras-card" id="rep-barras-wrap" style="display:none">
+    <div class="rep-dona-titulo"><span>📅 Consumo diario</span></div>
+    <div id="rep-barras-svg-wrap"></div>
+  </div>
+
+  <!-- Detalle proveedor seleccionado -->
+  <div class="rep-prov-detalle" id="rep-prov-detalle" style="display:none">
+    <div class="rep-prov-detalle-hdr">
+      <span id="rep-prov-nombre">Proveedor</span>
+      <button onclick="cerrarDetalleProv()">✕</button>
+    </div>
+    <div id="rep-prov-detalle-body"></div>
+  </div>
+
+  <!-- Tendencia + inventario + áreas -->
   <div id="rep-trend"></div>
   <div id="rep-areas"></div>
+
 </div>
 
 <!-- VENTAS -->
@@ -2250,7 +2402,7 @@ function _renderDashNow(){
     const movHoy=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=hoy&&d<manana;});
     const valHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||p?.precioTotal||0);},a),0);
     const unHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>b+(it.cantidadDespachada||it.cantidad||0),a),0);
-    const movSem=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=lunes&&d<=domingo;});
+    const movSem=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=desde&&d<=hasta;});
     const valSem=movSem.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||p?.precioTotal||0);},a),0);
     document.getElementById('d-val').textContent=clp(vt);document.getElementById('d-vsub').textContent='Neto: '+clp(vn);
     document.getElementById('d-np').textContent=prods.length;document.getElementById('d-pp').textContent=pp;
@@ -4031,12 +4183,226 @@ async function renderHistPrecios(){
 
 // ── REPORTE + EXPORTAR PDF ────────────────────────────────────────────────────
 function navSem(delta){semOffset+=delta;renderReporte();}
+// ── ESTADO DEL DASHBOARD FINANCIERO ─────────────────────────────────────────
+let repTab='semana', mesOffset=0, repProvSel=null;
+
+function setRepTab(tab, btn){
+  repTab=tab;
+  document.querySelectorAll('.rep-tab').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  document.getElementById('rep-nav-wrap').style.display=tab==='semana'?'':'none';
+  document.getElementById('rep-mes-wrap').style.display=tab==='mes'?'':'none';
+  document.getElementById('rep-rango-wrap').style.display=tab==='rango'?'':'none';
+  renderReporte();
+}
+
+function navMes(dir){
+  mesOffset+=dir;
+  const{inicio}=getMes(mesOffset);
+  document.getElementById('rep-mes-lbl').textContent=inicio.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
+  document.getElementById('rep-mes-nav-lbl').textContent=mesOffset===0?'Este mes':mesOffset===-1?'Mes anterior':'Hace '+Math.abs(mesOffset)+' meses';
+  renderReporte();
+}
+
+// Obtener rango de fechas según tab activo
+function getRepRango(){
+  if(repTab==='semana'){
+    const{lunes,domingo}=getSemana(semOffset);
+    return{desde:lunes,hasta:domingo};
+  }
+  if(repTab==='mes'){
+    const{inicio,fin}=getMes(mesOffset);
+    return{desde:inicio,hasta:fin};
+  }
+  // rango personalizado
+  const dEl=document.getElementById('rep-desde');
+  const hEl=document.getElementById('rep-hasta');
+  if(!dEl?.value||!hEl?.value)return null;
+  const desde=new Date(dEl.value+'T00:00:00');
+  const hasta=new Date(hEl.value+'T23:59:59');
+  return{desde,hasta};
+}
+
+// ── DONA SVG ────────────────────────────────────────────────────────────────
+const PROV_COLORS=['#6c63ff','#00c9a7','#f7b731','#fc5c65','#45aaf2','#fd9644','#a55eea','#26de81','#eb3b5a','#2bcbba'];
+
+function buildDona(datos, totalGasto){
+  // datos = [{label, valor, color}]
+  const svg=document.getElementById('rep-dona-svg');
+  const leyenda=document.getElementById('rep-dona-leyenda');
+  const cVal=document.getElementById('rep-dona-c-val');
+  const cLbl=document.getElementById('rep-dona-c-lbl');
+  const totalEl=document.getElementById('rep-dona-total');
+  if(!svg||!datos.length){if(svg)svg.innerHTML='<text x="100" y="110" text-anchor="middle" fill="var(--txd)" font-size="12">Sin datos</text>';return;}
+  
+  totalEl.textContent=clp(totalGasto);
+  cVal.textContent=clp(totalGasto);
+  cLbl.textContent='Total';
+
+  const cx=100,cy=100,r=75,ri=46; // radio externo e interno
+  let angulo=0;
+  const paths=[];
+  datos.forEach((d,i)=>{
+    const pct=d.valor/totalGasto;
+    const a=pct*2*Math.PI;
+    const x1=cx+r*Math.sin(angulo),y1=cy-r*Math.cos(angulo);
+    const x2=cx+r*Math.sin(angulo+a),y2=cy-r*Math.cos(angulo+a);
+    const xi1=cx+ri*Math.sin(angulo),yi1=cy-ri*Math.cos(angulo);
+    const xi2=cx+ri*Math.sin(angulo+a),yi2=cy-ri*Math.cos(angulo+a);
+    const large=a>Math.PI?1:0;
+    const path=`M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${ri} ${ri} 0 ${large} 0 ${xi1} ${yi1} Z`;
+    paths.push({path,d,i,pct});
+    angulo+=a;
+  });
+
+  svg.innerHTML=paths.map(({path,d,i})=>
+    `<path d="${path}" fill="${d.color}" opacity="0.92" data-i="${i}" onclick="selProvDona(${i})" />`
+  ).join('');
+
+  leyenda.innerHTML=datos.map((d,i)=>
+    `<div class="rep-prov-row" id="rep-prov-row-${i}" onclick="selProvDona(${i})">
+      <div class="rep-prov-dot" style="background:${d.color}"></div>
+      <div class="rep-prov-info">
+        <div class="rep-prov-nom">${d.label}</div>
+        <div class="rep-prov-pct">${Math.round(d.valor/totalGasto*100)}% del total</div>
+      </div>
+      <div class="rep-prov-val">${clp(d.valor)}</div>
+    </div>`
+  ).join('');
+}
+
+function selProvDona(i){
+  repProvSel=repProvSel===i?null:i;
+  // Actualizar visual dona
+  document.querySelectorAll('#rep-dona-svg path').forEach(p=>{
+    const pi=parseInt(p.dataset.i);
+    p.style.opacity=repProvSel===null||pi===repProvSel?'0.92':'0.3';
+    p.classList.toggle('sel',pi===repProvSel);
+  });
+  document.querySelectorAll('.rep-prov-row').forEach(r=>{
+    const ri=parseInt(r.id.replace('rep-prov-row-',''));
+    r.classList.toggle('sel',ri===repProvSel);
+  });
+  // Actualizar centro dona
+  const datos=window._repDonaData;
+  if(!datos)return;
+  const totalGasto=datos.reduce((a,d)=>a+d.valor,0);
+  const cVal=document.getElementById('rep-dona-c-val');
+  const cLbl=document.getElementById('rep-dona-c-lbl');
+  if(repProvSel===null){
+    cVal.textContent=clp(totalGasto);cLbl.textContent='Total';
+    cerrarDetalleProv();
+  } else {
+    const d=datos[repProvSel];
+    cVal.textContent=clp(d.valor);cLbl.textContent=d.label;
+    mostrarDetalleProv(d.label);
+  }
+}
+
+function mostrarDetalleProv(provNombre){
+  const rango=getRepRango();if(!rango)return;
+  const{desde,hasta}=rango;
+  const el=document.getElementById('rep-prov-detalle');
+  const body=document.getElementById('rep-prov-detalle-body');
+  const nomEl=document.getElementById('rep-prov-nombre');
+  if(!el||!body)return;
+  nomEl.textContent=provNombre;
+  el.style.display='block';
+
+  // Facturas del proveedor en el período
+  const facsProv=facts.filter(f=>{
+    const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;
+    return d&&d>=desde&&d<=hasta&&(f.proveedor||'—')===provNombre;
+  }).sort((a,b)=>{
+    const da=a.creadoEn?.toDate?a.creadoEn.toDate():new Date(0);
+    const db=b.creadoEn?.toDate?b.creadoEn.toDate():new Date(0);
+    return db-da;
+  });
+
+  if(!facsProv.length){body.innerHTML='<div class="empty" style="padding:12px"><div class="et">Sin facturas en este período</div></div>';return;}
+
+  // Agrupar productos más comprados
+  const prodAgg={};
+  facsProv.forEach(f=>(f.items||[]).forEach(it=>{
+    const k=it.nombreProducto||it.productoId;
+    if(!prodAgg[k])prodAgg[k]={nombre:k,total:0,cantidad:0,unidad:it.unidadMedida||''};
+    prodAgg[k].total+=(it.cantidadIngresada||it.cantidad||0)*(it.precioUnitNeto||it.costoUnitario||0);
+    prodAgg[k].cantidad+=(it.cantidadIngresada||it.cantidad||0);
+  }));
+  const topProds=Object.values(prodAgg).sort((a,b)=>b.total-a.total).slice(0,8);
+  const totalProv=facsProv.reduce((a,f)=>a+(f.totalFactura||0),0);
+
+  // Calcular consumo diario y semanal
+  const dias=Math.max(1,Math.round((hasta-desde)/(1000*60*60*24)));
+  const diario=totalProv/dias;
+  const semanal=diario*7;
+
+  body.innerHTML=`
+    <div class="sg" style="margin-bottom:12px">
+      <div class="st ac-b"><div class="sl">Total período</div><div class="sv" style="color:var(--accent);font-size:18px">${clp(totalProv)}</div></div>
+      <div class="st ac-g"><div class="sl">Facturas</div><div class="sv" style="color:var(--green)">${facsProv.length}</div></div>
+      <div class="st ac-r"><div class="sl">Prom. diario</div><div class="sv" style="color:var(--red);font-size:16px">${clp(Math.round(diario))}</div></div>
+      <div class="st ac-p"><div class="sl">Prom. semanal</div><div class="sv" style="color:var(--purple);font-size:16px">${clp(Math.round(semanal))}</div></div>
+    </div>
+    <div class="sec-lbl">Facturas del período</div>
+    ${facsProv.map(f=>`<div class="li"><div><div class="lt">${fDateOnly(f.creadoEn)}${f.numeroFactura?' · #'+f.numeroFactura:''}</div><div class="ls">${(f.items||[]).length} productos</div></div><span class="badge bg-g-s">${clp(f.totalFactura||0)}</span></div>`).join('')}
+    ${topProds.length?`<div class="sec-lbl" style="margin-top:12px">Productos más comprados</div>`+topProds.map(p=>`<div class="rep-item"><div class="rep-item-nom">${p.nombre}</div><span class="rep-item-cant">${clpn(p.cantidad)} ${p.unidad}</span><span class="rep-item-val">${clp(p.total)}</span></div>`).join(''):''}
+  `;
+}
+
+function cerrarDetalleProv(){
+  const el=document.getElementById('rep-prov-detalle');
+  if(el)el.style.display='none';
+}
+
+// ── BARRAS DIARIAS ───────────────────────────────────────────────────────────
+function buildBarrasDiarias(desde, hasta, factsRango){
+  const wrap=document.getElementById('rep-barras-svg-wrap');
+  if(!wrap)return;
+  const dias=[];
+  const d=new Date(desde);
+  while(d<=hasta){dias.push(new Date(d));d.setDate(d.getDate()+1);}
+  if(dias.length>31){wrap.innerHTML='<div style="font-size:11px;color:var(--txd);text-align:center;padding:8px">Rango muy amplio para vista diaria</div>';return;}
+
+  const porDia=dias.map(dia=>{
+    const sig=new Date(dia);sig.setHours(23,59,59,999);
+    const val=factsRango.filter(f=>{const fd=f.creadoEn?.toDate?f.creadoEn.toDate():null;return fd&&fd>=dia&&fd<=sig;}).reduce((a,f)=>a+(f.totalFactura||0),0);
+    return{dia,val,lbl:dia.toLocaleDateString('es-CL',{weekday:'short',day:'numeric'})};
+  });
+
+  const maxVal=Math.max(...porDia.map(d=>d.val),1);
+  const W=300,H=80,barW=Math.max(4,Math.floor(W/dias.length)-3),gap=Math.floor(W/dias.length);
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+
+  const bars=porDia.map((d,i)=>{
+    const bH=Math.round((d.val/maxVal)*H);
+    const x=i*gap,y=H-bH;
+    const esHoy=d.dia.toDateString()===hoy.toDateString();
+    const color=esHoy?'var(--accent)':d.val>0?'var(--blue)':'var(--bd2)';
+    const lbl=d.dia.toLocaleDateString('es-CL',{weekday:'short'}).slice(0,2);
+    return`<g>
+      <rect x="${x}" y="${y}" width="${barW}" height="${bH}" rx="3" fill="${color}" opacity="0.85"/>
+      <text x="${x+barW/2}" y="${H+14}" text-anchor="middle" font-size="9" fill="var(--txd)">${lbl}</text>
+      ${d.val>0?`<text x="${x+barW/2}" y="${Math.max(y-4,8)}" text-anchor="middle" font-size="8" fill="var(--txm)">${Math.round(d.val/1000)}k</text>`:''}
+    </g>`;
+  }).join('');
+
+  const vbW=dias.length*gap+barW;
+  wrap.innerHTML=`<svg viewBox="0 0 ${vbW} ${H+20}" class="rep-barras-svg" style="height:${H+24}px">${bars}</svg>`;
+}
+
 function renderReporte(){
-  const{lunes,domingo}=getSemana(semOffset);
+  // Actualizar UI de navegación semanal
   const fmt=d=>d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const{lunes,domingo}=getSemana(semOffset);
   document.getElementById('rep-rango').textContent=fmt(lunes)+' — '+fmt(domingo);
   document.getElementById('rep-nav-lbl').textContent=semOffset===0?'Esta semana':semOffset===-1?'Semana anterior':'Hace '+Math.abs(semOffset)+' semanas';
   document.getElementById('rep-semana-lbl').textContent=semOffset===0?'Semana actual':'Semana del '+fmt(lunes);
+
+  // Obtener rango activo
+  const rango=getRepRango();
+  if(!rango)return; // rango personalizado sin fechas aún
+  const{desde,hasta}=rango;
   const movSem=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=lunes&&d<=domingo;});
   const n=gN();
   const areas={c1:{nombre:n.c1,icono:'🌅',items:{}},c2:{nombre:n.c2,icono:'🍮',items:{}},c3:{nombre:n.c3,icono:'🍽️',items:{}},c4:{nombre:n.c4,icono:'🍹',items:{}}};
@@ -4053,22 +4419,49 @@ function renderReporte(){
   });
   // Ventas de la misma semana, por área (para food cost % y margen)
   const dstr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const lunesStr=dstr(lunes),domingoStr=dstr(domingo);
-  const ventasSem=ventas.filter(v=>v.fecha>=lunesStr&&v.fecha<=domingoStr);
+  const desdeStr=dstr(desde),hastaStr=dstr(hasta);
+  const ventasSem=ventas.filter(v=>v.fecha>=desdeStr&&v.fecha<=hastaStr);
   const ventasPorArea={};
   ventasSem.forEach(v=>{ventasPorArea[v.area]=(ventasPorArea[v.area]||0)+(v.monto||0);});
   const totalVentasSem=Object.values(ventasPorArea).reduce((a,v)=>a+v,0);
   // Facturas ingresadas en la semana (compras a proveedores, no despachos)
-  const factSem=facts.filter(f=>{const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;return d&&d>=lunes&&d<=domingo;});
+  const factSem=facts.filter(f=>{const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;return d&&d>=desde&&d<=hasta;});
   const totFact=factSem.reduce((a,f)=>a+(f.totalFactura||0),0);
+  // KPIs principales
+  const dias=Math.max(1,Math.round((hasta-desde)/(1000*60*60*24))+1);
+  const costoDiario=Math.round(totFact/dias);
+  const costoSemanal=Math.round(costoDiario*7);
+  const fc=totalVentasSem>0?Math.round((totS/totalVentasSem)*100):null;
+  const margenTotal=totalVentasSem>0?totalVentasSem-totS:null;
   document.getElementById('rep-stats').innerHTML=`
-    <div class="st full ac-r"><div class="sl">Consumo total semana</div><div class="sv" style="color:var(--accent)">${clp(totS)}</div><div class="su">${totU.toLocaleString('es-CL')} unidades</div></div>
-    <div class="st ac-b"><div class="sl">Despachos</div><div class="sv" style="color:var(--blue)">${movSem.length}</div></div>
-    <div class="st ac-g"><div class="sl">Áreas activas</div><div class="sv" style="color:var(--green)">${Object.values(areas).filter(a=>Object.keys(a.items).length>0).length}</div></div>
-    <div class="st full ac-p"><div class="sl">Facturas ingresadas en la semana</div><div class="sv" style="color:var(--purple)">${clp(totFact)}</div><div class="su">${factSem.length} factura${factSem.length===1?'':'s'}</div></div>
-    ${totalVentasSem>0?`<div class="st full ac-y"><div class="sl">Food cost % de la semana</div><div class="sv" style="color:var(--yellow)">${Math.round((totS/totalVentasSem)*100)}%</div><div class="su">Ventas: ${clp(totalVentasSem)}</div></div>`:''}`;
+    <div class="st full ac-r"><div class="sl">Gasto en compras (facturas)</div><div class="sv" style="color:var(--red)">${clp(totFact)}</div><div class="su">${factSem.length} factura${factSem.length===1?'':'s'} · ${clp(costoDiario)}/día</div></div>
+    <div class="st ac-p"><div class="sl">Consumo despachado</div><div class="sv" style="color:var(--purple);font-size:18px">${clp(totS)}</div><div class="su">${movSem.length} despachos</div></div>
+    <div class="st ac-b"><div class="sl">Costo semanal prom.</div><div class="sv" style="color:var(--blue);font-size:18px">${clp(costoSemanal)}</div></div>
+    ${fc!==null?`<div class="st ac-y full"><div class="sl">Food cost %</div><div class="sv" style="color:${fc>38?'var(--red)':fc>30?'var(--yellow)':'var(--green)'}">${fc}%</div><div class="su">Ventas: ${clp(totalVentasSem)} · Margen: ${clp(margenTotal)}</div></div>`:''}`;
+
+  // ── DONA DE PROVEEDORES ─────────────────────────────────────────────────────
+  const porProv={};
+  factSem.forEach(f=>{const k=f.proveedor||'Sin proveedor';porProv[k]=(porProv[k]||0)+(f.totalFactura||0);});
+  const provSorted=Object.entries(porProv).sort((a,b)=>b[1]-a[1]);
+  const donaData=provSorted.map(([label,valor],i)=>({label,valor,color:PROV_COLORS[i%PROV_COLORS.length]}));
+  window._repDonaData=donaData;
+  const donaWrap=document.getElementById('rep-dona-wrap');
+  if(donaWrap)donaWrap.style.display=donaData.length?'':'none';
+  if(donaData.length)buildDona(donaData,totFact||1);
+
+  // ── BARRAS DIARIAS ─────────────────────────────────────────────────────────
+  const barrasWrap=document.getElementById('rep-barras-wrap');
+  if(barrasWrap){
+    barrasWrap.style.display=dias<=31?'':'none';
+    if(dias<=31)buildBarrasDiarias(desde,hasta,factSem);
+  }
+
+  // Resetear detalle proveedor al cambiar rango
+  cerrarDetalleProv();
+  repProvSel=null;
+
   // Indicador tendencia
-  if(semOffset===0||semOffset===-1){
+  if(repTab==='semana'&&(semOffset===0||semOffset===-1)){
     const{lunes:l1,domingo:d1}=getSemana(semOffset-1);
     const movPrev=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=l1&&d<=d1;});
     const aggA={},aggP={};
@@ -4492,7 +4885,7 @@ startCfgListener();
 })();
 
 Object.assign(window,{
-  selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,navSem,toggleMode,
+  selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,navSem,navMes,setRepTab,selProvDona,cerrarDetalleProv,toggleMode,
   fStockBod,fStockCat2,fStockCatSel,toggleStockFiltros,limpiarFiltrosStock,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,limpiarBuscar,vaciarCarrito,
