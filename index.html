@@ -1288,18 +1288,18 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
     </div>
   </div>
 
-  <!-- Selector área de origen (solo roles con subáreas) -->
+  <!-- Selector área de pedido (opcional, solo roles con subáreas) -->
   <div id="pedir-subarea-wrap" style="display:none;margin-bottom:10px">
-    <div class="pedir-area-label">📍 Área de origen</div>
-    <div class="pedir-chips-scroll">
-      <button class="pchip on" id="sa-" onclick="selSubArea('',this)">General</button>
-      <button class="pchip" id="sa-caliente" onclick="selSubArea('Cuarto Caliente',this)">🔥 Caliente</button>
-      <button class="pchip" id="sa-frio" onclick="selSubArea('Cuarto Frío',this)">❄️ Frío</button>
-      <button class="pchip" id="sa-reposicion" onclick="selSubArea('Reposición',this)">📦 Reposición</button>
-      <button class="pchip" id="sa-pastas" onclick="selSubArea('Pastas',this)">🍝 Pastas</button>
-      <button class="pchip" id="sa-sushi" onclick="selSubArea('Sushi',this)">🍱 Sushi</button>
-      <button class="pchip" id="sa-parrilla" onclick="selSubArea('Parrilla',this)">🥩 Parrilla</button>
-    </div>
+    <label class="fl">📍 Área de pedido <span style="color:var(--txd);font-weight:500;text-transform:none">(opcional)</span></label>
+    <select class="fi" id="sa-select" onchange="selSubArea(this.value)" style="font-size:15px;padding:10px 14px">
+      <option value="">— Sin área específica —</option>
+      <option value="Cuarto Caliente">🔥 Cuarto Caliente</option>
+      <option value="Cuarto Frío">❄️ Cuarto Frío</option>
+      <option value="Reposición">📦 Reposición</option>
+      <option value="Pastas">🍝 Pastas</option>
+      <option value="Sushi">🍱 Sushi</option>
+      <option value="Parrilla">🥩 Parrilla</option>
+    </select>
   </div>
 
   <!-- Buscador de productos -->
@@ -2624,7 +2624,9 @@ function goTo(id){
     document.getElementById('p-res').style.display='none';
     const saWrap=document.getElementById('pedir-subarea-wrap');
     if(saWrap)saWrap.style.display=role==='c3'?'block':'none';
-    if(carrito.length===0){subAreaActual='';document.getElementById('carrito-wrap').style.display='none';document.getElementById('pedir-empty').style.display='block';}
+    if(carrito.length===0){subAreaActual='';
+      const saS=document.getElementById('sa-select');if(saS)saS.value='';
+      document.getElementById('carrito-wrap').style.display='none';document.getElementById('pedir-empty').style.display='block';}
   }
 }
 // Icons
@@ -3126,11 +3128,10 @@ function renderCarrito(){
 function chgC(i,d){const it=carrito[i];const isKg=['kg','g','lt','ml'].includes(it.unidad.toLowerCase());const step=isKg?.1:1;carrito[i].cantidad=Math.max(step,parseFloat((it.cantidad+d*step).toFixed(2)));renderCarrito();}
 function setCantC(i,v){const val=parseFloat(v);if(!isNaN(val)&&val>0)carrito[i].cantidad=val;}
 function rmC(i){carrito.splice(i,1);renderCarrito();}
-function selSubArea(area,btn){
+function selSubArea(area){
   subAreaActual=area;
-  document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
-  if(btn)btn.classList.add('on');
-  const lbl=document.getElementById('pedir-sub');if(lbl)lbl.textContent=area?'Área: '+area:'Busca y agrega productos';
+  const lbl=document.getElementById('pedir-sub');
+  if(lbl)lbl.textContent=area?'Área: '+area:'Busca y agrega productos al pedido';
 }
 async function enviarPedido(){
   if(carrito.length===0){toast('Agrega productos','err');return;}
@@ -3144,9 +3145,9 @@ async function enviarPedido(){
     });
     toast('✓ Pedido enviado');
     carrito=[];document.getElementById('p-nota').value='';
-    subAreaActual='';document.querySelectorAll('#pedir-subarea-wrap .chip').forEach(c=>c.classList.remove('on'));
-    const saD=document.getElementById('sa-');if(saD)saD.classList.add('on');
-    const lbl=document.getElementById('pedir-sub');if(lbl)lbl.textContent='Busca y agrega productos';
+    subAreaActual='';
+    const saSelect=document.getElementById('sa-select');if(saSelect)saSelect.value='';
+    const lbl=document.getElementById('pedir-sub');if(lbl)lbl.textContent='Busca y agrega productos al pedido';
     renderCarrito();goTo('pg-mispedidos');
   }catch(e){toast('Error: '+e.message,'err');}
   btn.disabled=false;btn.textContent='📤 Enviar pedido a bodega';
