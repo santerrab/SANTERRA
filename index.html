@@ -9,7 +9,9 @@
 <meta name="theme-color" content="#0d1117">
 <link rel="dns-prefetch" href="https://firestore.googleapis.com">
 <link rel="dns-prefetch" href="https://fcm.googleapis.com">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="SANTERRA">
 <title>SANTERRA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://firestore.googleapis.com">
@@ -35,7 +37,7 @@
   --sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;min-height:100dvh}
+html,body{height:100%;min-height:100vh;min-height:100dvh}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 body.login-active{overflow:hidden}
 
@@ -176,7 +178,7 @@ body.light .nav{background:rgba(255,255,255,.92)}
 .bg-orange{background:var(--orange);color:#fff}.bg-orange:active{transform:scale(.98)}
 
 /* ── MODALES ─────────────────────────────────────────────────── */
-.ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;align-items:flex-end;backdrop-filter:blur(12px)}
+.ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;align-items:flex-end;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .ovl.on{display:flex}
 .modal{
   background:var(--sf);border-radius:26px 26px 0 0;width:100%;
@@ -237,7 +239,7 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 .area-lbl::before,.area-lbl::after{content:'';flex:1;height:1px;background:var(--bd2)}
 
 /* ── PIN ─────────────────────────────────────────────────────── */
-.pin-ovl{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.8);backdrop-filter:blur(16px);align-items:flex-end}
+.pin-ovl{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);align-items:flex-end}
 .pin-ovl.on{display:flex;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .pin-sheet{background:var(--sf);border-radius:28px 28px 0 0;width:100%;padding:22px max(22px,var(--sr)) calc(32px + var(--sb)) max(22px,var(--sl));border-top:1px solid var(--bd);animation:slideUp .32s cubic-bezier(.32,1.01,.58,1);max-width:480px;margin:0 auto}
@@ -1119,7 +1121,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 <div class="toast" id="toast"></div>
 
 <!-- ALARMA BODEGUERO -->
-<div style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(6px)" id="alarm-overlay">
+<div style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)" id="alarm-overlay">
   <div style="background:var(--sf);border:2px solid var(--blueb);border-radius:24px;padding:32px 24px;max-width:320px;width:calc(100% - 32px);text-align:center">
     <div style="font-size:60px;margin-bottom:12px;animation:bell 1s ease infinite">🔔</div>
     <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:var(--blue);margin-bottom:6px">¡Nuevo Pedido!</div>
@@ -5501,15 +5503,50 @@ Object.assign(window,{
 });
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').then(reg=>{
-    reg.update();
-    reg.addEventListener('updatefound',()=>{const nw=reg.installing;if(!nw)return;nw.addEventListener('statechange',()=>{if(nw.state==='installed')nw.postMessage('SKIP_WAITING');if(nw.state==='activated')window.location.reload();});});
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update();});
-  }).catch(()=>{});
-  navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
+  // Retry con backoff — MIUI (Xiaomi) mata el SW en el primer intento con frecuencia
+  const _regSW=async(intento=1)=>{
+    try{
+      const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+      reg.update();
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;if(!nw)return;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed')nw.postMessage('SKIP_WAITING');
+          if(nw.state==='activated')window.location.reload();
+        });
+      });
+      document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='visible')reg.update();
+      });
+    }catch(e){
+      // Reintentar hasta 3 veces (MIUI bloquea primer intento si la app acaba de abrirse)
+      if(intento<3)setTimeout(()=>_regSW(intento+1),1200*intento);
+    }
+  };
+  _regSW();
+  // Prevenir reload en bucle — sessionStorage sobrevive navegación pero no cierre
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!sessionStorage.getItem('_swrl')){sessionStorage.setItem('_swrl','1');window.location.reload();}
+    else sessionStorage.removeItem('_swrl');
+  });
 }
-if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone)
-  setTimeout(()=>toast('Safari → Compartir → "Añadir al inicio"'),4000);
+// ── Sugerencia de instalación según plataforma ───────────────────────────
+(()=>{
+  const ua=navigator.userAgent;
+  const isIOS=/iPad|iPhone|iPod/.test(ua)&&!window.MSStream;
+  const isAndroid=/Android/.test(ua);
+  const isStandalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  if(isStandalone)return;
+  if(isIOS&&!window.navigator.standalone){
+    setTimeout(()=>toast('Safari → Compartir → «Añadir al inicio» para instalar'),4000);
+  } else if(isAndroid){
+    window.addEventListener('beforeinstallprompt',e=>{
+      e.preventDefault();
+      window._pwaPrompt=e;
+      setTimeout(()=>toast('Toca ⋮ → «Añadir a pantalla de inicio» para instalar SANTERRA'),4000);
+    });
+  }
+})();
 </script>
 </body>
 </html>
