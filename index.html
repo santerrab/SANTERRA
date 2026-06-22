@@ -257,6 +257,96 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 
 /* ── BUSCADOR ────────────────────────────────────────────────── */
+/* ── REPORTE: CARDS DE ÁREA CON DESGLOSE ────────────────────────────────── */
+.area-card{
+  background:var(--sf);border:1px solid var(--bd);border-radius:18px;
+  padding:14px;margin-bottom:10px;contain:layout style
+}
+.area-titulo{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:15px;font-weight:800;color:var(--tx);margin-bottom:10px
+}
+.area-total{
+  font-family:'Inter',sans-serif;font-size:16px;font-weight:900;color:var(--accent)
+}
+/* KPIs del área: fila de métricas compactas */
+.area-kpis{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(60px,1fr));
+  gap:6px;margin-bottom:8px
+}
+.area-kpi{
+  background:var(--sf2);border-radius:10px;padding:7px 8px;text-align:center
+}
+.area-kpi-lbl{font-size:9px;color:var(--txd);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.area-kpi-val{font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:var(--tx);letter-spacing:-.2px}
+/* Food cost row */
+.area-fc-row{
+  display:flex;justify-content:space-between;
+  font-size:11px;color:var(--txm);
+  padding:6px 2px;border-top:1px solid var(--bd3);margin-bottom:8px
+}
+.area-fc-row strong{font-family:'Inter',sans-serif;font-weight:800;color:var(--tx)}
+/* Tabs internos del área */
+.area-tabs{
+  display:flex;gap:0;background:var(--sf2);border:1px solid var(--bd2);
+  border-radius:10px;padding:3px;margin-bottom:10px
+}
+.area-tab{
+  flex:1;padding:5px 4px;background:none;border:none;border-radius:7px;
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;
+  color:var(--txm);cursor:pointer;transition:background .15s,color .15s;
+  touch-action:manipulation
+}
+.area-tab.on{background:var(--sf);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+/* Panel de contenido */
+.area-panel{/* visible o display:none según tab */}
+/* Items de resumen y productos */
+.rep-item{
+  display:flex;align-items:center;gap:6px;padding:7px 0;
+  border-bottom:1px solid var(--bd3)
+}
+.rep-item:last-child{border-bottom:none}
+.area-prod-num{
+  width:18px;height:18px;border-radius:50%;background:var(--sf2);
+  color:var(--txd);font-size:9px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0
+}
+.rep-item-nom{flex:1;font-size:12px;font-weight:600;color:var(--tx);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-item-cant{font-size:10px;color:var(--txm);white-space:nowrap;flex-shrink:0}
+.rep-item-val{font-family:'Inter',sans-serif;font-size:12px;font-weight:800;color:var(--tx);white-space:nowrap;flex-shrink:0}
+/* Link para ver todos */
+.area-mas-items{
+  font-size:11px;color:var(--accent);font-weight:700;padding:8px 0 2px;
+  cursor:pointer;text-align:right;touch-action:manipulation
+}
+/* Estado vacío de área */
+.area-sin-consumo{
+  text-align:center;padding:14px;color:var(--txd);font-size:12px;font-weight:500
+}
+/* Bloque diario */
+.area-dia-bloque{margin-bottom:10px}
+.area-dia-bloque:last-child{margin-bottom:0}
+.area-dia-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 0 5px 2px;border-bottom:2px solid var(--bd2);margin-bottom:5px
+}
+.area-dia-fecha{
+  font-size:11px;font-weight:800;color:var(--txm);
+  text-transform:capitalize;letter-spacing:.2px
+}
+.area-dia-total{
+  font-family:'Inter',sans-serif;font-size:14px;font-weight:900;color:var(--accent)
+}
+.area-dia-items{padding-left:4px}
+.area-dia-item{
+  display:flex;align-items:center;gap:6px;padding:5px 0;
+  border-bottom:1px solid var(--bd3)
+}
+.area-dia-item:last-child{border-bottom:none}
+.area-dia-nom{flex:1;font-size:12px;color:var(--tx);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.area-dia-cant{font-size:10px;color:var(--txm);white-space:nowrap;flex-shrink:0}
+.area-dia-val{font-family:'Inter',sans-serif;font-size:11px;font-weight:800;color:var(--tx);white-space:nowrap;flex-shrink:0;min-width:52px;text-align:right}
+
 /* ── REPORTE: KPIs JERÁRQUICOS ───────────────────────────────────────────── */
 /* KPI principal — gasto total, el más importante */
 .rep-kpi-principal{
@@ -4595,6 +4685,19 @@ function mostrarDetalleProv(provNombre){
   `;
 }
 
+function setAreaTab(areaKey, tab, btn){
+  // Desactivar todos los tabs de esta área
+  document.querySelectorAll('#area-tabs-'+areaKey+' .area-tab').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  // Ocultar todos los paneles
+  ['resumen','diario','productos'].forEach(t=>{
+    const el=document.getElementById('area-panel-'+areaKey+'-'+t);
+    if(el)el.style.display='none';
+  });
+  // Mostrar el panel activo
+  const active=document.getElementById('area-panel-'+areaKey+'-'+tab);
+  if(active)active.style.display='block';
+}
 function cerrarDetalleProv(){
   const el=document.getElementById('rep-prov-detalle');
   if(el)el.style.display='none';
@@ -4832,20 +4935,125 @@ function renderReporte(){
     </div>`;
   ac.appendChild(invCard);
 
+  // ── Pre-calcular días únicos del período para el desglose diario ──────────
+  const diasDelPeriodo=[];
+  {const tmp=new Date(desde);tmp.setHours(0,0,0,0);
+   while(tmp<=hasta){diasDelPeriodo.push(new Date(tmp));tmp.setDate(tmp.getDate()+1);}}
+
   Object.entries(areas).forEach(([key,area])=>{
     const items=Object.values(area.items).sort((a,b)=>b.valor-a.valor);
     const tot=items.reduce((s,i)=>s+i.valor,0);
+    if(!tot&&!items.length)return; // ocultar áreas sin consumo
     const ventaArea=ventasPorArea[key]||0;
     const fc=ventaArea>0?Math.round((tot/ventaArea)*100):null;
     const margen=ventaArea>0?ventaArea-tot:null;
+    const fcColor=fc===null?'var(--tx)':fc>38?'var(--red)':fc>30?'var(--yellow)':'var(--green)';
+
+    // ── Desglose diario de esta área ─────────────────────────────────────────
+    // Agrupar los movimientos del período por día para esta área
+    const movArea=movSem.filter(m=>(m.area||'c1')===key);
+    const porDia=diasDelPeriodo.map(dia=>{
+      const sig=new Date(dia);sig.setHours(23,59,59,999);
+      const movsDelDia=movArea.filter(m=>{const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=dia&&d<=sig;});
+      // Agrupar productos de ese día
+      const prodsDia={};
+      movsDelDia.forEach(m=>(m.items||[]).forEach(it=>{
+        const precio=it.precioUnitStock||prods.find(x=>x.id===it.productoId)?.precioTotal||0;
+        const cant=it.cantidadDespachada||it.cantidad||0;
+        const k=it.productoId;
+        if(!prodsDia[k])prodsDia[k]={nombre:it.nombreProducto,unidad:it.unidadMedida||'',cantidad:0,valor:0};
+        prodsDia[k].cantidad+=cant;prodsDia[k].valor+=cant*precio;
+      }));
+      const totalDia=Object.values(prodsDia).reduce((a,p)=>a+p.valor,0);
+      return{dia,totalDia,prods:Object.values(prodsDia).sort((a,b)=>b.valor-a.valor)};
+    }).filter(d=>d.totalDia>0);
+
+    const diasConConsumo=porDia.length;
+    const promDiario=diasConConsumo>0?Math.round(tot/diasConConsumo):0;
+
     const card=document.createElement('div');card.className='area-card';
-    card.innerHTML=`<div class="area-titulo"><span>${area.icono} ${area.nombre}</span><span class="area-total">${clp(tot)}</span></div>
-      ${ventaArea>0?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0 10px;padding:8px;background:var(--sf);border-radius:10px">
-        <div style="text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase">Ventas</div><div style="font-size:13px;font-weight:800;color:var(--green)">${clp(ventaArea)}</div></div>
-        <div style="text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase">Food cost</div><div style="font-size:13px;font-weight:800;color:${fc>35?'var(--red)':'var(--accent)'}">${fc}%</div></div>
-        <div style="text-align:center"><div style="font-size:9px;color:var(--txm);text-transform:uppercase">Margen</div><div style="font-size:13px;font-weight:800;color:var(--blue)">${clp(margen)}</div></div>
+    card.innerHTML=`
+      <!-- Header: nombre área + total período -->
+      <div class="area-titulo">
+        <span>${area.icono} ${area.nombre}</span>
+        <span class="area-total">${clp(tot)}</span>
+      </div>
+
+      <!-- KPIs del área -->
+      <div class="area-kpis">
+        <div class="area-kpi">
+          <div class="area-kpi-lbl">Promedio diario</div>
+          <div class="area-kpi-val">${clp(promDiario)}</div>
+        </div>
+        <div class="area-kpi">
+          <div class="area-kpi-lbl">Días activos</div>
+          <div class="area-kpi-val">${diasConConsumo}</div>
+        </div>
+        <div class="area-kpi">
+          <div class="area-kpi-lbl">Pedidos</div>
+          <div class="area-kpi-val">${movArea.length}</div>
+        </div>
+        ${ventaArea>0?`<div class="area-kpi"><div class="area-kpi-lbl">Food cost</div><div class="area-kpi-val" style="color:${fcColor}">${fc}%</div></div>`:''}
+      </div>
+      ${ventaArea>0?`
+      <div class="area-fc-row">
+        <span>Ventas <strong>${clp(ventaArea)}</strong></span>
+        <span>Margen <strong style="color:var(--green)">${clp(margen)}</strong></span>
       </div>`:''}
-      ${items.length?items.map(it=>`<div class="rep-item"><div class="rep-item-nom">${it.nombre}</div><span class="rep-item-cant">${clpn(it.cantidad)} ${it.unidad}</span><span class="rep-item-val">${clp(it.valor)}</span></div>`).join(''):'<div style="text-align:center;padding:10px;color:var(--txd);font-size:12px">Sin consumo</div>'}`;
+
+      <!-- Tabs internos: Resumen / Diario / Productos -->
+      <div class="area-tabs" id="area-tabs-${key}">
+        <button class="area-tab on" onclick="setAreaTab('${key}','resumen',this)">Resumen</button>
+        <button class="area-tab" onclick="setAreaTab('${key}','diario',this)">Diario</button>
+        <button class="area-tab" onclick="setAreaTab('${key}','productos',this)">Productos</button>
+      </div>
+
+      <!-- PANEL: Resumen (top 5 productos) -->
+      <div id="area-panel-${key}-resumen" class="area-panel">
+        ${items.length
+          ? items.slice(0,5).map(it=>`
+            <div class="rep-item">
+              <div class="rep-item-nom">${it.nombre}</div>
+              <span class="rep-item-cant">${clpn(it.cantidad)} ${it.unidad}</span>
+              <span class="rep-item-val">${clp(it.valor)}</span>
+            </div>`).join('')
+            +(items.length>5?`<div class="area-mas-items" onclick="setAreaTab('${key}','productos',document.querySelector('#area-tabs-${key} .area-tab:last-child'))">Ver los ${items.length} productos →</div>`:'')
+          :'<div class="area-sin-consumo">Sin consumo en este período</div>'}
+      </div>
+
+      <!-- PANEL: Desglose diario -->
+      <div id="area-panel-${key}-diario" class="area-panel" style="display:none">
+        ${porDia.length?porDia.map(d=>`
+          <div class="area-dia-bloque">
+            <div class="area-dia-hdr">
+              <span class="area-dia-fecha">${d.dia.toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'})}</span>
+              <span class="area-dia-total">${clp(d.totalDia)}</span>
+            </div>
+            <div class="area-dia-items">
+              ${d.prods.map(p=>`
+                <div class="area-dia-item">
+                  <span class="area-dia-nom">${p.nombre}</span>
+                  <span class="area-dia-cant">${clpn(p.cantidad)} ${p.unidad}</span>
+                  <span class="area-dia-val">${clp(p.valor)}</span>
+                </div>`).join('')}
+            </div>
+          </div>`).join('')
+          :'<div class="area-sin-consumo">Sin despachos en este período</div>'}
+      </div>
+
+      <!-- PANEL: Todos los productos del período -->
+      <div id="area-panel-${key}-productos" class="area-panel" style="display:none">
+        ${items.length
+          ? items.map((it,idx)=>`
+            <div class="rep-item">
+              <span class="area-prod-num">${idx+1}</span>
+              <div class="rep-item-nom">${it.nombre}</div>
+              <span class="rep-item-cant">${clpn(it.cantidad)} ${it.unidad}</span>
+              <span class="rep-item-val">${clp(it.valor)}</span>
+            </div>`).join('')
+          :'<div class="area-sin-consumo">Sin productos</div>'}
+      </div>`;
+
     ac.appendChild(card);
   });
 }
@@ -5200,7 +5408,7 @@ startCfgListener();
 })();
 
 Object.assign(window,{
-  selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,navSem,navMes,setRepTab,selProvDona,cerrarDetalleProv,toggleMode,
+  selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,navSem,navMes,setRepTab,selProvDona,cerrarDetalleProv,setAreaTab,toggleMode,
   fStockBod,fStockCat2,fStockCatSel,toggleStockFiltros,limpiarFiltrosStock,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,limpiarBuscar,vaciarCarrito,
