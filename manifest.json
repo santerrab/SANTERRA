@@ -2,13 +2,16 @@
   "name": "SANTERRA",
   "short_name": "SANTERRA",
   "description": "Sistema de inventario y bodega en tiempo real",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/SANTERRA/index.html",
+  "scope": "/SANTERRA/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
   "orientation": "portrait",
   "lang": "es",
+  "id": "/SANTERRA/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icon-192x192.png",
@@ -34,5 +37,7 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": ["utilities", "productivity"],
+  "screenshots": []
 }
