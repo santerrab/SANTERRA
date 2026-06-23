@@ -2742,7 +2742,7 @@ function _renderDashNow(){
     const movHoy=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=hoy&&d<manana;});
     const valHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);},a),0);
     const unHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>b+(it.cantidadDespachada||it.cantidad||0),a),0);
-    const movSem=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=desde&&d<=hasta;});
+    const movSem=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=lunes&&d<=domingo;});
     const valSem=movSem.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);},a),0);
     document.getElementById('d-val').textContent=clp(vt);document.getElementById('d-vsub').textContent='Neto: '+clp(vn);
     document.getElementById('d-np').textContent=prods.length;document.getElementById('d-pp').textContent=pp;
