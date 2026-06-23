@@ -2740,10 +2740,10 @@ function _renderDashNow(){
     const vn=prods.reduce((a,p)=>a+stockTotal(p)*(p.precioNeto||0),0);
     const pp=sols.filter(s=>s.estado==='pendiente').length;
     const movHoy=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=hoy&&d<manana;});
-    const valHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||p?.precioTotal||0);},a),0);
+    const valHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);},a),0);
     const unHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>b+(it.cantidadDespachada||it.cantidad||0),a),0);
     const movSem=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=desde&&d<=hasta;});
-    const valSem=movSem.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||p?.precioTotal||0);},a),0);
+    const valSem=movSem.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);},a),0);
     document.getElementById('d-val').textContent=clp(vt);document.getElementById('d-vsub').textContent='Neto: '+clp(vn);
     document.getElementById('d-np').textContent=prods.length;document.getElementById('d-pp').textContent=pp;
     document.getElementById('d-hoy').textContent=clp(valHoy);document.getElementById('d-hoy-u').textContent=unHoy>0?unHoy+' uds.':'Sin despachos hoy';
@@ -2845,7 +2845,7 @@ function renderTendencia(movs,prods){
     m.forEach(mv=>(mv.items||[]).forEach(it=>{
       if(!agg[it.productoId])agg[it.productoId]={nombre:it.nombreProducto,val:0};
       const p=prods.find(x=>x.id===it.productoId);
-      agg[it.productoId].val+=(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||p?.precioTotal||0);
+      agg[it.productoId].val+=(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);
     }));return agg;
   };
   const semA=calcPP(l0,d0),semP=calcPP(l1,d1);
@@ -3348,21 +3348,12 @@ function renderDesp(){
   }
 }
 // Obtener bodega preferida para un área+producto
-// bodegasPorArea[area] puede ser un string (legacy) o un array de bodegas en orden de prioridad.
-// Se busca la primera bodega de la lista que tenga stock; si ninguna tiene, se devuelve
-// la bodega principal del producto como último recurso.
 function getBodegaParaArea(area,prod){
   const regla=(_cfg.bodegasPorArea||{})[area];
-  if(!regla)return prod?.bodega||'seca';
-  // Normalizar: soporte legacy string y nuevo array
-  const lista=Array.isArray(regla)?regla:[regla];
-  // Buscar primera bodega con stock
-  for(const bodId of lista){
-    if(bodId&&prod&&stockEnBodega(prod,bodId)>0)return bodId;
-  }
-  // Sin stock en ninguna bodega prioritaria → primer ítem de la lista (mejor esfuerzo)
-  if(lista[0])return lista[0];
-  // Último recurso: bodega propia del producto
+  // Si hay regla para el área Y el producto tiene stock en esa bodega, usarla
+  if(regla&&prod&&(stockEnBodega(prod,regla)>0||(prod.stockPorBodega&&regla in prod.stockPorBodega)))
+    return regla;
+  // Fallback: bodega principal del producto
   return prod?.bodega||'seca';
 }
 
@@ -4898,7 +4889,7 @@ function renderReporte(){
   movSem.forEach(m=>{
     const ar=m.area||'c1';if(!areas[ar])return;
     (m.items||[]).forEach(it=>{
-      const p=prods.find(x=>x.id===it.productoId);const precio=it.precioUnitStock||p?.precioTotal||0;
+      const p=prods.find(x=>x.id===it.productoId);const precio=(it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0;
       const cant=it.cantidadDespachada||it.cantidad||0;const val=cant*precio;
       if(!areas[ar].items[it.productoId])areas[ar].items[it.productoId]={nombre:it.nombreProducto,unidad:it.unidadMedida||'unidad',cantidad:0,valor:0};
       areas[ar].items[it.productoId].cantidad+=cant;areas[ar].items[it.productoId].valor+=val;
@@ -4991,8 +4982,8 @@ function renderReporte(){
     const{lunes:l1,domingo:d1}=getSemana(semOffset-1);
     const movPrev=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=l1&&d<=d1;});
     const aggA={},aggP={};
-    movSem.forEach(m=>(m.items||[]).forEach(it=>{if(!aggA[it.productoId])aggA[it.productoId]={nombre:it.nombreProducto,val:0};const p=prods.find(x=>x.id===it.productoId);aggA[it.productoId].val+=(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||p?.precioTotal||0);}));
-    movPrev.forEach(m=>(m.items||[]).forEach(it=>{if(!aggP[it.productoId])aggP[it.productoId]={val:0};const p=prods.find(x=>x.id===it.productoId);aggP[it.productoId].val+=(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||p?.precioTotal||0);}));
+    movSem.forEach(m=>(m.items||[]).forEach(it=>{if(!aggA[it.productoId])aggA[it.productoId]={nombre:it.nombreProducto,val:0};const p=prods.find(x=>x.id===it.productoId);aggA[it.productoId].val+=(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);}));
+    movPrev.forEach(m=>(m.items||[]).forEach(it=>{if(!aggP[it.productoId])aggP[it.productoId]={val:0};const p=prods.find(x=>x.id===it.productoId);aggP[it.productoId].val+=(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);}));
     const vars=Object.entries(aggA).map(([pid,d])=>{const prev=aggP[pid]?.val||0;const pct=prev===0?100:Math.round(((d.val-prev)/prev)*100);return{nombre:d.nombre,curr:d.val,prev,pct};}).filter(v=>Math.abs(v.pct)>=20).sort((a,b)=>b.pct-a.pct);
     const wrap=document.getElementById('rep-trend');
     if(vars.length){
@@ -5066,7 +5057,7 @@ function renderReporte(){
       // Agrupar productos de ese día
       const prodsDia={};
       movsDelDia.forEach(m=>(m.items||[]).forEach(it=>{
-        const precio=it.precioUnitStock||prods.find(x=>x.id===it.productoId)?.precioTotal||0;
+        const precio=(it.precioUnitStock!=null?it.precioUnitStock:prods.find(x=>x.id===it.productoId)?.precioTotal)||0;
         const cant=it.cantidadDespachada||it.cantidad||0;
         const k=it.productoId;
         if(!prodsDia[k])prodsDia[k]={nombre:it.nombreProducto,unidad:it.unidadMedida||'',cantidad:0,valor:0};
@@ -5172,7 +5163,7 @@ function exportarPDF(){
   const movSem=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=lunes&&d<=domingo;});
   const n=gN();
   const areas={c1:{nombre:n.c1,icono:'🌅',items:{}},c2:{nombre:n.c2,icono:'🍮',items:{}},c3:{nombre:n.c3,icono:'🍽️',items:{}},c4:{nombre:n.c4,icono:'🍹',items:{}}};
-  movSem.forEach(m=>{const ar=m.area||'c1';if(!areas[ar])return;(m.items||[]).forEach(it=>{const p=prods.find(x=>x.id===it.productoId);const precio=it.precioUnitStock||p?.precioTotal||0;const cant=it.cantidadDespachada||it.cantidad||0;if(!areas[ar].items[it.productoId])areas[ar].items[it.productoId]={nombre:it.nombreProducto,unidad:it.unidadMedida||'',cantidad:0,valor:0};areas[ar].items[it.productoId].cantidad+=cant;areas[ar].items[it.productoId].valor+=cant*precio;});});
+  movSem.forEach(m=>{const ar=m.area||'c1';if(!areas[ar])return;(m.items||[]).forEach(it=>{const p=prods.find(x=>x.id===it.productoId);const precio=(it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0;const cant=it.cantidadDespachada||it.cantidad||0;if(!areas[ar].items[it.productoId])areas[ar].items[it.productoId]={nombre:it.nombreProducto,unidad:it.unidadMedida||'',cantidad:0,valor:0};areas[ar].items[it.productoId].cantidad+=cant;areas[ar].items[it.productoId].valor+=cant*precio;});});
   const totTotal=Object.values(areas).reduce((a,area)=>a+Object.values(area.items).reduce((b,i)=>b+i.valor,0),0);
   let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${titulo}</title><style>
     body{font-family:Arial,sans-serif;font-size:12px;color:#1a1d23;padding:24px}
@@ -5453,38 +5444,18 @@ function renderCfgBodegasArea(){
   const areas=['c1','c2','c3','c4'];
   const reglas=_cfg.bodegasPorArea||{};
   const bodOpts=bodegas.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
-  el.innerHTML=areas.map(k=>{
-    // Normalizar: soporte legacy string y nuevo array
-    const raw=reglas[k];
-    const lista=Array.isArray(raw)?raw:(raw?[raw]:[]);
-    return`<div style="margin-bottom:12px;background:var(--sf2);border:1px solid var(--bd2);border-radius:14px;padding:12px">
-      <div style="font-size:11px;color:var(--txm);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${n[k]||k}</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div>
-          <div style="font-size:9px;color:var(--txm);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">1ª prioridad</div>
-          <select class="fi" id="cfg-bpa-${k}-0" style="font-size:14px;padding:8px 12px">
-            <option value="">— Bodega del producto —</option>
-            ${bodOpts}
-          </select>
-        </div>
-        <div>
-          <div style="font-size:9px;color:var(--txm);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">2ª prioridad (si 1ª sin stock)</div>
-          <select class="fi" id="cfg-bpa-${k}-1" style="font-size:14px;padding:8px 12px">
-            <option value="">— Bodega del producto —</option>
-            ${bodOpts}
-          </select>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  el.innerHTML=areas.map(k=>`
+    <div class="fg" style="margin-bottom:8px">
+      <label class="fl">${n[k]||k}</label>
+      <select class="fi" id="cfg-bpa-${k}" style="font-size:15px;padding:9px 14px">
+        <option value="">— Bodega del producto (por defecto) —</option>
+        ${bodOpts}
+      </select>
+    </div>`).join('');
   // Establecer valores guardados
   areas.forEach(k=>{
-    const raw=reglas[k];
-    const lista=Array.isArray(raw)?raw:(raw?[raw]:[]);
-    [0,1].forEach(i=>{
-      const sel=document.getElementById(`cfg-bpa-${k}-${i}`);
-      if(sel&&lista[i])sel.value=lista[i];
-    });
+    const sel=document.getElementById('cfg-bpa-'+k);
+    if(sel&&reglas[k])sel.value=reglas[k];
   });
 }
 
@@ -5492,11 +5463,8 @@ async function guardarBodegasArea(){
   const areas=['c1','c2','c3','c4'];
   const reglas={};
   areas.forEach(k=>{
-    const v0=document.getElementById(`cfg-bpa-${k}-0`)?.value||'';
-    const v1=document.getElementById(`cfg-bpa-${k}-1`)?.value||'';
-    // Guardar como array filtrando vacíos; si ambos vacíos no guardar la clave
-    const lista=[v0,v1].filter(Boolean);
-    if(lista.length)reglas[k]=lista;
+    const v=document.getElementById('cfg-bpa-'+k)?.value||'';
+    if(v)reglas[k]=v;
   });
   try{
     await setDoc(doc(db,'config','app'),{bodegasPorArea:reglas},{merge:true});
