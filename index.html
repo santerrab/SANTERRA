@@ -100,14 +100,20 @@ body.light .hdr{background:rgba(255,255,255,.92)}
   transform:translateZ(0);-webkit-transform:translateZ(0);
   border-top:1px solid var(--bd);
   display:flex;padding-bottom:var(--sb);z-index:200;
+  overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  scroll-snap-type:x proximity;
   box-shadow:0 -1px 0 var(--bd);
 }
+.nav::-webkit-scrollbar{display:none}
 body.light .nav{background:rgba(255,255,255,.92)}
 .nb{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:10px 2px 8px;background:none;border:none;
+  flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 6px 8px;background:none;border:none;
   color:var(--txd);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;
   cursor:pointer;transition:color .2s;gap:4px;text-transform:uppercase;letter-spacing:.6px;position:relative;
+  touch-action:manipulation;scroll-snap-align:center;
 }
 .nb svg{width:22px;height:22px;stroke-width:1.7;transition:all .2s}
 .nb.on{color:var(--accent)}
@@ -1843,6 +1849,11 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
     <div class="fg"><label class="fl">Servicio</label><input class="fi" type="text" id="cfg-serv" placeholder="Servicio"></div>
     <button class="btn bg-blue" onclick="guardarNombres()">Guardar nombres</button>
     <div class="divl"></div>
+    <div style="font-size:11px;color:var(--txm);text-transform:uppercase;font-weight:700;margin-bottom:10px">🏪 Bodega preferida por área</div>
+    <div style="font-size:11px;color:var(--txd);margin-bottom:12px">Define de qué bodega se despacha por defecto cuando cada área hace un pedido. Solo aplica si el producto tiene stock en esa bodega.</div>
+    <div id="cfg-bodegas-area"></div>
+    <button class="btn bg-acc" onclick="guardarBodegasArea()">Guardar reglas de bodega</button>
+    <div class="divl"></div>
     <div style="font-size:11px;color:var(--txm);text-transform:uppercase;font-weight:700;margin-bottom:10px">🕐 Horario del Bodeguero</div>
     <div class="fr" style="margin-bottom:11px">
       <div class="fg" style="margin-bottom:0"><label class="fl">Desde</label><input class="fi" type="time" id="cfg-h-desde" value="08:00"></div>
@@ -2098,7 +2109,7 @@ function startCfgListener(){
   uCfg=onSnapshot(doc(db,'config','app'),snap=>{
     if(snap.exists()){
       const d=snap.data();
-      _cfg={pinE:d.pinE||'1234',pinB:d.pinB||null,c1:d.c1||'Desayuno',c2:d.c2||'Postres',c3:d.c3||'Buffet',c4:d.c4||'Barra'};
+      _cfg={pinE:d.pinE||'1234',pinB:d.pinB||null,c1:d.c1||'Desayuno',c2:d.c2||'Postres',c3:d.c3||'Buffet',c4:d.c4||'Barra',bodegasPorArea:d.bodegasPorArea||{}};
       ['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('lbl-'+k);if(el)el.textContent=_cfg[k];});
       if(!_cfgReady){_cfgReady=true;_onCfgReady.forEach(fn=>fn());_onCfgReady=[];}
       else if(role==='encargado'){
@@ -2596,7 +2607,8 @@ function goTo(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nb,.sb-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById(id)?.classList.add('on');
-  document.getElementById('nb-'+id)?.classList.add('on');
+  const _nb=document.getElementById('nb-'+id);
+  if(_nb){_nb.classList.add('on');_nb.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
   document.getElementById('sbb-'+id)?.classList.add('on');
   window.scrollTo(0,0);
   if(id==='pg-rep')renderReporte();
@@ -3210,7 +3222,7 @@ function renderDesp(){
     const renderItem=it=>{
       const p=it.prod;
       const isKg=['kg','g','lt','ml'].includes((it.unidadMedida||'').toLowerCase());
-      const est=despEst[sol.id][it.productoId]||{tipo:'p',cant:it.cantidad,bodega:p?.bodega||'seca'};
+      const est=despEst[sol.id][it.productoId]||{tipo:'p',cant:it.cantidad,bodega:getBodegaParaArea(sol.creadoPor,p)||'seca'};
       // Stock disponible en la bodega elegida
       const stockBod=p?stockEnBodega(p,est.bodega||p?.bodega||'seca'):0;
       const stockTot=p?stockTotal(p):0;
@@ -3335,12 +3347,23 @@ function renderDesp(){
     lista.innerHTML=ss.map(s=>solCard(s)).join('');
   }
 }
+// Obtener bodega preferida para un área+producto
+function getBodegaParaArea(area,prod){
+  const regla=(_cfg.bodegasPorArea||{})[area];
+  // Si hay regla para el área Y el producto tiene stock en esa bodega, usarla
+  if(regla&&prod&&(stockEnBodega(prod,regla)>0||(prod.stockPorBodega&&regla in prod.stockPorBodega)))
+    return regla;
+  // Fallback: bodega principal del producto
+  return prod?.bodega||'seca';
+}
+
 function togD(sid,pid,cantSol){
   if(!despEst[sid])despEst[sid]={};
   const e=despEst[sid][pid]||{tipo:'p',cant:cantSol};
   const c={p:'ok',ok:'ss',ss:'p'}[e.tipo]||'ok';
   const p=prods.find(x=>x.id===pid);
-  const bodId=e.bodega||p?.bodega||'seca';
+  const sol=sols.find(x=>x.id===sid);
+  const bodId=e.bodega||getBodegaParaArea(sol?.creadoPor,p)||'seca';
   const stockDispo=p?Math.min(stockEnBodega(p,bodId),cantSol):cantSol;
   despEst[sid][pid]={tipo:c,cant:c==='ss'?0:stockDispo,bodega:bodId};
   renderDesp();
@@ -3354,7 +3377,7 @@ function aceptarTodo(sid){
   if(!despEst[sid])despEst[sid]={};
   (sol.items||[]).forEach(it=>{
     const p=prods.find(x=>x.id===it.productoId);
-    const bodId=despEst[sid][it.productoId]?.bodega||p?.bodega||'seca';
+    const bodId=despEst[sid][it.productoId]?.bodega||getBodegaParaArea(sol?.creadoPor,p)||'seca';
     const stockDispo=p?Math.min(stockEnBodega(p,bodId),it.cantidad):it.cantidad;
     despEst[sid][it.productoId]={tipo:stockDispo>0?'ok':'ss',cant:stockDispo,bodega:bodId};
   });
@@ -3385,7 +3408,7 @@ async function despachar(solId){
     const bodId=est.bodega||p?.bodega||'seca';
     const stockDispo=p?stockEnBodega(p,bodId):0;
     const cantFinal=Math.min(est.cant,stockDispo);
-    if(cantFinal>0)items.push({...it,cantidadDespachada:cantFinal,bodegaOrigen:bodId});
+    if(cantFinal>0)items.push({...it,cantidadDespachada:cantFinal,bodegaOrigen:bodId,precioUnitStock:p?.precioTotal||0,precioUnitNeto:p?.precioNeto||0});
   }
   if(!items.length){toast('Tikea al menos un producto','err');return;}
   try{
@@ -5415,8 +5438,43 @@ async function elimCat(id,n){if(!confirm('¿Eliminar "'+n+'"?'))return;try{await
 function cSug(n,btn){const c=CATS_BASE.find(x=>x.nombre===n);if(!c)return;document.getElementById('cat-nom').value=c.nombre;document.getElementById('cat-subs').value=c.subcategorias.join(', ');if(btn)btn.classList.add('on');document.getElementById('cat-nom').scrollIntoView({behavior:'smooth',block:'nearest'});}
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
+function renderCfgBodegasArea(){
+  const el=document.getElementById('cfg-bodegas-area');if(!el)return;
+  const n=gN();
+  const areas=['c1','c2','c3','c4'];
+  const reglas=_cfg.bodegasPorArea||{};
+  const bodOpts=bodegas.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
+  el.innerHTML=areas.map(k=>`
+    <div class="fg" style="margin-bottom:8px">
+      <label class="fl">${n[k]||k}</label>
+      <select class="fi" id="cfg-bpa-${k}" style="font-size:15px;padding:9px 14px">
+        <option value="">— Bodega del producto (por defecto) —</option>
+        ${bodOpts}
+      </select>
+    </div>`).join('');
+  // Establecer valores guardados
+  areas.forEach(k=>{
+    const sel=document.getElementById('cfg-bpa-'+k);
+    if(sel&&reglas[k])sel.value=reglas[k];
+  });
+}
+
+async function guardarBodegasArea(){
+  const areas=['c1','c2','c3','c4'];
+  const reglas={};
+  areas.forEach(k=>{
+    const v=document.getElementById('cfg-bpa-'+k)?.value||'';
+    if(v)reglas[k]=v;
+  });
+  try{
+    await setDoc(doc(db,'config','app'),{bodegasPorArea:reglas},{merge:true});
+    toast('✓ Reglas de bodega guardadas');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
 function abrirCfg(){
   const n=gN();['c1','c2','c3','c4'].forEach(k=>{const el=document.getElementById('cfg-'+k);if(el)el.value=n[k];});
+  renderCfgBodegasArea();
   const es=document.getElementById('cfg-serv');if(es)es.value='';
   document.getElementById('cfg-pe').value='';document.getElementById('cfg-pb').value='';
   const h=getHorario();
@@ -5497,7 +5555,7 @@ Object.assign(window,{
   guardarBodega,elimBodega,renderBodegasM,
   abrirTransfer,trBuscar,trSelProd,trActualizarStock,confirmarTransferencia,
   abrirMerma,merBuscar,merSelProd,confirmarMerma,
-  guardarPins,guardarNombres,abrirCfg,limpiarDatosPrueba,guardarHorario,
+  guardarPins,guardarNombres,abrirCfg,guardarBodegasArea,limpiarDatosPrueba,guardarHorario,
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
   renderConteo,setConteo,actualizarContadores,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
   renderHistPrecios,exportarPDF,verFact,
