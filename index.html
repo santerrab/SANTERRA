@@ -3351,13 +3351,10 @@ function renderDesp(){
 function getBodegaParaArea(area,prod){
   const regla=(_cfg.bodegasPorArea||{})[area];
   if(!regla)return prod?.bodega||'seca';
-  // Normalizar: soporte legacy string y nuevo array
   const lista=Array.isArray(regla)?regla:[regla];
-  // Buscar primera bodega con stock
   for(const bodId of lista){
     if(bodId&&prod&&stockEnBodega(prod,bodId)>0)return bodId;
   }
-  // Sin stock en ninguna prioritaria → primera de la lista (mejor esfuerzo)
   if(lista[0])return lista[0];
   return prod?.bodega||'seca';
 }
@@ -3402,8 +3399,14 @@ function stepCant(sid,pid,delta){
   renderDesp();
 }
 
+const _despachando=new Set();
 async function despachar(solId){
-  const sol=sols.find(x=>x.id===solId);if(!sol)return;
+  if(_despachando.has(solId))return;          // bloquea doble-tap
+  _despachando.add(solId);
+  // Deshabilitar visualmente el botón mientras dura el despacho
+  const btnDesp=document.querySelector(`.btn-desp[onclick="despachar('${solId}')"]`);
+  if(btnDesp){btnDesp.disabled=true;btnDesp.textContent='Despachando...';}
+  const sol=sols.find(x=>x.id===solId);if(!sol){_despachando.delete(solId);return;}
   const items=[];const noTiqueados=[];
   for(const it of(sol.items||[])){
     const est=despEst[solId]?.[it.productoId];
@@ -3446,6 +3449,7 @@ async function despachar(solId){
     renderDesp();renderSolsPage();renderDash();
     toast(noTiqueados.length?`✓ Despachado (${noTiqueados.length} sin tiquear)`:'✓ Despacho registrado');
   }catch(e){toast('Error: '+e.message,'err');}
+  finally{_despachando.delete(solId);}
 }
 function abrirRechazo(id){rechazandoId=id;document.getElementById('f-motivo').value='';openM('mo-rechazo');}
 async function confirmarRechazo(){
