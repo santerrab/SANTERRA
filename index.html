@@ -131,6 +131,32 @@ body.light .nav{background:rgba(255,255,255,.92)}
 }
 .nb-badge.on{display:block}
 
+/* ── PANEL "MÁS" (nav móvil — Encargado) ───────────────────────── */
+.mas-ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.mas-ovl.on{display:block}
+.mas-panel{
+  position:fixed;left:10px;right:10px;bottom:calc(var(--sb) + 76px);
+  background:var(--sf);border:1px solid var(--bd);border-radius:18px;
+  padding:8px;box-shadow:0 -10px 34px rgba(0,0,0,.4);z-index:201;
+  opacity:0;transform:translateY(14px) scale(.97);pointer-events:none;
+  transition:opacity .18s,transform .18s;
+}
+#mas-items{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px}
+.mas-ovl.on .mas-panel{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.mas-item{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:14px 4px;background:none;border:none;border-radius:14px;
+  color:var(--txm);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;
+  cursor:pointer;transition:background .15s,color .15s;text-transform:uppercase;letter-spacing:.4px;
+  touch-action:manipulation;
+}
+.mas-item:active{background:var(--bd3);transform:none}
+.mas-item svg{width:20px;height:20px;stroke-width:1.7}
+.mas-item.on{color:var(--accent)}
+.mas-item.on svg{stroke-width:2.2;filter:drop-shadow(0 0 6px var(--accent))}
+.mas-sep-full{grid-column:1/-1;height:1px;background:var(--bd2);margin:6px 4px}
+@media(min-width:900px){.mas-ovl{display:none!important}}
+
 /* ── PÁGINAS ─────────────────────────────────────────────────── */
 .pg{display:none;padding:20px;padding-bottom:calc(96px + var(--sb))}.pg.on{display:block}
 .pages-wrap{-webkit-overflow-scrolling:touch;overflow-y:auto;touch-action:pan-y}
@@ -1576,6 +1602,9 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 
 </div><!-- /pages-wrap -->
 <div class="nav" id="nav-bar"></div>
+<div class="mas-ovl" id="mas-ovl" onclick="if(event.target===this)closeMas()">
+  <div class="mas-panel" id="mas-panel"><div id="mas-items"></div></div>
+</div>
 </div><!-- /app -->
 
 <!-- MODALES -->
@@ -2286,6 +2315,8 @@ function toast(msg,tipo=''){
 }
 function openM(id){document.getElementById(id)?.classList.add('on');}
 function closeM(id){document.getElementById(id)?.classList.remove('on');}
+function toggleMas(){document.getElementById('mas-ovl')?.classList.toggle('on');}
+function closeMas(){document.getElementById('mas-ovl')?.classList.remove('on');}
 document.querySelectorAll('.ovl').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on');}));
 // Eventos de scroll con passive:true para mejor rendimiento en móvil
 document.querySelector('.pages-wrap')?.addEventListener('scroll',()=>{},{passive:true});
@@ -2586,11 +2617,26 @@ function buildNav(r){
     {id:'pg-dash',i:iD(),l:'Inicio'}
   ];
   const tabs={encargado:enc,bodeguero:bod,c1:coc,c2:coc,c3:coc,c4:coc}[r]||coc;
-  document.getElementById('nav-bar').innerHTML=tabs.map(t=>`
-    <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
-      ${t.i}<span>${t.l}</span>
-      ${t.badge?`<span class="nb-badge" id="nb-badge-desp">0</span>`:''}
-    </button>`).join('');
+  if(r==='encargado'){
+    // Nav móvil: 5 fijos (Inicio, Almacén, Solicitudes, Facturas, Transferir) + botón "Más"
+    const fijosIds=['pg-dash','pg-stock','pg-sols','pg-fact'];
+    const fijos=enc.filter(t=>fijosIds.includes(t.id));
+    const gestion=enc.filter(t=>!fijosIds.includes(t.id));
+    document.getElementById('nav-bar').innerHTML=
+      fijos.map(t=>`<button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">${t.i}<span>${t.l}</span></button>`).join('')+
+      `<button class="nb" id="nb-transfer" onclick="closeMas();openM('mo-transfer')">${iTransfer()}<span>Transferir</span></button>`+
+      `<button class="nb" id="nb-more" onclick="toggleMas()">${iMore()}<span>Más</span></button>`;
+    document.getElementById('mas-items').innerHTML=
+      gestion.map(t=>`<button class="mas-item" id="mas-${t.id}" onclick="closeMas();goTo('${t.id}')">${t.i}<span>${t.l}</span></button>`).join('')+
+      `<div class="mas-sep-full"></div>`+
+      `<button class="mas-item" onclick="closeMas();abrirCfg()">${iCfg()}<span>Configuración</span></button>`;
+  }else{
+    document.getElementById('nav-bar').innerHTML=tabs.map(t=>`
+      <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
+        ${t.i}<span>${t.l}</span>
+        ${t.badge?`<span class="nb-badge" id="nb-badge-desp">0</span>`:''}
+      </button>`).join('');
+  }
   const sb=document.getElementById('sidebar');
   if(r==='encargado'){
     sb.style.display='flex';
@@ -2605,11 +2651,13 @@ function buildNav(r){
 }
 function goTo(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.nb,.sb-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.nb,.sb-btn,.mas-item').forEach(b=>b.classList.remove('on'));
   document.getElementById(id)?.classList.add('on');
   const _nb=document.getElementById('nb-'+id);
   if(_nb){_nb.classList.add('on');_nb.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
   document.getElementById('sbb-'+id)?.classList.add('on');
+  const _mi=document.getElementById('mas-'+id);
+  if(_mi){_mi.classList.add('on');document.getElementById('nb-more')?.classList.add('on');}
   window.scrollTo(0,0);
   if(id==='pg-rep')renderReporte();
   if(id==='pg-inv')renderInvHistorial();
@@ -2656,6 +2704,7 @@ function iMer(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 function iChart(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`;}
 function iTransfer(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>`;}
 function iVt(){return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`;}
+function iMore(){return`<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>`;}
 
 // ── LISTENERS ────────────────────────────────────────────────────────────────
 function startL(){
