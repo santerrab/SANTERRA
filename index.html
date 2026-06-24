@@ -2639,27 +2639,44 @@ function buildNav(r){
     ];
     navEl.innerHTML=
       encPrim.map(t=>`
-        <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
+        <button class="nb" id="nb-${t.id}" data-goto="${t.id}" style="min-width:64px">
           ${t.i}<span>${t.l}</span>
         </button>`).join('')+
-      `<button class="nb" onclick="openM('mo-transfer')">
+      `<button class="nb" id="nb-transfer-btn" style="min-width:64px">
         ${iTransfer()}<span>Transferir</span>
       </button>`+
-      `<button class="nb nb-more" id="nb-more-btn" onclick="toggleNavMore()">
+      `<button class="nb nb-more" id="nb-more-btn" style="min-width:64px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
         <span>Más</span>
       </button>`;
-    // Poblar panel Más
+    // Vincular eventos con addEventListener — fiable en iOS Safari
+    encPrim.forEach(t=>{
+      navEl.querySelector('[data-goto="'+t.id+'"]')
+        ?.addEventListener('click',()=>goTo(t.id));
+    });
+    navEl.querySelector('#nb-transfer-btn')
+      ?.addEventListener('click',()=>openM('mo-transfer'));
+    navEl.querySelector('#nb-more-btn')
+      ?.addEventListener('click',toggleNavMore);
+    // Poblar panel Más con addEventListener — más fiable en iOS Safari
     const panel=document.getElementById('nav-more-panel');
-    if(panel)panel.innerHTML=
-      encMore.map(t=>`
-        <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}');closeNavMore()">
-          ${t.i}<span>${t.l}</span>
-        </button>`).join('')+
-      `<button class="nb" onclick="abrirCfg();closeNavMore()">
-        ${iCfg()}<span>Config</span>
-      </button>`;
-    navEl.classList.add('nav-fit');
+    if(panel){
+      panel.innerHTML=
+        encMore.map(t=>`
+          <button class="nb" id="nb-${t.id}" data-goto="${t.id}">
+            ${t.i}<span>${t.l}</span>
+          </button>`).join('')+
+        `<button class="nb" id="nb-more-cfg">
+          ${iCfg()}<span>Config</span>
+        </button>`;
+      encMore.forEach(t=>{
+        panel.querySelector('[data-goto="'+t.id+'"]')
+          ?.addEventListener('click',()=>{goTo(t.id);closeNavMore();});
+      });
+      panel.querySelector('#nb-more-cfg')
+        ?.addEventListener('click',()=>{abrirCfg();closeNavMore();});
+    }
+    // 6 botones en encargado — scroll horizontal, sin nav-fit
   } else {
     const extraBtn=``;
     navEl.innerHTML=tabs.map(t=>`
@@ -2686,6 +2703,7 @@ function toggleNavMore(){
   const panel=document.getElementById('nav-more-panel');
   const overlay=document.getElementById('nav-more-overlay');
   const btn=document.getElementById('nb-more-btn');
+  if(!panel)return;
   const isOpen=panel.style.display==='grid';
   panel.style.display=isOpen?'none':'grid';
   overlay.style.display=isOpen?'none':'block';
