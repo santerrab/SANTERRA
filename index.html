@@ -107,6 +107,9 @@ body.light .hdr{background:rgba(255,255,255,.92)}
   box-shadow:0 -1px 0 var(--bd);
 }
 .nav::-webkit-scrollbar{display:none}
+/* nav-fit: pocos botones — se distribuyen a lo ancho sin scroll */
+.nav.nav-fit{overflow-x:hidden;}
+.nav.nav-fit .nb{flex:1;min-width:0;}
 body.light .nav{background:rgba(255,255,255,.92)}
 .nb{
   flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -127,6 +130,19 @@ body.light .nav{background:rgba(255,255,255,.92)}
   position:absolute;top:6px;right:calc(50% - 18px);
   background:var(--red);color:#fff;font-size:9px;font-weight:800;
   border-radius:10px;padding:1px 5px;min-width:18px;text-align:center;display:none;
+/* ── Panel "Más" del encargado ─────────────────────────────────────────── */
+#nav-more-panel{
+  display:none;position:fixed;bottom:calc(62px + var(--sab,0px));left:0;right:0;
+  background:var(--sf);border-top:1px solid var(--bd2);
+  padding:10px 8px 6px;z-index:120;
+  display:none;
+  grid-template-columns:repeat(4,1fr);gap:4px;
+}
+#nav-more-panel.open{display:grid;}
+#nav-more-panel .nb{flex:1;min-width:0;font-size:8.5px;padding:8px 4px 6px;}
+#nav-more-overlay{display:none;position:fixed;inset:0;z-index:119;}
+#nav-more-overlay.open{display:block;}
+.nb-more.on{color:var(--accent);}
   box-shadow:0 0 8px var(--red);
 }
 .nb-badge.on{display:block}
@@ -1575,6 +1591,8 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 </div>
 
 </div><!-- /pages-wrap -->
+<div id="nav-more-overlay" onclick="closeNavMore()"></div>
+<div id="nav-more-panel"></div>
 <div class="nav" id="nav-bar"></div>
 </div><!-- /app -->
 
@@ -2179,7 +2197,24 @@ const clp=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',mini
 const clpn=v=>new Intl.NumberFormat('es-CL',{minimumFractionDigits:0,maximumFractionDigits:2}).format(v||0);
 // Helpers para inputs de monto en $ que deben mostrar puntos de miles mientras se escribe
 // (ej: 20.000) sin perder el cursor ni romper el parseo numérico interno.
-const desfmtMiles=s=>{const n=parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
+const desfmtMiles=s=>{
+  let str=String(s||'').trim();
+  if(!str)return 0;
+  // Detectar si el punto actúa como decimal:
+  // → solo hay un punto Y no hay coma → el punto es decimal (ej iOS: "1500.5")
+  // → hay punto Y coma → punto=miles, coma=decimal (ej "1.500,5")
+  // → solo coma → coma=decimal (ej "1500,5")
+  const puntos=(str.match(/\./g)||[]).length;
+  const comas=(str.match(/,/g)||[]).length;
+  if(puntos===1&&comas===0){
+    // Punto es separador decimal — usarlo directamente
+    const n=parseFloat(str.replace(/[^\d.]/g,''));
+    return isNaN(n)?0:n;
+  }
+  // Caso estándar: punto=miles, coma=decimal
+  const n=parseFloat(str.replace(/\./g,'').replace(',','.'));
+  return isNaN(n)?0:n;
+};
 // fmtMiles: formato entero (puntos de miles, sin decimales) — para descuentos en $
 const fmtMiles=v=>{const n=Math.round(v||0);return n?new Intl.NumberFormat('es-CL').format(n):'';};
 // fmtMilesDec: formato con hasta 4 decimales — para precios netos y subtotales de factura
@@ -2200,36 +2235,38 @@ function onInputMiles(el){
   el.setSelectionRange(pos,pos);
   return raw;
 }
-// onInputMilesDec: igual que onInputMiles pero conserva decimales mientras se escribe
-// Lógica especial: si el usuario está escribiendo la parte decimal (el valor termina en
-// coma, o en coma+dígitos), no reformatea los decimales para no interrumpir el tipeo.
+// onInputMilesDec: conserva decimales mientras se escribe.
+// Soporta tanto coma (Android/desktop) como punto (iOS) como separador decimal.
 function onInputMilesDec(el){
   const raw=el.value;
 
-  // ── CASOS ESPECIALES: usuario borrando o en medio de escritura ────────────
-  // 1. Campo vacío — dejar limpio, no forzar nada
+  // 1. Campo vacío
   if(!raw||raw.trim()==='')return 0;
 
-  // 2. Solo un separador decimal al final ("," o ".") — el usuario va a escribir decimales
-  //    No formatear todavía, dejar el cursor donde está
+  // 2. Solo un separador al final ("," o ".") — usuario va a escribir decimales
   if(/^[\d.,]*[,.]$/.test(raw)){
-    // Calcular el valor numérico de la parte entera ya escrita
-    const soloEntero=raw.replace(/[,.]$/,'');
-    return desfmtMiles(soloEntero)||0;
+    return desfmtMiles(raw.replace(/[,.]$/,''))||0;
   }
 
-  // 3. Número con decimales en progreso (ej "1.500,3") — respetar lo escrito
-  const tieneDecimales=/[,.]\d+/.test(raw);
-  if(tieneDecimales){
-    // Separar parte entera y decimal respetando lo que escribió
-    const sepIdx=Math.max(raw.lastIndexOf(','),raw.lastIndexOf('.'));
+  // 3. Detectar separador decimal real:
+  //    - Si hay exactamente un punto y sin coma → el punto ES decimal (iOS)
+  //    - Si hay coma (con o sin puntos) → la coma es decimal
+  const puntos=(raw.match(/\./g)||[]).length;
+  const comas=(raw.match(/,/g)||[]).length;
+  const esPuntoDecimal=puntos===1&&comas===0&&/\.\d+$/.test(raw);
+  const esComaDecimal=comas===1&&/,\d*/.test(raw);
+
+  if(esPuntoDecimal||esComaDecimal){
+    // Separar parte entera y decimal
+    const sepChar=esPuntoDecimal?'.':',';
+    const sepIdx=raw.lastIndexOf(sepChar);
     const parteEnteraRaw=raw.slice(0,sepIdx);
     const parteDec=raw.slice(sepIdx+1);
-    const entero=desfmtMiles(parteEnteraRaw)||0;
-    // Re-formatear solo la parte entera, conservar decimales tal como están
+    // Parsear la parte entera eliminando separadores de miles
+    const entero=parseFloat(parteEnteraRaw.replace(/[.,]/g,''))||0;
+    // Reformatear parte entera con puntos de miles, mantener decimales intactos
     const entFmt=entero>0?new Intl.NumberFormat('es-CL').format(Math.trunc(entero)):'0';
     const nuevoValor=entFmt+','+parteDec;
-    // Solo actualizar si el formato cambió, para no mover el cursor innecesariamente
     if(el.value!==nuevoValor){
       const pos=el.selectionStart;
       const diff=nuevoValor.length-raw.length;
@@ -2240,19 +2277,16 @@ function onInputMilesDec(el){
     return parseFloat(entero+'.'+(parteDec||'0'))||0;
   }
 
-  // 4. Número entero — formatear con puntos de miles conservando posición del cursor
+  // 4. Número entero — formatear con puntos de miles
   const num=desfmtMiles(raw);
   if(!num&&num!==0)return 0;
   const formatted=num>0?fmtMilesDec(num):'';
   if(el.value!==formatted){
     const pos=el.selectionStart;
-    const lenAntes=raw.length;
-    el.value=formatted;
-    const lenDespues=formatted.length;
-    // Compensar puntos de miles que se agregaron/quitaron
     const puntosAntes=(raw.match(/\./g)||[]).length;
+    el.value=formatted;
     const puntosDespues=(formatted.match(/\./g)||[]).length;
-    const nuevaPos=Math.max(0,Math.min(lenDespues, pos+(puntosDespues-puntosAntes)));
+    const nuevaPos=Math.max(0,Math.min(formatted.length,pos+(puntosDespues-puntosAntes)));
     el.setSelectionRange(nuevaPos,nuevaPos);
   }
   return num;
@@ -2586,11 +2620,58 @@ function buildNav(r){
     {id:'pg-dash',i:iD(),l:'Inicio'}
   ];
   const tabs={encargado:enc,bodeguero:bod,c1:coc,c2:coc,c3:coc,c4:coc}[r]||coc;
-  document.getElementById('nav-bar').innerHTML=tabs.map(t=>`
-    <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
-      ${t.i}<span>${t.l}</span>
-      ${t.badge?`<span class="nb-badge" id="nb-badge-desp">0</span>`:''}
-    </button>`).join('');
+  const navEl=document.getElementById('nav-bar');
+
+  if(r==='encargado'){
+    // Operación diaria — 5 botones siempre visibles
+    const encPrim=[
+      {id:'pg-dash',i:iD(),l:'Inicio'},
+      {id:'pg-stock',i:iSt(),l:'Almacén'},
+      {id:'pg-sols',i:iSo(),l:'Solicitudes'},
+      {id:'pg-fact',i:iF(),l:'Facturas'},
+    ];
+    // Gestión — van en el panel "Más"
+    const encMore=[
+      {id:'pg-prods',i:iPr(),l:'Productos'},
+      {id:'pg-rep',i:iR(),l:'Reporte'},
+      {id:'pg-ventas',i:iVt(),l:'Ventas'},
+      {id:'pg-inv',i:iInv(),l:'Inventario'},
+      {id:'pg-merma',i:iMer(),l:'Merma'},
+      {id:'pg-precios',i:iChart(),l:'Precios'},
+    ];
+    navEl.innerHTML=
+      encPrim.map(t=>`
+        <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
+          ${t.i}<span>${t.l}</span>
+        </button>`).join('')+
+      `<button class="nb" onclick="openM('mo-transfer')">
+        ${iTransfer()}<span>Transferir</span>
+      </button>`+
+      `<button class="nb nb-more" id="nb-more-btn" onclick="toggleNavMore()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+        <span>Más</span>
+      </button>`;
+    // Poblar panel Más
+    const panel=document.getElementById('nav-more-panel');
+    if(panel)panel.innerHTML=
+      encMore.map(t=>`
+        <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}');closeNavMore()">
+          ${t.i}<span>${t.l}</span>
+        </button>`).join('')+
+      `<button class="nb" onclick="abrirCfg();closeNavMore()">
+        ${iCfg()}<span>Config</span>
+      </button>`;
+    navEl.classList.add('nav-fit');
+  } else {
+    const extraBtn=``;
+    navEl.innerHTML=tabs.map(t=>`
+      <button class="nb" id="nb-${t.id}" onclick="goTo('${t.id}')">
+        ${t.i}<span>${t.l}</span>
+        ${t.badge?`<span class="nb-badge" id="nb-badge-desp">0</span>`:''}
+      </button>`).join('');
+    const totalBtns=tabs.length;
+    navEl.classList.toggle('nav-fit',totalBtns<=5);
+  }
   const sb=document.getElementById('sidebar');
   if(r==='encargado'){
     sb.style.display='flex';
@@ -2603,6 +2684,20 @@ function buildNav(r){
   const startPage={encargado:'pg-dash',bodeguero:'pg-desp'}[r]||'pg-pedir';
   goTo(startPage);
 }
+function toggleNavMore(){
+  const panel=document.getElementById('nav-more-panel');
+  const overlay=document.getElementById('nav-more-overlay');
+  const btn=document.getElementById('nb-more-btn');
+  const isOpen=panel.classList.contains('open');
+  panel.classList.toggle('open',!isOpen);
+  overlay.classList.toggle('open',!isOpen);
+  btn?.classList.toggle('on',!isOpen);
+}
+function closeNavMore(){
+  document.getElementById('nav-more-panel')?.classList.remove('open');
+  document.getElementById('nav-more-overlay')?.classList.remove('open');
+  document.getElementById('nb-more-btn')?.classList.remove('on');
+}
 function goTo(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nb,.sb-btn').forEach(b=>b.classList.remove('on'));
@@ -2610,6 +2705,9 @@ function goTo(id){
   const _nb=document.getElementById('nb-'+id);
   if(_nb){_nb.classList.add('on');_nb.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
   document.getElementById('sbb-'+id)?.classList.add('on');
+  // Si la página pertenece al panel "Más", marcar el botón Más como activo
+  const morePages=['pg-prods','pg-rep','pg-ventas','pg-inv','pg-merma','pg-precios'];
+  document.getElementById('nb-more-btn')?.classList.toggle('on',morePages.includes(id));
   window.scrollTo(0,0);
   if(id==='pg-rep')renderReporte();
   if(id==='pg-inv')renderInvHistorial();
@@ -2679,7 +2777,7 @@ function startL(){
     if(pgOn('pg-stock'))_renderStockNow();
     if(pgOn('pg-prods'))renderProds();
   },err=>{sdot('er');toast('Error: '+err.message,'err');});
-  uS=onSnapshot(query(collection(db,'solicitudes'),orderBy('creadoEn','desc')),s=>{
+  uS=onSnapshot(query(collection(db,'solicitudes'),orderBy('creadoEn','desc'),limit(500)),s=>{
     const nueva=s.docs.map(d=>({id:d.id,...d.data()}));
     if(role==='bodeguero'){
       const pend=nueva.filter(x=>x.estado==='pendiente'||x.estado==='visto');
@@ -2706,17 +2804,17 @@ function startL(){
     if(role==='bodeguero'){if(pgOn('pg-desp'))renderDesp();}
     else{if(pgOn('pg-sols'))renderSolsPage();if(pgOn('pg-mispedidos'))renderMisPed();}
   },err=>console.warn('sols:',err.message));
-  uF=onSnapshot(query(collection(db,'facturas'),orderBy('creadoEn','desc')),s=>{
+  uF=onSnapshot(query(collection(db,'facturas'),orderBy('creadoEn','desc'),limit(500)),s=>{
     facts=s.docs.map(d=>({id:d.id,...d.data()}));
     if(document.getElementById('pg-fact')?.classList.contains('on'))renderFact();
   },err=>console.warn('facts:',err.message));
-  uM=onSnapshot(query(collection(db,'movimientos'),orderBy('creadoEn','desc')),s=>{
+  uM=onSnapshot(query(collection(db,'movimientos'),orderBy('creadoEn','desc'),limit(1000)),s=>{
     movs=s.docs.map(d=>({id:d.id,...d.data()}));
     if(document.getElementById('pg-dash')?.classList.contains('on'))renderDash();
   },err=>console.warn('movs:',err.message));
-  uI=onSnapshot(query(collection(db,'inventarios'),orderBy('creadoEn','desc')),s=>{invDocs=s.docs.map(d=>({id:d.id,...d.data()}));renderInvHistorial();},err=>console.warn('inv:',err.message));
-  uMer=onSnapshot(query(collection(db,'mermas'),orderBy('creadoEn','desc')),s=>{mermas=s.docs.map(d=>({id:d.id,...d.data()}));renderMermas();},err=>console.warn('mer:',err.message));
-  uVt=onSnapshot(query(collection(db,'ventas'),orderBy('creadoEn','desc')),s=>{
+  uI=onSnapshot(query(collection(db,'inventarios'),orderBy('creadoEn','desc'),limit(200)),s=>{invDocs=s.docs.map(d=>({id:d.id,...d.data()}));renderInvHistorial();},err=>console.warn('inv:',err.message));
+  uMer=onSnapshot(query(collection(db,'mermas'),orderBy('creadoEn','desc'),limit(500)),s=>{mermas=s.docs.map(d=>({id:d.id,...d.data()}));renderMermas();},err=>console.warn('mer:',err.message));
+  uVt=onSnapshot(query(collection(db,'ventas'),orderBy('creadoEn','desc'),limit(500)),s=>{
     ventas=s.docs.map(d=>({id:d.id,...d.data()}));
     renderVentasLista();
     if(document.getElementById('pg-rep')?.classList.contains('on'))renderReporte();
@@ -3210,12 +3308,13 @@ function renderDesp(){
         _vistoSent.add(sol.id);
         updateDoc(doc(db,'solicitudes',sol.id),{estado:'visto',vistoPor:role,vistoEn:serverTimestamp()}).catch(()=>{});
       }
-      // Agrupar items por bodega
+      // Agrupar items por bodega resuelta (respeta prioridades configuradas)
       const grupos={};
       bodegas.forEach(b=>grupos[b.id]=[]);
       (sol.items||[]).forEach(it=>{
         const p=prods.find(x=>x.id===it.productoId);
-        const bodId=p?.bodega||'seca';
+        // Usar bodega ya elegida en despEst si existe, si no resolver por prioridad
+        const bodId=despEst[sol.id]?.[it.productoId]?.bodega||getBodegaParaArea(sol.creadoPor,p)||p?.bodega||'seca';
         if(!grupos[bodId])grupos[bodId]=[];
         grupos[bodId].push({...it,prod:p});
       });
@@ -3310,12 +3409,12 @@ function renderDesp(){
       ${nItems>0?`<div style="padding:12px 16px;background:var(--sf2);border-bottom:1px solid var(--bd2)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:11px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.6px">Progreso</span>
-          <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:900;color:${allDone?'var(--green)':'var(--tx)'}">
+          <span class="prog-count" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:900;color:${allDone?'var(--green)':'var(--tx)'}">
             ${tiqueados}/${nItems} ${allDone?'✓ Listo':'pendientes'}
           </span>
         </div>
         <div style="background:var(--bd2);border-radius:6px;height:8px;overflow:hidden">
-          <div style="background:${allDone?'var(--green)':'linear-gradient(90deg,var(--accent),var(--yellow))'};height:100%;width:${progPct}%;transition:width .4s cubic-bezier(.4,0,.2,1);border-radius:6px"></div>
+          <div class="prog-bar-inner" style="background:${allDone?'var(--green)':'linear-gradient(90deg,var(--accent),var(--yellow))'};height:100%;width:${progPct}%;transition:width .4s cubic-bezier(.4,0,.2,1);border-radius:6px"></div>
         </div>
       </div>`:''}
 
@@ -3367,7 +3466,9 @@ function togD(sid,pid,cantSol){
   const sol=sols.find(x=>x.id===sid);
   const bodId=e.bodega||getBodegaParaArea(sol?.creadoPor,p)||'seca';
   const stockDispo=p?Math.min(stockEnBodega(p,bodId),cantSol):cantSol;
-  despEst[sid][pid]={tipo:c,cant:c==='ss'?0:stockDispo,bodega:bodId};
+  // Al volver a pendiente restaurar la cantidad pedida original, no el stock disponible
+  const cantNueva=c==='ss'?0:c==='p'?cantSol:stockDispo;
+  despEst[sid][pid]={tipo:c,cant:cantNueva,bodega:bodId};
   renderDesp();
 }
 // Acepta el pedido completo de una solicitud en un solo toque: marca cada producto
@@ -3385,7 +3486,27 @@ function aceptarTodo(sid){
   });
   renderDesp();
 }
-function setD(sid,pid,v){if(!despEst[sid])despEst[sid]={};const p=prods.find(x=>x.id===pid);const bodId=despEst[sid][pid]?.bodega||p?.bodega||'seca';const maxStock=p?stockEnBodega(p,bodId):Infinity;const c=Math.min(parseFloat(v)||0,maxStock);despEst[sid][pid]={...despEst[sid][pid],tipo:c===0?'ss':'parcial',cant:c};}
+function setD(sid,pid,v){
+  if(!despEst[sid])despEst[sid]={};
+  const p=prods.find(x=>x.id===pid);
+  const bodId=despEst[sid][pid]?.bodega||p?.bodega||'seca';
+  const maxStock=p?stockEnBodega(p,bodId):Infinity;
+  const c=Math.min(parseFloat(v)||0,maxStock);
+  despEst[sid][pid]={...despEst[sid][pid],tipo:c===0?'ss':'parcial',cant:c};
+  // Refrescar barra de progreso y texto del botón Despachar
+  const nItems=(sols.find(x=>x.id===sid)?.items||[]).length;
+  const tiqueados=Object.values(despEst[sid]).filter(e=>e.tipo!=='p').length;
+  const allDone=tiqueados===nItems&&nItems>0;
+  const btn=document.querySelector(`.btn-desp[onclick="despachar('${sid}')"]`);
+  if(btn){
+    btn.disabled=tiqueados===0;
+    btn.textContent=allDone?'✓ Despachar todo':tiqueados>0?`✓ Despachar ${tiqueados}/${nItems}`:'Tiquea al menos uno';
+  }
+  const barEl=document.querySelector(`#dsc-${sid} .prog-bar-inner`);
+  if(barEl){const pct=nItems>0?Math.round(tiqueados/nItems*100):0;barEl.style.width=pct+'%';barEl.style.background=allDone?'var(--green)':'linear-gradient(90deg,var(--accent),var(--yellow))';}
+  const cntEl=document.querySelector(`#dsc-${sid} .prog-count`);
+  if(cntEl)cntEl.textContent=`${tiqueados}/${nItems} ${allDone?'✓ Listo':'pendientes'}`;
+}
 function setBodegaD(sid,pid,bodId){if(!despEst[sid])despEst[sid]={};const p=prods.find(x=>x.id===pid);const maxStock=p?stockEnBodega(p,bodId):Infinity;const cantActual=despEst[sid][pid]?.cant||0;despEst[sid][pid]={...despEst[sid][pid],bodega:bodId,cant:Math.min(cantActual,maxStock)};renderDesp();}
 function stepCant(sid,pid,delta){
   if(!despEst[sid])despEst[sid]={};
@@ -3418,22 +3539,22 @@ async function despachar(solId){
     const cantFinal=Math.min(est.cant,stockDispo);
     if(cantFinal>0)items.push({...it,cantidadDespachada:cantFinal,bodegaOrigen:bodId,precioUnitStock:p?.precioTotal||0,precioUnitNeto:p?.precioNeto||0});
   }
-  if(!items.length){toast('Tikea al menos un producto','err');return;}
+  if(!items.length){_despachando.delete(solId);toast('Tikea al menos un producto','err');return;}
   try{
     const batch=writeBatch(db);
-    for(const it of items){
-      const r=doc(db,'productos',it.productoId);
-      const s=await getDoc(r);
+    // Leer todos los docs en paralelo antes de construir el batch
+    const snaps=await Promise.all(items.map(it=>getDoc(doc(db,'productos',it.productoId))));
+    snaps.forEach((s,idx)=>{
+      const it=items[idx];
       if(s.exists()){
         const data=s.data();
-        // Actualizar stockPorBodega
         const spb={...data.stockPorBodega};
         if(!spb[it.bodegaOrigen]&&data.bodega===it.bodegaOrigen)spb[it.bodegaOrigen]=data.stock||0;
         spb[it.bodegaOrigen]=Math.max(0,(spb[it.bodegaOrigen]||0)-it.cantidadDespachada);
         const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-        batch.update(r,{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+        batch.update(doc(db,'productos',it.productoId),{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
       }
-    }
+    });
     batch.update(doc(db,'solicitudes',solId),{
       estado:'despachada',despachoPor:role,areaDestino:sol.creadoPor,
       itemsDespacho:items,itemsNoTiqueados:noTiqueados,
