@@ -99,7 +99,7 @@ body.light .hdr{background:rgba(255,255,255,.92)}
   backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   transform:translateZ(0);-webkit-transform:translateZ(0);
   border-top:1px solid var(--bd);
-  display:flex;padding-bottom:var(--sb);z-index:200;
+  display:flex;justify-content:space-evenly;padding-bottom:var(--sb);z-index:200;
   overflow-x:auto;overflow-y:hidden;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
@@ -107,14 +107,6 @@ body.light .hdr{background:rgba(255,255,255,.92)}
   box-shadow:0 -1px 0 var(--bd);
 }
 .nav::-webkit-scrollbar{display:none}
-/* nav-fit: botones distribuidos a lo ancho sin scroll */
-.nav.nav-fit{overflow-x:hidden;}
-.nav.nav-fit .nb{flex:1;min-width:0;}
-/* En pantallas muy pequeñas (<380px), reducir texto y padding del nav */
-@media(max-width:379px){
-  .nav.nav-fit .nb{font-size:7.5px;padding:10px 2px 8px;}
-  .nav.nav-fit .nb svg{width:20px;height:20px;}
-}
 body.light .nav{background:rgba(255,255,255,.92)}
 .nb{
   flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -135,14 +127,15 @@ body.light .nav{background:rgba(255,255,255,.92)}
   position:absolute;top:6px;right:calc(50% - 18px);
   background:var(--red);color:#fff;font-size:9px;font-weight:800;
   border-radius:10px;padding:1px 5px;min-width:18px;text-align:center;display:none;
+  box-shadow:0 0 8px var(--red);
 }
 /* ── Panel "Más" del encargado ─────────────────────────────────────────── */
-.mas-ovl{display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.mas-ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
 .mas-ovl.on{display:block}
 .mas-panel{
-  position:fixed;left:10px;right:10px;bottom:calc(var(--sb,0px) + 76px);
+  position:fixed;left:10px;right:10px;bottom:calc(var(--sb) + 76px);
   background:var(--sf);border:1px solid var(--bd);border-radius:18px;
-  padding:8px;box-shadow:0 -10px 34px rgba(0,0,0,.4);z-index:211;
+  padding:8px;box-shadow:0 -10px 34px rgba(0,0,0,.4);z-index:201;
   opacity:0;transform:translateY(14px) scale(.97);pointer-events:none;
   transition:opacity .18s,transform .18s;
 }
@@ -155,7 +148,7 @@ body.light .nav{background:rgba(255,255,255,.92)}
   cursor:pointer;transition:background .15s,color .15s;text-transform:uppercase;letter-spacing:.4px;
   touch-action:manipulation;
 }
-.mas-item:active{background:var(--bd3)}
+.mas-item:active{background:var(--bd3);transform:none}
 .mas-item svg{width:20px;height:20px;stroke-width:1.7}
 .mas-item.on{color:var(--accent)}
 .mas-item.on svg{stroke-width:2.2;filter:drop-shadow(0 0 6px var(--accent))}
@@ -2651,7 +2644,6 @@ function buildNav(r){
       gestion.map(t=>`<button class="mas-item" id="mas-${t.id}" onclick="closeMas();goTo('${t.id}')">${t.i}<span>${t.l}</span></button>`).join('')+
       `<div class="mas-sep-full"></div>`+
       `<button class="mas-item" onclick="closeMas();abrirCfg()">${iCfg()}<span>Configuración</span></button>`;
-    navEl.classList.add('nav-fit');
   } else {
     const extraBtn=``;
     navEl.innerHTML=tabs.map(t=>`
