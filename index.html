@@ -24,7 +24,7 @@
 :root{
   --bg:#080a0f;--sf:#0f1218;--sf2:#161a22;--sf3:#0a0c11;
   --bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.05);--bd3:rgba(255,255,255,.025);
-  --accent:#ff3b5c;--accd:rgba(255,59,92,.1);--accb:rgba(255,59,92,.28);
+  --accent:#ff3b5c;--accd:rgba(255,59,92,.1);--accb:rgba(255,59,92,.28);--accentd:rgba(255,59,92,.1);--accentb:rgba(255,59,92,.28);
   --blue:#4f8ef7;--blued:rgba(79,142,247,.1);--blueb:rgba(79,142,247,.28);
   --green:#00c98d;--greend:rgba(0,201,141,.1);--greenb:rgba(0,201,141,.28);
   --yellow:#ffb800;--yellowd:rgba(255,184,0,.1);--yellowb:rgba(255,184,0,.28);
@@ -46,7 +46,7 @@ body.light{
   --bg:#f0f2f7;--sf:#ffffff;--sf2:#e8ebf2;--sf3:#dde1ea;
   --bd:rgba(0,0,0,.09);--bd2:rgba(0,0,0,.06);--bd3:rgba(0,0,0,.03);
   --tx:#0f1420;--txm:#4a5268;--txd:#a0a8bc;
-  --accd:rgba(255,59,92,.07);--accb:rgba(255,59,92,.18);
+  --accd:rgba(255,59,92,.07);--accb:rgba(255,59,92,.18);--accentd:rgba(255,59,92,.07);--accentb:rgba(255,59,92,.18);
   --blued:rgba(79,142,247,.07);--blueb:rgba(79,142,247,.18);
   --greend:rgba(0,201,141,.07);--greenb:rgba(0,201,141,.18);
   --yellowd:rgba(255,184,0,.07);--yellowb:rgba(255,184,0,.18);
@@ -984,6 +984,7 @@ input[type=number]{-moz-appearance:textfield}
 }
 .btn-desp:active{transform:scale(.98);opacity:.9}
 .btn-desp:disabled{opacity:.45;box-shadow:none;cursor:default;pointer-events:none}
+.bg-nuevo{background:var(--accd);color:var(--accent);border:1px solid var(--accb)}
 
 /* ── SOLICITUD CARD (.solc) — Mis Pedidos y Solicitudes ──────────────────── */
 .solc{
@@ -1617,10 +1618,10 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 </div>
 
 </div><!-- /pages-wrap -->
-<div class="nav" id="nav-bar"></div>
 <div class="mas-ovl" id="mas-ovl" onclick="if(event.target===this)closeMas()">
   <div class="mas-panel" id="mas-panel"><div id="mas-items"></div></div>
 </div>
+<div class="nav" id="nav-bar"></div>
 </div><!-- /app -->
 
 <!-- MODALES -->
@@ -2066,7 +2067,8 @@ let carrito=[],fnItems=[],despEst={},semOffset=0;
 let invActivo=null,conteoLocal={},csvData=[];
 let alarmaActiva=false,solsPrevCount=null,audioCtx=null,wakeLock=null;
 let diffFiltro='diff',detalleFiltro='diff',detalleInv=null;
-const _vistoSent=new Set(); // IDs de solicitudes ya marcadas como 'visto' en esta sesión
+const _vistoSent=new Set();
+const _maxVisto=200;
 let subAreaActual='';
 let trProdId=null,merProdId=null,verifSolId=null;
 let fProdBodegaActual='',fStockBodega='',fStockCat='';
@@ -2224,7 +2226,18 @@ const clp=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',mini
 const clpn=v=>new Intl.NumberFormat('es-CL',{minimumFractionDigits:0,maximumFractionDigits:2}).format(v||0);
 // Helpers para inputs de monto en $ que deben mostrar puntos de miles mientras se escribe
 // (ej: 20.000) sin perder el cursor ni romper el parseo numérico interno.
-const desfmtMiles=s=>{const n=parseFloat(String(s||'').replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n;};
+const desfmtMiles=s=>{
+  let str=String(s||'').trim();
+  if(!str)return 0;
+  const puntos=(str.match(/\./g)||[]).length;
+  const comas=(str.match(/,/g)||[]).length;
+  if(puntos===1&&comas===0){
+    const n=parseFloat(str.replace(/[^\d.]/g,''));
+    return isNaN(n)?0:n;
+  }
+  const n=parseFloat(str.replace(/\./g,'').replace(',','.'));
+  return isNaN(n)?0:n;
+};
 // fmtMiles: formato entero (puntos de miles, sin decimales) — para descuentos en $
 const fmtMiles=v=>{const n=Math.round(v||0);return n?new Intl.NumberFormat('es-CL').format(n):'';};
 // fmtMilesDec: formato con hasta 4 decimales — para precios netos y subtotales de factura
@@ -2245,29 +2258,30 @@ function onInputMiles(el){
   el.setSelectionRange(pos,pos);
   return raw;
 }
-// onInputMilesDec: igual que onInputMiles pero conserva decimales mientras se escribe
-// Lógica especial: si el usuario está escribiendo la parte decimal (el valor termina en
-// coma, o en coma+dígitos), no reformatea los decimales para no interrumpir el tipeo.
+// onInputMilesDec: conserva decimales mientras se escribe.
+// Soporta tanto coma (Android/desktop) como punto (iOS) como separador decimal.
 function onInputMilesDec(el){
   const raw=el.value;
 
-  // ── CASOS ESPECIALES: usuario borrando o en medio de escritura ────────────
-  // 1. Campo vacío — dejar limpio, no forzar nada
+  // 1. Campo vacío
   if(!raw||raw.trim()==='')return 0;
 
-  // 2. Solo un separador decimal al final ("," o ".") — el usuario va a escribir decimales
-  //    No formatear todavía, dejar el cursor donde está
+  // 2. Solo un separador al final — usuario va a escribir decimales
   if(/^[\d.,]*[,.]$/.test(raw)){
-    // Calcular el valor numérico de la parte entera ya escrita
-    const soloEntero=raw.replace(/[,.]$/,'');
-    return desfmtMiles(soloEntero)||0;
+    return desfmtMiles(raw.replace(/[,.]$/,''))||0;
   }
 
-  // 3. Número con decimales en progreso (ej "1.500,3") — respetar lo escrito
-  const tieneDecimales=/[,.]\d+/.test(raw);
-  if(tieneDecimales){
-    // Separar parte entera y decimal respetando lo que escribió
-    const sepIdx=Math.max(raw.lastIndexOf(','),raw.lastIndexOf('.'));
+  // 3. Detectar separador decimal:
+  //    - Un solo punto sin coma → punto ES decimal (iOS)
+  //    - Coma presente → coma es decimal (Android/desktop)
+  const puntos=(raw.match(/\./g)||[]).length;
+  const comas=(raw.match(/,/g)||[]).length;
+  const esPuntoDecimal=puntos===1&&comas===0&&/\.\d+$/.test(raw);
+  const esComaDecimal=comas===1&&/,\d*/.test(raw);
+
+  if(esPuntoDecimal||esComaDecimal){
+    const sepChar=esPuntoDecimal?'.':',';
+    const sepIdx=raw.lastIndexOf(sepChar);
     const parteEnteraRaw=raw.slice(0,sepIdx);
     const parteDec=raw.slice(sepIdx+1);
     const entero=desfmtMiles(parteEnteraRaw)||0;
@@ -3271,6 +3285,7 @@ function renderDesp(){
     const htmlPendientes=pendientes.map(sol=>{
       if(!despEst[sol.id])despEst[sol.id]={};
       // Marcar como visto solo si no lo hemos mandado ya en esta sesión
+      if(_vistoSent.size>_maxVisto)_vistoSent.clear();
       if(sol.estado==='pendiente'&&!sol.vistoPor&&!_vistoSent.has(sol.id)){
         _vistoSent.add(sol.id);
         updateDoc(doc(db,'solicitudes',sol.id),{estado:'visto',vistoPor:role,vistoEn:serverTimestamp()}).catch(()=>{});
@@ -3320,7 +3335,15 @@ function renderDesp(){
             <div style="font-size:8px;color:var(--txm);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Bodega</div>
             <select class="di-bodega-sel" style="width:100%;font-size:11.5px;padding:7px 8px;border-radius:9px"
               onchange="setBodegaD('${sol.id}','${it.productoId}',this.value)">
-              ${bodegas.map(b=>`<option value="${b.id}" ${(est.bodega||p?.bodega||'seca')===b.id?'selected':''}>${b.icono} ${b.nombre} — ${clpn(p?stockEnBodega(p,b.id):0)} ${it.unidadMedida||''}</option>`).join('')}
+              ${bodegas.map(b=>{
+                const stk=p?stockEnBodega(p,b.id):0;
+                const sel=(est.bodega||p?.bodega||'seca')===b.id;
+                const suficiente=stk>=it.cantidad;
+                const label=stk===0?`${b.icono} ${b.nombre} — Sin stock ✕`
+                  :suficiente?`${b.icono} ${b.nombre} — ${clpn(stk)} ${it.unidadMedida||''} ✓`
+                  :`${b.icono} ${b.nombre} — ${clpn(stk)} ${it.unidadMedida||''} ⚠`;
+                return`<option value="${b.id}" ${sel?'selected':''} ${stk===0?'disabled':''}>${label}</option>`;
+              }).join('')}
             </select>
           </div>
           <div style="text-align:center">
@@ -3347,9 +3370,9 @@ function renderDesp(){
         ${items.map(renderItem).join('')}
       </div>`;
     }).join('');
-    const estadoBadge=(sol.estado==='visto'||sol.estado==='pendiente')
-      ?`<span class="badge bg-y-s" style="font-size:10px;padding:5px 10px">🔔 Pendiente</span>`
-      :`<span class="badge bg-y-s" style="font-size:10px;padding:5px 10px">🔔 Nuevo</span>`;
+    const estadoBadge=sol.estado==='pendiente'
+      ?`<span class="badge bg-nuevo" style="font-size:10px;padding:5px 10px">🆕 Nuevo</span>`
+      :`<span class="badge bg-y-s" style="font-size:10px;padding:5px 10px">🔔 Pendiente</span>`;
     const nItems=(sol.items||[]).length;
     const tiqueados=Object.values(despEst[sol.id]||{}).filter(e=>e.tipo!=='p').length;
     const progPct=nItems>0?Math.round(tiqueados/nItems*100):0;
@@ -3364,12 +3387,25 @@ function renderDesp(){
               ${sol.nombreSolicitante||sol.creadoPor||'—'}
             </div>
             ${sol.subArea?`<div style="font-size:11px;color:var(--blue);font-weight:700;margin-top:2px">📍 ${sol.subArea}</div>`:''}
-            <div style="font-size:10px;color:var(--txm);margin-top:2px;font-weight:500">${fDate(sol.creadoEn)}</div>
+            <div style="font-size:10px;color:var(--txm);margin-top:2px;font-weight:500;display:flex;align-items:center;gap:5px">
+              <span>${fDate(sol.creadoEn)}</span>
+              ${(()=>{
+                const d=sol.creadoEn?.toDate?sol.creadoEn.toDate():null;
+                if(!d)return'';
+                const mins=Math.floor((Date.now()-d.getTime())/60000);
+                const color=mins>30?'var(--red)':mins>10?'var(--yellow)':'var(--txm)';
+                const txt=mins<1?'Ahora':mins<60?mins+'min':Math.floor(mins/60)+'h '+mins%60+'min';
+                return`<span style="color:${color};font-weight:700">· ⏱ ${txt}</span>`;
+              })()}
+            </div>
           </div>
           ${estadoBadge}
         </div>
         ${sol.nota?`<div style="font-size:11px;color:var(--txm);background:var(--sf2);border-radius:10px;padding:7px 11px;border-left:3px solid var(--bd);line-height:1.4">📝 ${sol.nota}</div>`:''}
-        ${nItems>1?`<button onclick="aceptarTodo('${sol.id}')" style="margin-top:10px;width:100%;padding:10px;border-radius:11px;border:1.5px solid var(--greenb);background:var(--greend);color:var(--green);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:800;cursor:pointer">✓✓ Aceptar pedido completo</button>`:''}
+        ${(()=>{
+          const tieneStock=(sol.items||[]).some(it=>{const p=prods.find(x=>x.id===it.productoId);return p&&stockTotal(p)>0;});
+          return nItems>1&&tieneStock?`<button onclick="aceptarTodo('${sol.id}')" style="margin-top:10px;width:100%;padding:10px;border-radius:11px;border:1.5px solid var(--greenb);background:var(--greend);color:var(--green);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:800;cursor:pointer">✓✓ Aceptar pedido completo</button>`:'';
+        })()}
       </div>
 
       <!-- BARRA DE PROGRESO -->
@@ -3392,8 +3428,8 @@ function renderDesp(){
 
       <!-- BOTONES DE ACCIÓN — fijos al fondo del card, siempre visibles -->
       <div style="padding:12px 16px;border-top:1px solid var(--bd2);background:var(--sf);display:flex;gap:10px;position:sticky;bottom:0;z-index:10;padding-bottom:calc(12px + env(safe-area-inset-bottom))">
-        <button class="btn-rech" onclick="abrirRechazo('${sol.id}')" style="padding:14px 16px;font-size:13px">
-          ✕
+        <button class="btn-rech" onclick="abrirRechazo('${sol.id}')" style="padding:14px 16px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;white-space:nowrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Rechazar
         </button>
         <button class="btn-desp" onclick="despachar('${sol.id}')" ${tiqueados===0?'disabled':''}
           style="flex:1;font-size:16px;padding:14px">
@@ -3465,7 +3501,7 @@ function setD(sid,pid,v){
   const nItems=(sol?.items||[]).length;
   const tiqueados=Object.values(despEst[sid]).filter(e=>e.tipo!=='p').length;
   const allDone=tiqueados===nItems&&nItems>0;
-  const btn=document.querySelector(`.btn-desp[onclick="despachar('${sid}')"]`);
+  const btn=document.querySelector(`#dsc-${sid} .btn-desp`);
   if(btn){
     btn.disabled=tiqueados===0;
     btn.textContent=allDone?'✓ Despachar todo':tiqueados>0?`✓ Despachar ${tiqueados}/${nItems}`:'Tiquea al menos uno';
@@ -3482,7 +3518,7 @@ function stepCant(sid,pid,delta){
   const bodId=despEst[sid][pid]?.bodega||p?.bodega||'seca';
   const maxStock=p?stockEnBodega(p,bodId):Infinity;
   const actual=despEst[sid][pid]?.cant||0;
-  const isKg=['kg','g','lt','ml'].includes((p?.unidad||'').toLowerCase());
+  const isKg=['kg','g','lt','ml'].includes((p?.unidadMedida||'').toLowerCase());
   const nueva=Math.max(0,Math.min(parseFloat((actual+delta).toFixed(isKg?1:0)),maxStock));
   despEst[sid][pid]={...despEst[sid][pid],tipo:nueva===0?'ss':'parcial',cant:nueva,bodega:bodId};
   renderDesp();
@@ -3493,7 +3529,7 @@ async function despachar(solId){
   if(_despachando.has(solId))return;          // bloquea doble-tap
   _despachando.add(solId);
   // Deshabilitar visualmente el botón mientras dura el despacho
-  const btnDesp=document.querySelector(`.btn-desp[onclick="despachar('${solId}')"]`);
+  const btnDesp=document.querySelector(`#dsc-${solId} .btn-desp`);
   if(btnDesp){btnDesp.disabled=true;btnDesp.textContent='Despachando...';}
   const sol=sols.find(x=>x.id===solId);if(!sol){_despachando.delete(solId);renderDesp();return;}
   const items=[];const noTiqueados=[];
@@ -3548,7 +3584,7 @@ async function despachar(solId){
   }catch(e){toast('Error: '+e.message,'err');}
   finally{_despachando.delete(solId);}
 }
-function abrirRechazo(id){rechazandoId=id;document.getElementById('f-motivo').value='';openM('mo-rechazo');}
+function abrirRechazo(id){rechazandoId=id;document.getElementById('f-motivo').value='';delete despEst[id];openM('mo-rechazo');}
 async function confirmarRechazo(){
   const m=document.getElementById('f-motivo').value.trim();if(!m){toast('Escribe el motivo','err');return;}
   await updateDoc(doc(db,'solicitudes',rechazandoId),{estado:'rechazada',motivoRechazo:m,rechazadoPor:role,rechazadoEn:serverTimestamp()});
