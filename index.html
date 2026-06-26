@@ -2232,12 +2232,19 @@ const desfmtMiles=s=>{
   const puntos=(str.match(/\./g)||[]).length;
   const comas=(str.match(/,/g)||[]).length;
   if(puntos===1&&comas===0){
+    // Si hay exactamente 3 dígitos tras el punto → separador de miles chileno (ej: "1.940")
+    // Si hay otra cantidad → punto decimal (ej: "1.9", "19.50")
+    const esMiles=/^\d+\.\d{3}$/.test(str);
+    if(esMiles){
+      const n=parseFloat(str.replace(/\./g,''));
+      return isNaN(n)?0:n;
+    }
     const n=parseFloat(str.replace(/[^\d.]/g,''));
     return isNaN(n)?0:n;
   }
   const n=parseFloat(str.replace(/\./g,'').replace(',','.'));
   return isNaN(n)?0:n;
-};
+}
 // fmtMiles: formato entero (puntos de miles, sin decimales) — para descuentos en $
 const fmtMiles=v=>{const n=Math.round(v||0);return n?new Intl.NumberFormat('es-CL').format(n):'';};
 // fmtMilesDec: formatea un número con separador de miles y decimales opcionales.
@@ -2281,7 +2288,7 @@ function onInputMilesDec(el){
   //    - Si no hay ninguno → tratar como entero puro (nunca agregar decimales)
   const puntos=(raw.match(/\./g)||[]).length;
   const comas=(raw.match(/,/g)||[]).length;
-  const esPuntoDecimal=puntos===1&&comas===0&&/\.\d+$/.test(raw);
+  const esPuntoDecimal=puntos===1&&comas===0&&/\.\d+$/.test(raw)&&!/^\d+\.\d{3}$/.test(raw);
   const esComaDecimal=comas===1&&/,\d*/.test(raw);
 
   if(esPuntoDecimal||esComaDecimal){
