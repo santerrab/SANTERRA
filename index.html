@@ -2828,7 +2828,7 @@ function _renderDashNow(){
     document.getElementById('d-hoy').textContent=clp(valHoy);document.getElementById('d-hoy-u').textContent=unHoy>0?unHoy+' uds.':'Sin despachos hoy';
     document.getElementById('d-sem').textContent=clp(valSem);document.getElementById('d-sem-u').textContent=movSem.length+' despachos esta semana';
     const diasMap={};prods.forEach(p=>{diasMap[p.id]=diasRestantes(p,movs);});
-    const low=prods.filter(p=>stockTotal(p)<=(p.stockMinimo||5));
+    const low=prods.filter(p=>p.stockMinimo!=null&&stockTotal(p)<=p.stockMinimo);
     const lowIds=new Set(low.map(p=>p.id));
     const REPO_DIAS_ALERTA=3;
     const reposicion=prods.filter(p=>!lowIds.has(p.id)&&diasMap[p.id]!==null&&diasMap[p.id]<=REPO_DIAS_ALERTA).sort((a,b)=>diasMap[a.id]-diasMap[b.id]);
@@ -2879,7 +2879,7 @@ function _renderDashNow(){
     const alBod=document.getElementById('dash-al-bod');alBod.innerHTML='';
     renderHorarioBanner('dash-al-bod');
     // ── Alertas agrupadas por bodega (bodeguero) ────────────────────────────
-    const low=prods.filter(p=>stockTotal(p)<=(p.stockMinimo||5));
+    const low=prods.filter(p=>p.stockMinimo!=null&&stockTotal(p)<=p.stockMinimo);
     if(low.length){
       const diasMapBod={};prods.forEach(p=>{diasMapBod[p.id]=diasRestantes(p,movs);});
       // Agrupar por bodega
@@ -3082,12 +3082,12 @@ function _renderStockNow(){
 
   // Función compartida de card
   function prodCard(p){
-    const st=stockTotal(p),m=p.stockMinimo||5;
-    const cls=st===0?'bg-r-s':st<=m?'bg-y-s':'bg-g-s';
+    const st=stockTotal(p),m=p.stockMinimo??null;
+    const cls=st===0?'bg-r-s':(m!=null&&st<=m)?'bg-y-s':'bg-g-s';
     const bodTags=bodegas.map(b=>{
       const s=stockEnBodega(p,b.id);
       if(!s&&p.bodega!==b.id)return'';
-      const sc=s===0?'no-stock':s<=m?'low-stock':'has-stock';
+      const sc=s===0?'no-stock':(m!=null&&s<=m)?'low-stock':'has-stock';
       return`<span class="stock-bod-tag ${sc}">${b.icono} ${b.nombre}: ${clpn(s)} ${p.unidadMedida||''}</span>`;
     }).filter(Boolean).join('');
     return`<div class="prod-card">
@@ -3142,9 +3142,9 @@ function pBuscar(q){
   // Mostrar botón clear
   const clr=document.getElementById('p-clear');if(clr)clr.style.display='block';
   res.innerHTML=m.map(p=>{
-    const s=stockTotal(p),mn=p.stockMinimo||5,inC=carrito.find(c=>c.pid===p.id);
+    const s=stockTotal(p),mn=p.stockMinimo??null,inC=carrito.find(c=>c.pid===p.id);
     return`<div class="sri" onclick="addCart('${p.id}')">
-      <div class="sri-info"><div class="sri-nom">${p.nombre}</div><div class="sri-det" style="color:${s===0?'var(--red)':s<=mn?'var(--yellow)':'var(--txm)'}">${s===0?'⚠️ Sin stock':'Stock: '+clpn(s)+' '+(p.unidadMedida||'')}</div></div>
+      <div class="sri-info"><div class="sri-nom">${p.nombre}</div><div class="sri-det" style="color:${s===0?'var(--red)':(mn!=null&&s<=mn)?'var(--yellow)':'var(--txm)'}">${s===0?'⚠️ Sin stock':'Stock: '+clpn(s)+' '+(p.unidadMedida||'')}</div></div>
       <button class="sri-btn${inC?' added':''}">${inC?'✓':'＋'}</button>
     </div>`;
   }).join('');
@@ -4329,8 +4329,8 @@ function renderProds(){
         <div class="prod-precio-item"><div class="prod-precio-lbl">Final/unit</div><div class="prod-precio-val" style="color:var(--green)">${clp(p.precioTotal||0)}</div></div>
       </div>
       <div class="prod-stock-bar">
-        <div style="font-size:11px;color:var(--txm)">${p.proveedor||'—'} · Mín: ${p.stockMinimo||5}</div>
-        <span class="badge ${st===0?'bg-r-s':st<=(p.stockMinimo||5)?'bg-y-s':'bg-g-s'}">Total: ${clpn(st)} ${p.unidadMedida||''}</span>
+        <div style="font-size:11px;color:var(--txm)">${p.proveedor||'—'}${p.stockMinimo!=null?' · Mín: '+p.stockMinimo:''}</div>
+        <span class="badge ${st===0?'bg-r-s':(p.stockMinimo!=null&&st<=p.stockMinimo)?'bg-y-s':'bg-g-s'}">Total: ${clpn(st)} ${p.unidadMedida||''}</span>
       </div>
     </div>`;
   }).join('');
@@ -4342,7 +4342,7 @@ function abrirProd(id=null){
   document.getElementById('pp-cod').value=p?.codigoProducto||'';
   document.getElementById('pp-nombre').value=p?.nombre||'';
   document.getElementById('pp-prov').value=p?.proveedor||'';
-  document.getElementById('pp-min').value=p?.stockMinimo||5;
+  document.getElementById('pp-min').value=p?.stockMinimo??'';
   document.getElementById('pp-neto').value=p?.precioNeto||'';
   document.getElementById('pp-unidad').value=p?.unidadMedida||'unidad';
   document.getElementById('pp-imp').value=p?.tipoImpuesto||'general';
@@ -4426,7 +4426,7 @@ async function guardarProd(){
   const data={
     codigoProducto:document.getElementById('pp-cod').value.trim(),nombre:nom,categoria:cat,
     subcategoria:document.getElementById('pp-subcat').value,unidadMedida:document.getElementById('pp-unidad').value,
-    stockMinimo:parseInt(document.getElementById('pp-min').value)||5,proveedor:document.getElementById('pp-prov').value.trim(),
+    stockMinimo:document.getElementById('pp-min').value!==''?parseInt(document.getElementById('pp-min').value):null,proveedor:document.getElementById('pp-prov').value.trim(),
     precioNeto:Math.round(netoUnit*100)/100,tipoImpuesto:tipo,precioTotal:c.total,totalImpuestos:Math.round(c.imp),
     unidadCompra:ucompra||null,factorConversion:ucompra&&conv>1?conv:1,
     bodega,actualizadoEn:serverTimestamp()
