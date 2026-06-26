@@ -2240,13 +2240,17 @@ const desfmtMiles=s=>{
 };
 // fmtMiles: formato entero (puntos de miles, sin decimales) — para descuentos en $
 const fmtMiles=v=>{const n=Math.round(v||0);return n?new Intl.NumberFormat('es-CL').format(n):'';};
-// fmtMilesDec: formato con hasta 4 decimales — para precios netos y subtotales de factura
+// fmtMilesDec: formatea un número con separador de miles y decimales opcionales.
+// Redondea a máximo 3 decimales para evitar ruido de punto flotante (ej: 1940.0000000002).
+// Solo muestra decimales si el valor los tiene realmente — nunca fuerza coma.
 const fmtMilesDec=v=>{
   if(!v&&v!==0)return'';
-  const parts=String(v).split('.');
+  // Redondear a 3 decimales para eliminar ruido flotante (ej: 1940.0000000000002 → 1940)
+  const rounded=Math.round(v*1000)/1000;
+  const parts=String(rounded).split('.');
   const entero=parseInt(parts[0]||0);
-  const dec=parts[1]?parts[1].replace(/0+$/,''):''; // quita ceros finales
-  const entFmt=entero?new Intl.NumberFormat('es-CL').format(entero):'0';
+  const dec=parts[1]?parts[1].replace(/0+$/,''):''; // quita ceros insignificantes
+  const entFmt=entero||entero===0?new Intl.NumberFormat('es-CL').format(entero):'0';
   return dec?entFmt+','+dec:entFmt;
 };
 function onInputMiles(el){
@@ -2274,6 +2278,7 @@ function onInputMilesDec(el){
   // 3. Detectar separador decimal:
   //    - Un solo punto sin coma → punto ES decimal (iOS)
   //    - Coma presente → coma es decimal (Android/desktop)
+  //    - Si no hay ninguno → tratar como entero puro (nunca agregar decimales)
   const puntos=(raw.match(/\./g)||[]).length;
   const comas=(raw.match(/,/g)||[]).length;
   const esPuntoDecimal=puntos===1&&comas===0&&/\.\d+$/.test(raw);
@@ -4067,7 +4072,8 @@ function fnPrecioBlur(i,el){
     return;
   }
   // Formatear el valor final limpiamente
-  const v=desfmtMiles(raw);
+  // Redondear a 3 decimales para evitar ruido flotante al guardar
+  const v=Math.round(desfmtMiles(raw)*1000)/1000;
   if(v>0){
     it.precio=v;
     el.value=fmtMilesDec(v);
@@ -4089,7 +4095,7 @@ function fnSubtotalBlur(i,el){
   const it=fnItems[i];if(!it)return;
   const raw=el.value.trim();
   if(!raw){el.value='';return;}
-  const v=desfmtMiles(raw);
+  const v=Math.round(desfmtMiles(raw)*1000)/1000;
   if(v>0){
     el.value=fmtMilesDec(v);
   } else {
@@ -4132,8 +4138,9 @@ function fnSubtotal(i,el){
   if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim()))return;
   const subtotal=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!(subtotal>0))return;
-  it.cantidad=subtotal/it.precio;
-  const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=Math.round(it.cantidad*10000)/10000;
+  // Redondear a 4 decimales para evitar ruido flotante en la cantidad calculada
+  it.cantidad=Math.round((subtotal/it.precio)*10000)/10000;
+  const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=it.cantidad;
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
