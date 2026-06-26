@@ -4112,9 +4112,8 @@ function fnSubtotalBlur(i,el){
 function fnPrecio(i,el){
   const it=fnItems[i];if(!it)return;
   const raw=typeof el==='object'?el.value:String(el);
-  // No guardar si vacío, solo separador, o usuario en medio de escribir decimales
+  // No guardar si el campo está vacío o es solo un separador (usuario borrando)
   if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim()))return;
-  if(/[,.]$/.test(raw))return; // termina en separador → esperar más dígitos
   const v=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!v&&v!==0)return; // valor inválido, no guardar
   it.precio=v;
@@ -4142,17 +4141,11 @@ function fnPrecio(i,el){
 function fnSubtotal(i,el){
   const it=fnItems[i];if(!it||!(it.precio>0))return;
   const raw=typeof el==='object'?el.value:String(el);
-  // 1. No procesar si vacío o solo separador (usuario borrando o iniciando decimal)
+  // No procesar si está vacío o solo tiene separador decimal
   if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim()))return;
-  // 2. No procesar mientras el usuario está en medio de escribir decimales
-  //    (el campo termina en coma, o tiene coma seguida de dígitos incompletos que
-  //    aún no deben recalcular la cantidad — evita el rebote visual)
-  if(/[,.]$/.test(raw))return;
-  // 3. Formatear visualmente con onInputMilesDec (agrega puntos de miles, corrige cursor)
-  //    y obtener el valor numérico limpio en una sola llamada
   const subtotal=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!(subtotal>0))return;
-  // 4. Calcular cantidad redondeando a 4 decimales para evitar ruido flotante
+  // Redondear a 4 decimales para evitar ruido flotante en la cantidad calculada
   it.cantidad=Math.round((subtotal/it.precio)*10000)/10000;
   const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=it.cantidad;
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
