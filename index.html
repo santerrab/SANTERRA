@@ -2271,34 +2271,59 @@ function onInputMiles(el){
 }
 // onInputMilesDec: conserva decimales mientras se escribe.
 // Soporta tanto coma (Android/desktop) como punto (iOS) como separador decimal.
+//
+// NOTA (fix bug decimales/precios≥1000): antes, para decidir si un único punto era
+// "separador de miles" o "separador decimal" se usaba una heurística ambigua basada en
+// CUÁNTOS dígitos había después del punto ("exactamente 3 = miles, lo demás = decimal").
+// Esa heurística se rompía apenas el usuario seguía escribiendo más cifras de un precio
+// entero ≥1000 (ej: "12990" terminaba leyéndose como "1,2990") o usaba el punto del
+// teclado numérico/decimal del celular para ingresar decimales en un precio ya con punto
+// de miles (ej: "1748.567" terminaba leyéndose como "17,48567").
+// Ahora la decisión NO se adivina por la forma del texto: se usa una marca explícita
+// (el.dataset.fnDecMode) que se activa SOLO en el instante real en que el usuario
+// teclea el separador decimal (ver fnPrecio/fnSubtotal). Mientras esa marca no esté
+// activa, cualquier punto presente se trata siempre como separador de miles, sin
+// importar cuántos dígitos lo sigan — así un precio de cualquier cantidad de cifras
+// se puede seguir escribiendo sin que se "active" un decimal por accidente.
 function onInputMilesDec(el){
   const raw=el.value;
+  const ds=(el&&el.dataset)?el.dataset:null;
 
-  // 1. Campo vacío
-  if(!raw||raw.trim()==='')return 0;
+  // 1. Campo vacío → no hay nada que decidir, se limpia la marca de modo-decimal
+  if(!raw||raw.trim()===''){
+    if(ds)ds.fnDecMode='';
+    return 0;
+  }
 
-  // 2. Solo un separador al final — usuario va a escribir decimales
+  // 2. Solo un separador (al final, o el campo entero es un separador) — el usuario
+  //    recién tecleó el separador decimal y todavía no escribe dígitos después.
+  //    Se confirma el modo-decimal aquí también (cubre el caso de empezar tecleando
+  //    "," o "." como primer carácter, ej. ",5").
   if(/^[\d.,]*[,.]$/.test(raw)){
+    if(ds)ds.fnDecMode='1';
     return desfmtMiles(raw.replace(/[,.]$/,''))||0;
   }
 
-  // 3. Detectar separador decimal:
-  //    - Un solo punto sin coma → punto ES decimal (iOS)
-  //    - Coma presente → coma es decimal (Android/desktop)
-  //    - Si no hay ninguno → tratar como entero puro (nunca agregar decimales)
   const puntos=(raw.match(/\./g)||[]).length;
   const comas=(raw.match(/,/g)||[]).length;
-  const esPuntoDecimal=puntos===1&&comas===0&&/\.\d+$/.test(raw)&&!/^\d+\.\d{3}$/.test(raw);
-  const esComaDecimal=comas===1&&/,\d*/.test(raw);
+  const enModoDecimalPorPunto=!!(ds&&ds.fnDecMode==='1');
 
-  if(esPuntoDecimal||esComaDecimal){
-    const sepChar=esPuntoDecimal?'.':',';
+  // La coma SIEMPRE es decimal sin ambigüedad (nunca se usa como separador de miles
+  // en este formato). El punto solo se trata como decimal si el usuario ya confirmó
+  // esa intención tecleándolo explícitamente (enModoDecimalPorPunto).
+  const esComaDecimal=comas===1;
+  const esPuntoDecimal=!esComaDecimal&&comas===0&&puntos>=1&&enModoDecimalPorPunto&&/\.\d+$/.test(raw);
+
+  if(esComaDecimal||esPuntoDecimal){
+    const sepChar=esComaDecimal?',':'.';
     const sepIdx=raw.lastIndexOf(sepChar);
     const parteEnteraRaw=raw.slice(0,sepIdx);
     const parteDec=raw.slice(sepIdx+1);
-    const entero=desfmtMiles(parteEnteraRaw)||0;
-    // Re-formatear solo la parte entera, conservar decimales tal como están
-    const entFmt=entero>0?new Intl.NumberFormat('es-CL').format(Math.trunc(entero)):'0';
+    // La parte entera puede traer sus propios puntos de miles ya formateados (ej:
+    // "12.345,"); se limpian directamente sin pasar por la heurística ambigua de
+    // desfmtMiles, porque a esta altura ya sabemos con certeza que son miles.
+    const entero=parseInt(parteEnteraRaw.replace(/[.,]/g,''),10)||0;
+    const entFmt=entero>0?new Intl.NumberFormat('es-CL').format(entero):'0';
     const nuevoValor=entFmt+','+parteDec;
     // Solo actualizar si el formato cambió, para no mover el cursor innecesariamente
     if(el.value!==nuevoValor){
@@ -2311,8 +2336,11 @@ function onInputMilesDec(el){
     return parseFloat(entero+'.'+(parteDec||'0'))||0;
   }
 
-  // 4. Número entero — formatear con puntos de miles conservando posición del cursor
-  const num=desfmtMiles(raw);
+  // 3. Sin modo-decimal activo: SIEMPRE es un número entero, sin importar cuántos
+  //    puntos de miles tenga (ya formateados o no). Se limpian todos los puntos y se
+  //    reformatea, evitando que escribir el 5° dígito (o más) de un precio "active"
+  //    por error una lectura decimal.
+  const num=parseInt(raw.replace(/\./g,''),10)||0;
   if(!num&&num!==0)return 0;
   const formatted=num>0?fmtMilesDec(num):'';
   if(el.value!==formatted){
@@ -3976,7 +4004,7 @@ function fnVarBadgeHTML(it){
   const diffPct=Math.round((costoUnit-prod.precioNeto)/prod.precioNeto*100);
   if(Math.abs(diffPct)<1)return'';
   const subio=diffPct>0;
-  return`<div style="font-size:11px;font-weight:600;${subio?'color:#ef4444;background:rgba(239,68,68,.08)':'color:var(--green);background:var(--greend)'};border-radius:6px;padding:5px 8px;display:inline-flex;align-items:center;gap:5px">${subio?'▲':'▼'} ${Math.abs(diffPct)}% vs última compra ($${fmtMilesDec(prod.precioNeto)} → $${fmtMilesDec(costoUnit)})</div>`;
+  return`<div style="font-size:11px;font-weight:600;${subio?'color:#ef4444;background:rgba(239,68,68,.08)':'color:var(--green);background:var(--greend)'};border-radius:6px;padding:5px 8px;display:inline-flex;align-items:center;gap:5px">${subio?'▲':'▼'} ${Math.abs(diffPct)}% vs última compra (${clp(prod.precioNeto)} → ${clp(costoUnit)})</div>`;
 }
 function actualizarVarBadge(i){
   const box=document.getElementById('var-badge-'+i);if(!box)return;
@@ -4019,7 +4047,7 @@ function renderFnItems(){
       <span class="fn-pg-signo">$</span>
       <input id="fn-precio-${i}" type="text" inputmode="decimal" class="fn-precio-input" value="${fmtMilesDec(it.precio)}"
         oninput="fnPrecio(${i},this)"
-        onfocus="this.select()"
+        onfocus="this.select();this.dataset.fnDecMode=''"
         onblur="fnPrecioBlur(${i},this)">
     </div>
     <div class="fn-pg-lbl">Subtotal calculado</div>
@@ -4028,7 +4056,7 @@ function renderFnItems(){
     <div class="fn-pg-lbl fn-pg-lbl-acento">⚖️ Subtotal en factura</div>
     <div class="fn-pg-ctrl">
       <span class="fn-pg-signo">$</span>
-      <input id="fn-subplaceholder-${i}" type="text" inputmode="decimal" class="fn-precio-input fn-subtotal-real" placeholder="${fmtMilesDec(subtotalCalc)}" oninput="fnSubtotal(${i},this)" onfocus="this.select()" onblur="fnSubtotalBlur(${i},this)">
+      <input id="fn-subplaceholder-${i}" type="text" inputmode="decimal" class="fn-precio-input fn-subtotal-real" placeholder="${fmtMilesDec(subtotalCalc)}" oninput="fnSubtotal(${i},this)" onfocus="this.select();this.dataset.fnDecMode=''" onblur="fnSubtotalBlur(${i},this)">
     </div>`:''}
     ${it.tieneBulto?`
     <div class="fn-pg-lbl">Stock que ingresa</div>
@@ -4084,12 +4112,6 @@ function fnPrecioBlur(i,el){
   if(v>0){
     it.precio=v;
     el.value=fmtMilesDec(v);
-    // Si el precio cambia, el subtotalReal anterior ya no es válido
-    if(it.subtotalReal){
-      it.subtotalReal=null;
-      const subInputEl=document.getElementById('fn-subplaceholder-'+i);
-      if(subInputEl)subInputEl.value='';
-    }
     // Recalcular todo
     const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*v);
     const prod2=prods.find(x=>x.id===it.pid);
@@ -4107,30 +4129,34 @@ function fnPrecioBlur(i,el){
 function fnSubtotalBlur(i,el){
   const it=fnItems[i];if(!it)return;
   const raw=el.value.trim();
-  if(!raw){el.value='';it.subtotalReal=null;return;}
+  if(!raw){el.value='';return;}
   const v=Math.round(desfmtMiles(raw)*1000)/1000;
   if(v>0){
-    it.subtotalReal=v;
     el.value=fmtMilesDec(v);
   } else {
-    el.value='';it.subtotalReal=null;
+    el.value='';
   }
 }
 function fnPrecio(i,el){
   const it=fnItems[i];if(!it)return;
   const raw=typeof el==='object'?el.value:String(el);
   // No guardar si vacío, solo separador, o usuario en medio de escribir decimales
-  if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim()))return;
-  if(/[,.]$/.test(raw))return; // termina en separador → esperar más dígitos
+  if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim())){
+    // Si lo único tecleado hasta ahora es el separador (ej: usuario parte con ",")
+    // confirmamos el modo-decimal para que el punto se siga interpretando como decimal.
+    if(typeof el==='object'&&el.dataset&&/^[,.]$/.test(raw.trim()))el.dataset.fnDecMode='1';
+    return;
+  }
+  if(/[,.]$/.test(raw)){
+    // El usuario recién tecleó el separador decimal (coma o punto) al final del valor
+    // → se confirma el modo-decimal para que, de ahí en adelante, ese punto (y no la
+    // cantidad de dígitos que lo sigan) sea lo que decide la interpretación.
+    if(typeof el==='object'&&el.dataset)el.dataset.fnDecMode='1';
+    return; // termina en separador → esperar más dígitos
+  }
   const v=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!v&&v!==0)return; // valor inválido, no guardar
   it.precio=v;
-  // Si el precio cambia, el subtotalReal anterior ya no es válido — limpiar
-  if(it.subtotalReal){
-    it.subtotalReal=null;
-    const subInputEl=document.getElementById('fn-subplaceholder-'+i);
-    if(subInputEl)subInputEl.value='';
-  }
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
@@ -4156,22 +4182,25 @@ function fnSubtotal(i,el){
   const it=fnItems[i];if(!it||!(it.precio>0))return;
   const raw=typeof el==='object'?el.value:String(el);
   // 1. No procesar si vacío o solo separador (usuario borrando o iniciando decimal)
-  if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim()))return;
+  if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim())){
+    if(typeof el==='object'&&el.dataset&&/^[,.]$/.test(raw.trim()))el.dataset.fnDecMode='1';
+    return;
+  }
   // 2. No procesar mientras el usuario está en medio de escribir decimales
   //    (el campo termina en coma, o tiene coma seguida de dígitos incompletos que
   //    aún no deben recalcular la cantidad — evita el rebote visual)
-  if(/[,.]$/.test(raw))return;
+  if(/[,.]$/.test(raw)){
+    if(typeof el==='object'&&el.dataset)el.dataset.fnDecMode='1';
+    return;
+  }
   // 3. Formatear visualmente con onInputMilesDec (agrega puntos de miles, corrige cursor)
   //    y obtener el valor numérico limpio en una sola llamada
   const subtotal=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!(subtotal>0))return;
-  // 4. Guardar subtotal real de factura como fuente autoritativa
-  it.subtotalReal=subtotal;
-  // Calcular cantidad con máxima precisión posible
+  // 4. Calcular cantidad redondeando a 4 decimales para evitar ruido flotante
   it.cantidad=Math.round((subtotal/it.precio)*10000)/10000;
   const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=it.cantidad;
-  // Mostrar el subtotal real ingresado, no el recalculado (evita confusión)
-  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(subtotal);
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
     const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
@@ -4187,7 +4216,7 @@ function calcFnTotal(){
   const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
   const itemsCalc=fnItems.map(it=>{
     const prod=prods.find(x=>x.id===it.pid);
-    return{netoItem:it.subtotalReal||it.cantidad*it.precio,tipo:prod?.tipoImpuesto||'general'};
+    return{netoItem:it.cantidad*it.precio,tipo:prod?.tipoImpuesto||'general'};
   });
   const totalNetoConDesc=Math.max(0,itemsCalc.reduce((a,x)=>a+x.netoItem,0)-descMonto);
   const factorDesc=itemsCalc.reduce((a,x)=>a+x.netoItem,0)>0?totalNetoConDesc/itemsCalc.reduce((a,x)=>a+x.netoItem,0):1;
@@ -4214,16 +4243,16 @@ async function guardarFactura(){
       return{productoId:it.pid,nombreProducto:it.nombre,cantidadBultos:it.cantidad,cantidadStock:cantStock,
         unidadCompra:it.unidadCompra||null,factorConversion:it.factorConversion||1,
         precioPorBulto:it.precio,precioNetoUnit:Math.round(netoUnitExacto*100)/100,
-        precioUnitStock:c.total,subtotal:it.subtotalReal||it.cantidad*it.precio,
+        precioUnitStock:c.total,subtotal:it.cantidad*it.precio,
         tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca',
-        _netoUnitExacto:netoUnitExacto,_subtotalReal:it.subtotalReal||null};
+        _netoUnitExacto:netoUnitExacto};
     });
-    const tot=items.reduce((a,it)=>a+(it._subtotalReal||it.subtotal),0);
+    const tot=items.reduce((a,it)=>a+it.subtotal,0);
     const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
     const descPct=parseFloat(document.getElementById('fn-desc-pct')?.value)||0;
     const netoConDesc=Math.max(0,tot-descMonto);
     const factorDesc=tot>0?netoConDesc/tot:1;
-    const itemsCalc=items.map(it=>({netoItem:(it._subtotalReal||it.subtotal)*factorDesc,tipo:it.tipoImpuesto||'general'}));
+    const itemsCalc=items.map(it=>({netoItem:it.subtotal*factorDesc,tipo:it.tipoImpuesto||'general'}));
     const r=calcImpFactura(itemsCalc);
     // Costo real por unidad YA con el descuento del proveedor aplicado: es el valor que
     // debe quedar reflejado en el producto (stock) y en el historial de precios, para que
@@ -4233,7 +4262,7 @@ async function guardarFactura(){
       const cDesc=calcImp(netoUnitDesc,it.tipoImpuesto);
       return{...it,precioNetoUnitDesc:Math.round(netoUnitDesc*100)/100,precioUnitStockDesc:cDesc.total};
     });
-    const itemsParaGuardar=items.map(({_netoUnitExacto,_subtotalReal,...resto})=>resto);
+    const itemsParaGuardar=items.map(({_netoUnitExacto,...resto})=>resto);
     const ref=await addDoc(collection(db,'facturas'),{
       numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
       fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
