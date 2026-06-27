@@ -3976,7 +3976,7 @@ function fnVarBadgeHTML(it){
   const diffPct=Math.round((costoUnit-prod.precioNeto)/prod.precioNeto*100);
   if(Math.abs(diffPct)<1)return'';
   const subio=diffPct>0;
-  return`<div style="font-size:11px;font-weight:600;${subio?'color:#ef4444;background:rgba(239,68,68,.08)':'color:var(--green);background:var(--greend)'};border-radius:6px;padding:5px 8px;display:inline-flex;align-items:center;gap:5px">${subio?'▲':'▼'} ${Math.abs(diffPct)}% vs última compra (${clp(prod.precioNeto)} → ${clp(costoUnit)})</div>`;
+  return`<div style="font-size:11px;font-weight:600;${subio?'color:#ef4444;background:rgba(239,68,68,.08)':'color:var(--green);background:var(--greend)'};border-radius:6px;padding:5px 8px;display:inline-flex;align-items:center;gap:5px">${subio?'▲':'▼'} ${Math.abs(diffPct)}% vs última compra ($${fmtMilesDec(prod.precioNeto)} → $${fmtMilesDec(costoUnit)})</div>`;
 }
 function actualizarVarBadge(i){
   const box=document.getElementById('var-badge-'+i);if(!box)return;
@@ -4084,6 +4084,12 @@ function fnPrecioBlur(i,el){
   if(v>0){
     it.precio=v;
     el.value=fmtMilesDec(v);
+    // Si el precio cambia, el subtotalReal anterior ya no es válido
+    if(it.subtotalReal){
+      it.subtotalReal=null;
+      const subInputEl=document.getElementById('fn-subplaceholder-'+i);
+      if(subInputEl)subInputEl.value='';
+    }
     // Recalcular todo
     const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*v);
     const prod2=prods.find(x=>x.id===it.pid);
@@ -4101,12 +4107,13 @@ function fnPrecioBlur(i,el){
 function fnSubtotalBlur(i,el){
   const it=fnItems[i];if(!it)return;
   const raw=el.value.trim();
-  if(!raw){el.value='';return;}
+  if(!raw){el.value='';it.subtotalReal=null;return;}
   const v=Math.round(desfmtMiles(raw)*1000)/1000;
   if(v>0){
+    it.subtotalReal=v;
     el.value=fmtMilesDec(v);
   } else {
-    el.value='';
+    el.value='';it.subtotalReal=null;
   }
 }
 function fnPrecio(i,el){
@@ -4118,6 +4125,12 @@ function fnPrecio(i,el){
   const v=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!v&&v!==0)return; // valor inválido, no guardar
   it.precio=v;
+  // Si el precio cambia, el subtotalReal anterior ya no es válido — limpiar
+  if(it.subtotalReal){
+    it.subtotalReal=null;
+    const subInputEl=document.getElementById('fn-subplaceholder-'+i);
+    if(subInputEl)subInputEl.value='';
+  }
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
@@ -4152,10 +4165,13 @@ function fnSubtotal(i,el){
   //    y obtener el valor numérico limpio en una sola llamada
   const subtotal=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!(subtotal>0))return;
-  // 4. Calcular cantidad redondeando a 4 decimales para evitar ruido flotante
+  // 4. Guardar subtotal real de factura como fuente autoritativa
+  it.subtotalReal=subtotal;
+  // Calcular cantidad con máxima precisión posible
   it.cantidad=Math.round((subtotal/it.precio)*10000)/10000;
   const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=it.cantidad;
-  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  // Mostrar el subtotal real ingresado, no el recalculado (evita confusión)
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(subtotal);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
     const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
@@ -4171,7 +4187,7 @@ function calcFnTotal(){
   const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
   const itemsCalc=fnItems.map(it=>{
     const prod=prods.find(x=>x.id===it.pid);
-    return{netoItem:it.cantidad*it.precio,tipo:prod?.tipoImpuesto||'general'};
+    return{netoItem:it.subtotalReal||it.cantidad*it.precio,tipo:prod?.tipoImpuesto||'general'};
   });
   const totalNetoConDesc=Math.max(0,itemsCalc.reduce((a,x)=>a+x.netoItem,0)-descMonto);
   const factorDesc=itemsCalc.reduce((a,x)=>a+x.netoItem,0)>0?totalNetoConDesc/itemsCalc.reduce((a,x)=>a+x.netoItem,0):1;
@@ -4198,16 +4214,16 @@ async function guardarFactura(){
       return{productoId:it.pid,nombreProducto:it.nombre,cantidadBultos:it.cantidad,cantidadStock:cantStock,
         unidadCompra:it.unidadCompra||null,factorConversion:it.factorConversion||1,
         precioPorBulto:it.precio,precioNetoUnit:Math.round(netoUnitExacto*100)/100,
-        precioUnitStock:c.total,subtotal:it.cantidad*it.precio,
+        precioUnitStock:c.total,subtotal:it.subtotalReal||it.cantidad*it.precio,
         tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca',
-        _netoUnitExacto:netoUnitExacto};
+        _netoUnitExacto:netoUnitExacto,_subtotalReal:it.subtotalReal||null};
     });
-    const tot=items.reduce((a,it)=>a+it.subtotal,0);
+    const tot=items.reduce((a,it)=>a+(it._subtotalReal||it.subtotal),0);
     const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
     const descPct=parseFloat(document.getElementById('fn-desc-pct')?.value)||0;
     const netoConDesc=Math.max(0,tot-descMonto);
     const factorDesc=tot>0?netoConDesc/tot:1;
-    const itemsCalc=items.map(it=>({netoItem:it.subtotal*factorDesc,tipo:it.tipoImpuesto||'general'}));
+    const itemsCalc=items.map(it=>({netoItem:(it._subtotalReal||it.subtotal)*factorDesc,tipo:it.tipoImpuesto||'general'}));
     const r=calcImpFactura(itemsCalc);
     // Costo real por unidad YA con el descuento del proveedor aplicado: es el valor que
     // debe quedar reflejado en el producto (stock) y en el historial de precios, para que
@@ -4217,7 +4233,7 @@ async function guardarFactura(){
       const cDesc=calcImp(netoUnitDesc,it.tipoImpuesto);
       return{...it,precioNetoUnitDesc:Math.round(netoUnitDesc*100)/100,precioUnitStockDesc:cDesc.total};
     });
-    const itemsParaGuardar=items.map(({_netoUnitExacto,...resto})=>resto);
+    const itemsParaGuardar=items.map(({_netoUnitExacto,_subtotalReal,...resto})=>resto);
     const ref=await addDoc(collection(db,'facturas'),{
       numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
       fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
