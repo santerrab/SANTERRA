@@ -2309,9 +2309,16 @@ function onInputMilesDec(el){
   const enModoDecimalPorPunto=!!(ds&&ds.fnDecMode==='1');
 
   // La coma SIEMPRE es decimal sin ambigüedad (nunca se usa como separador de miles
-  // en este formato). El punto solo se trata como decimal si el usuario ya confirmó
-  // esa intención tecleándolo explícitamente (enModoDecimalPorPunto).
-  const esComaDecimal=comas===1;
+  // en este formato). Se usa comas>=1 (no ===1) para tolerar con gracia el caso de
+  // que el usuario haya tecleado manualmente el punto de miles tal como aparece
+  // impreso en la factura (ej: "1.748,567"): ese punto, al no haber dígitos previos
+  // suficientes, puede convertirse primero en una coma transitoria; si después llega
+  // la coma decimal real, queda más de una coma en el texto. En ese caso se toma
+  // siempre la ÚLTIMA coma como el separador decimal real, y todo lo anterior
+  // (incluida cualquier coma/punto sobrante) se limpia como parte entera más abajo.
+  // El punto solo se trata como decimal si el usuario ya confirmó esa intención
+  // tecleándolo explícitamente (enModoDecimalPorPunto).
+  const esComaDecimal=comas>=1;
   const esPuntoDecimal=!esComaDecimal&&comas===0&&puntos>=1&&enModoDecimalPorPunto&&/\.\d+$/.test(raw);
 
   if(esComaDecimal||esPuntoDecimal){
