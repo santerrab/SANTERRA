@@ -3253,7 +3253,7 @@ async function enviarPedido(){
     const lbl=document.getElementById('pedir-sub');if(lbl)lbl.textContent='Busca y agrega productos al pedido';
     renderCarrito();goTo('pg-mispedidos');
   }catch(e){toast('Error: '+e.message,'err');}
-  btn.disabled=false;btn.textContent='📤 Enviar pedido a bodega';
+  finally{btn.disabled=false;btn.textContent='📤 Enviar pedido a bodega';}
 }
 
 // ── MIS PEDIDOS ──────────────────────────────────────────────────────────────
@@ -4112,8 +4112,9 @@ function fnSubtotalBlur(i,el){
 function fnPrecio(i,el){
   const it=fnItems[i];if(!it)return;
   const raw=typeof el==='object'?el.value:String(el);
-  // No guardar si el campo está vacío o es solo un separador (usuario borrando)
+  // No guardar si vacío, solo separador, o usuario en medio de escribir decimales
   if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim()))return;
+  if(/[,.]$/.test(raw))return; // termina en separador → esperar más dígitos
   const v=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!v&&v!==0)return; // valor inválido, no guardar
   it.precio=v;
@@ -4141,11 +4142,17 @@ function fnPrecio(i,el){
 function fnSubtotal(i,el){
   const it=fnItems[i];if(!it||!(it.precio>0))return;
   const raw=typeof el==='object'?el.value:String(el);
-  // No procesar si está vacío o solo tiene separador decimal
+  // 1. No procesar si vacío o solo separador (usuario borrando o iniciando decimal)
   if(!raw||raw.trim()===''||/^[,.]$/.test(raw.trim()))return;
+  // 2. No procesar mientras el usuario está en medio de escribir decimales
+  //    (el campo termina en coma, o tiene coma seguida de dígitos incompletos que
+  //    aún no deben recalcular la cantidad — evita el rebote visual)
+  if(/[,.]$/.test(raw))return;
+  // 3. Formatear visualmente con onInputMilesDec (agrega puntos de miles, corrige cursor)
+  //    y obtener el valor numérico limpio en una sola llamada
   const subtotal=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!(subtotal>0))return;
-  // Redondear a 4 decimales para evitar ruido flotante en la cantidad calculada
+  // 4. Calcular cantidad redondeando a 4 decimales para evitar ruido flotante
   it.cantidad=Math.round((subtotal/it.precio)*10000)/10000;
   const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=it.cantidad;
   const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
@@ -4256,7 +4263,7 @@ async function guardarFactura(){
     histPreciosCache=null; // invalidar cache: hay registros nuevos
     toast('✓ '+fnItems.length+' productos ingresados');closeM('mo-fact');fnItems=[];
   }catch(e){toast('Error: '+e.message,'err');}
-  btn.disabled=false;btn.textContent='✓ Ingresar al stock';
+  finally{btn.disabled=false;btn.textContent='✓ Ingresar al stock';}
 }
 
 // ── PRODUCTOS ─────────────────────────────────────────────────────────────────
@@ -4454,7 +4461,8 @@ async function guardarProd(){
       toast(`✓ Creado — ${clp(c.total)} / ${data.unidadMedida}`);
     }
     closeM('mo-prod');editProdId=null;
-  }catch(e){toast('Error: '+e.message,'err');btn.disabled=false;btn.textContent='Guardar producto';}
+  }catch(e){toast('Error: '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='Guardar producto';}
 }
 async function elimProd(id,n){if(!confirm('¿Eliminar "'+n+'"?'))return;await deleteDoc(doc(db,'productos',id));toast('Eliminado');}
 // ── BODEGAS CONFIG ────────────────────────────────────────────────────────────
@@ -5512,7 +5520,7 @@ async function confirmarAjuste(){
     closeM('mo-inv-diff');invActivo=null;conteoLocal={};
     document.getElementById('inv-activo').style.display='none';document.getElementById('inv-historial').style.display='block';
   }catch(e){toast('Error: '+e.message,'err');}
-  if(btn){btn.disabled=false;btn.textContent='✓ Confirmar ajuste de stock';}
+  finally{if(btn){btn.disabled=false;btn.textContent='✓ Confirmar ajuste de stock';}}
 }
 function renderInvHistorial(){
   const lista=document.getElementById('inv-hist-lista');if(!lista)return;
