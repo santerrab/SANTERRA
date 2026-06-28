@@ -236,6 +236,8 @@ body.light .nav{background:rgba(255,255,255,.92)}
 .bg-o-s{background:var(--oranged);color:var(--orange);border:1px solid var(--orangeb)}
 .dbtn{background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:4px 6px;border-radius:8px}
 .dbtn:active{background:var(--redd)}
+.dbtn-verde{color:var(--green)}
+.dbtn-verde:active{background:var(--greend)}
 
 /* ── TOAST ───────────────────────────────────────────────────── */
 .toast{
@@ -1880,6 +1882,31 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
   </div>
 </div>
 
+<div class="ovl" id="mo-ajuste-stock">
+  <div class="modal"><div class="mh"></div><div class="mt">⚖️ Ajustar Stock</div>
+    <div style="font-size:11px;color:var(--txm);margin-bottom:11px;line-height:1.5">Corrige el stock de un producto cuando detectes una diferencia, sin tener que iniciar un inventario completo.</div>
+    <div id="ajs-prod-sel" style="background:var(--sf2);border-radius:9px;padding:10px 12px;margin-bottom:11px;font-size:13px;font-weight:600"></div>
+    <div class="fg" style="margin-bottom:11px"><label class="fl">Bodega</label><select class="fi" id="ajs-bodega" onchange="ajsBodegaChange()"></select></div>
+    <div class="fr" style="margin-bottom:4px">
+      <div class="fg" style="margin-bottom:0"><label class="fl">Stock actual (sistema)</label><div class="fi" id="ajs-stock-actual" style="display:flex;align-items:center;color:var(--txm);font-weight:700">—</div></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Stock real (contado) *</label><input class="fi" type="number" inputmode="decimal" id="ajs-real" min="0" step="1" placeholder="0" oninput="ajsInput()"></div>
+    </div>
+    <div style="text-align:right;margin-bottom:11px"><span id="ajs-diff" style="font-size:12px;font-weight:700"></span></div>
+    <div class="fg"><label class="fl">Motivo *</label>
+      <select class="fi" id="ajs-motivo">
+        <option value="conteo_puntual">Conteo físico puntual</option>
+        <option value="error_registro">Corrección de error de registro</option>
+        <option value="perdida_no_merma">Pérdida/rotura no registrada como merma</option>
+        <option value="producto_encontrado">Producto encontrado / sobrante</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Observación</label><input class="fi" type="text" id="ajs-obs" placeholder="Descripción adicional..."></div>
+    <button class="btn bg-blue" onclick="confirmarAjusteStock()">⚖️ Confirmar ajuste</button>
+    <button class="btn bg-ghost" onclick="closeM('mo-ajuste-stock')">Cancelar</button>
+  </div>
+</div>
+
 <div class="ovl" id="mo-cfg">
   <div class="modal"><div class="mh"></div><div class="mt">⚙️ Configuración</div>
     <div style="font-size:11px;color:var(--txm);text-transform:uppercase;font-weight:700;margin-bottom:10px">PINs de acceso</div>
@@ -2070,7 +2097,7 @@ let diffFiltro='diff',detalleFiltro='diff',detalleInv=null;
 const _vistoSent=new Set();
 const _maxVisto=200;
 let subAreaActual='';
-let trProdId=null,merProdId=null,verifSolId=null;
+let trProdId=null,merProdId=null,verifSolId=null,ajsProdId=null;
 let fProdBodegaActual='',fStockBodega='',fStockCat='';
 let fPC='',fDE='pendiente',fSE='',fME='';
 let ventaAreaSel='c3';
@@ -2224,6 +2251,21 @@ function calcImpFactura(items){
 // ── FORMATO ──────────────────────────────────────────────────────────────────
 const clp=v=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(Math.round(v||0));
 const clpn=v=>new Intl.NumberFormat('es-CL',{minimumFractionDigits:0,maximumFractionDigits:2}).format(v||0);
+// clpDec: como clp(), pero conserva los decimales reales si los hay (máx 3), en vez de
+// redondear siempre a peso entero. Se usa en precio neto y subtotal de factura, donde
+// ocultar el decimal puede esconder la diferencia exacta que el usuario necesita ver para
+// reconciliar con lo impreso en la factura del proveedor.
+const clpDec=v=>{
+  if(!v&&v!==0)return'$0';
+  const r=Math.round((v||0)*1000)/1000; // eliminar ruido flotante
+  const hasDec=r!==Math.round(r);
+  if(!hasDec)return clp(r);
+  const dec=String(r).split('.')[1]||'';
+  const decLimpio=dec.replace(/0+$/,'').slice(0,3);
+  const entero=Math.trunc(r);
+  const entFmt=clp(entero);
+  return entFmt.replace(/(\d)([^0-9]*)$/,`$1,${decLimpio}$2`)||entFmt+','+decLimpio;
+};
 // Helpers para inputs de monto en $ que deben mostrar puntos de miles mientras se escribe
 // (ej: 20.000) sin perder el cursor ni romper el parseo numérico interno.
 const desfmtMiles=s=>{
@@ -3131,14 +3173,21 @@ function _renderStockNow(){
   function prodCard(p){
     const st=stockTotal(p),m=p.stockMinimo??null;
     const cls=st===0?'bg-r-s':(m!=null&&st<=m)?'bg-y-s':'bg-g-s';
+    const puedeAjustar=role==='encargado';
     const bodTags=bodegas.map(b=>{
       const s=stockEnBodega(p,b.id);
       if(!s&&p.bodega!==b.id)return'';
       const sc=s===0?'no-stock':(m!=null&&s<=m)?'low-stock':'has-stock';
-      return`<span class="stock-bod-tag ${sc}">${b.icono} ${b.nombre}: ${clpn(s)} ${p.unidadMedida||''}</span>`;
+      // Si puede ajustar: el tag es clickeable y abre el ajuste con ESA bodega exacta ya
+      // seleccionada — clave cuando el producto está repartido en varias bodegas, para no
+      // tener que adivinar/reseleccionar la bodega correcta dentro del modal.
+      const clickAttr=puedeAjustar?` onclick="abrirAjusteStock('${p.id}','${b.id}')" style="cursor:pointer"`:'';
+      return`<span class="stock-bod-tag ${sc}"${clickAttr}>${b.icono} ${b.nombre}: ${clpn(s)} ${p.unidadMedida||''}</span>`;
     }).filter(Boolean).join('');
     return`<div class="prod-card">
-      <div class="prod-hdr"><div><div class="prod-nom">${p.nombre}</div><div class="prod-cat">${p.subcategoria||p.categoria||'—'}${p.proveedor?' · '+p.proveedor:''}</div></div><span class="badge ${cls}">${st===0?'Sin stock':clpn(st)+' '+(p.unidadMedida||'')}</span></div>
+      <div class="prod-hdr"><div><div class="prod-nom">${p.nombre}</div><div class="prod-cat">${p.subcategoria||p.categoria||'—'}${p.proveedor?' · '+p.proveedor:''}</div></div>
+        <span style="display:inline-flex;align-items:center;gap:6px">${puedeAjustar?`<button class="dbtn dbtn-verde" onclick="abrirAjusteStock('${p.id}')" title="Ajustar stock">⚖️</button>`:''}<span class="badge ${cls}">${st===0?'Sin stock':clpn(st)+' '+(p.unidadMedida||'')}</span></span>
+      </div>
       ${bodTags?`<div class="stock-bodegas">${bodTags}</div>`:''}
       <div class="prod-precios">
         <div class="prod-precio-item"><div class="prod-precio-lbl">Precio neto</div><div class="prod-precio-val" style="color:var(--txm)">${clp(pt(p)?pn(p):0)}</div></div>
@@ -4011,7 +4060,7 @@ function fnVarBadgeHTML(it){
   const diffPct=Math.round((costoUnit-prod.precioNeto)/prod.precioNeto*100);
   if(Math.abs(diffPct)<1)return'';
   const subio=diffPct>0;
-  return`<div style="font-size:11px;font-weight:600;${subio?'color:#ef4444;background:rgba(239,68,68,.08)':'color:var(--green);background:var(--greend)'};border-radius:6px;padding:5px 8px;display:inline-flex;align-items:center;gap:5px">${subio?'▲':'▼'} ${Math.abs(diffPct)}% vs última compra (${clp(prod.precioNeto)} → ${clp(costoUnit)})</div>`;
+  return`<div style="font-size:11px;font-weight:600;${subio?'color:#ef4444;background:rgba(239,68,68,.08)':'color:var(--green);background:var(--greend)'};border-radius:6px;padding:5px 8px;display:inline-flex;align-items:center;gap:5px">${subio?'▲':'▼'} ${Math.abs(diffPct)}% vs última compra (${clpDec(prod.precioNeto)} → ${clpDec(costoUnit)})</div>`;
 }
 function actualizarVarBadge(i){
   const box=document.getElementById('var-badge-'+i);if(!box)return;
@@ -4058,7 +4107,7 @@ function renderFnItems(){
         onblur="fnPrecioBlur(${i},this)">
     </div>
     <div class="fn-pg-lbl">Subtotal calculado</div>
-    <div class="fn-pg-resultado" id="fn-subtotal-${i}">${clp(subtotalCalc)}</div>
+    <div class="fn-pg-resultado" id="fn-subtotal-${i}">${clpDec(subtotalCalc)}</div>
     ${isKg?`
     <div class="fn-pg-lbl fn-pg-lbl-acento">⚖️ Subtotal en factura</div>
     <div class="fn-pg-ctrl">
@@ -4067,10 +4116,10 @@ function renderFnItems(){
     </div>`:''}
     ${it.tieneBulto?`
     <div class="fn-pg-lbl">Stock que ingresa</div>
-    <div class="fn-pg-ctrl"><span id="fn-bulto-${i}" class="fn-conv-txt">📦 ${it.cantidad}×${it.factorConversion} = +${stockAgregar} ${it.unidad} · ${clp(costoUnit)}/${it.unidad}</span></div>`:''}
+    <div class="fn-pg-ctrl"><span id="fn-bulto-${i}" class="fn-conv-txt">📦 ${it.cantidad}×${it.factorConversion} = +${stockAgregar} ${it.unidad} · ${clpDec(costoUnit)}/${it.unidad}</span></div>`:''}
     <div class="fn-pg-lbl">Costo/${it.tieneBulto?it.unidad:'unidad'}</div>
     <div class="fn-pg-resultado fn-costo-unit" id="fn-cunit-${i}">
-      ${clp(costoUnit)}${diffStr}
+      ${clpDec(costoUnit)}${diffStr}
     </div>
     <div class="fn-pg-lbl">Bodega destino</div>
     <div class="fn-pg-ctrl fn-pg-bod">
@@ -4088,16 +4137,20 @@ function setCantFn(i,v){
   if(isNaN(val)||val<=0)return;
   const it=fnItems[i];if(!it)return;
   it.cantidad=val;
-  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  // Si el usuario edita la cantidad directamente, el subtotal-en-factura tipeado antes
+  // ya no corresponde (quedaría inconsistente con la nueva cantidad) → se invalida.
+  if(it.subtotalReal){
+    it.subtotalReal=null;
+    const subInputEl=document.getElementById('fn-subplaceholder-'+i);
+    if(subInputEl)subInputEl.value='';
+  }
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clpDec(it.cantidad*it.precio);
   actualizarVarBadge(i);
-  // Actualizar subtotal en tabla
-  const subEl2=document.getElementById('fn-subtotal-'+i);
-  if(subEl2)subEl2.textContent=clp(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
     const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
     const bultoEl=document.getElementById('fn-bulto-'+i);
-    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
+    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clpDec(costoUnit)}`;
   }
   const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
   if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMilesDec(it.cantidad*it.precio);
@@ -4119,15 +4172,21 @@ function fnPrecioBlur(i,el){
   if(v>0){
     it.precio=v;
     el.value=fmtMilesDec(v);
+    // Si el precio cambia, el subtotal-en-factura tipeado antes ya no es válido
+    if(it.subtotalReal){
+      it.subtotalReal=null;
+      const subInputEl=document.getElementById('fn-subplaceholder-'+i);
+      if(subInputEl)subInputEl.value='';
+    }
     // Recalcular todo
-    const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*v);
+    const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clpDec(it.cantidad*v);
     const prod2=prods.find(x=>x.id===it.pid);
     const precioRef2=prod2?.precioNeto||0;
     const costoUnit2=it.tieneBulto?Math.round((v/(it.factorConversion||1))*100)/100:v;
     const diffPct2=precioRef2&&costoUnit2?Math.round((costoUnit2-precioRef2)/precioRef2*100):null;
     const diffStr2=diffPct2!==null&&Math.abs(diffPct2)>=1?`<span class="fn-diff-badge ${diffPct2>0?'fn-diff-sube':'fn-diff-baja'}">${diffPct2>0?'▲':'▼'}${Math.abs(diffPct2)}%</span>`:'';
     const cunitEl=document.getElementById('fn-cunit-'+i);
-    if(cunitEl)cunitEl.innerHTML=clp(costoUnit2)+diffStr2;
+    if(cunitEl)cunitEl.innerHTML=clpDec(costoUnit2)+diffStr2;
     calcFnTotal();actualizarVarBadge(i);
   } else {
     el.value=fmtMilesDec(it.precio||0);
@@ -4136,12 +4195,13 @@ function fnPrecioBlur(i,el){
 function fnSubtotalBlur(i,el){
   const it=fnItems[i];if(!it)return;
   const raw=el.value.trim();
-  if(!raw){el.value='';return;}
+  if(!raw){el.value='';it.subtotalReal=null;return;}
   const v=Math.round(desfmtMiles(raw)*1000)/1000;
   if(v>0){
+    it.subtotalReal=v;
     el.value=fmtMilesDec(v);
   } else {
-    el.value='';
+    el.value='';it.subtotalReal=null;
   }
 }
 function fnPrecio(i,el){
@@ -4164,12 +4224,20 @@ function fnPrecio(i,el){
   const v=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!v&&v!==0)return; // valor inválido, no guardar
   it.precio=v;
-  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  // Si el precio cambia, el subtotal-en-factura que el usuario tipeó antes ya no
+  // corresponde a este precio nuevo → se invalida para evitar guardar un total
+  // inconsistente (subtotal viejo + precio nuevo).
+  if(it.subtotalReal){
+    it.subtotalReal=null;
+    const subInputEl=document.getElementById('fn-subplaceholder-'+i);
+    if(subInputEl)subInputEl.value='';
+  }
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clpDec(it.cantidad*it.precio);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
     const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
     const bultoEl=document.getElementById('fn-bulto-'+i);
-    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
+    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clpDec(costoUnit)}`;
   }
   const subPlaceholderEl=document.getElementById('fn-subplaceholder-'+i);
   if(subPlaceholderEl)subPlaceholderEl.placeholder=fmtMilesDec(it.cantidad*it.precio);
@@ -4180,7 +4248,7 @@ function fnPrecio(i,el){
   const diffPct2=precioRef2&&costoUnit2?Math.round((costoUnit2-precioRef2)/precioRef2*100):null;
   const diffStr2=diffPct2!==null&&Math.abs(diffPct2)>=1?`<span class="fn-diff-badge ${diffPct2>0?'fn-diff-sube':'fn-diff-baja'}">${diffPct2>0?'▲':'▼'}${Math.abs(diffPct2)}%</span>`:'';
   const cunitEl=document.getElementById('fn-cunit-'+i);
-  if(cunitEl)cunitEl.innerHTML=clp(costoUnit2)+diffStr2;
+  if(cunitEl)cunitEl.innerHTML=clpDec(costoUnit2)+diffStr2;
   calcFnTotal();actualizarVarBadge(i);
 }
 // Ajusta la cantidad (peso) de forma precisa para que el subtotal de la línea coincida
@@ -4204,15 +4272,20 @@ function fnSubtotal(i,el){
   //    y obtener el valor numérico limpio en una sola llamada
   const subtotal=typeof el==='object'?onInputMilesDec(el):desfmtMiles(el);
   if(!(subtotal>0))return;
-  // 4. Calcular cantidad redondeando a 4 decimales para evitar ruido flotante
+  // 4. Guardar el subtotal real de la factura como fuente autoritativa: se usa tal cual
+  //    en los cálculos de impuestos/total (calcFnTotal, guardarFactura) en vez de
+  //    recalcularlo desde cantidad×precio, para no perder los centavos que el proveedor
+  //    redondeó. La cantidad se ajusta para que cantidad×precio se acerque al máximo.
+  it.subtotalReal=subtotal;
   it.cantidad=Math.round((subtotal/it.precio)*10000)/10000;
   const qtyEl=document.getElementById('fn-qty-'+i);if(qtyEl)qtyEl.value=it.cantidad;
-  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clp(it.cantidad*it.precio);
+  // Se muestra el subtotal real ingresado (no el recalculado) para evitar confusión.
+  const subEl=document.getElementById('fn-subtotal-'+i);if(subEl)subEl.textContent=clpDec(subtotal);
   if(it.tieneBulto){
     const stockAgregar=it.cantidad*(it.factorConversion||1);
     const costoUnit=Math.round((it.precio/(it.factorConversion||1))*100)/100;
     const bultoEl=document.getElementById('fn-bulto-'+i);
-    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clp(costoUnit)}`;
+    if(bultoEl)bultoEl.innerHTML=`📦 ${it.cantidad} ${it.unidadCompra} × ${it.factorConversion} = <strong>+${stockAgregar} ${it.unidad}</strong> · Costo/${it.unidad}: ${clpDec(costoUnit)}`;
   }
   calcFnTotal();actualizarVarBadge(i);
 }
@@ -4223,7 +4296,7 @@ function calcFnTotal(){
   const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
   const itemsCalc=fnItems.map(it=>{
     const prod=prods.find(x=>x.id===it.pid);
-    return{netoItem:it.cantidad*it.precio,tipo:prod?.tipoImpuesto||'general'};
+    return{netoItem:it.subtotalReal||it.cantidad*it.precio,tipo:prod?.tipoImpuesto||'general'};
   });
   const totalNetoConDesc=Math.max(0,itemsCalc.reduce((a,x)=>a+x.netoItem,0)-descMonto);
   const factorDesc=itemsCalc.reduce((a,x)=>a+x.netoItem,0)>0?totalNetoConDesc/itemsCalc.reduce((a,x)=>a+x.netoItem,0):1;
@@ -4250,16 +4323,16 @@ async function guardarFactura(){
       return{productoId:it.pid,nombreProducto:it.nombre,cantidadBultos:it.cantidad,cantidadStock:cantStock,
         unidadCompra:it.unidadCompra||null,factorConversion:it.factorConversion||1,
         precioPorBulto:it.precio,precioNetoUnit:Math.round(netoUnitExacto*100)/100,
-        precioUnitStock:c.total,subtotal:it.cantidad*it.precio,
+        precioUnitStock:c.total,subtotal:it.subtotalReal||it.cantidad*it.precio,
         tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca',
-        _netoUnitExacto:netoUnitExacto};
+        _netoUnitExacto:netoUnitExacto,_subtotalReal:it.subtotalReal||null};
     });
-    const tot=items.reduce((a,it)=>a+it.subtotal,0);
+    const tot=items.reduce((a,it)=>a+(it._subtotalReal||it.subtotal),0);
     const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
     const descPct=parseFloat(document.getElementById('fn-desc-pct')?.value)||0;
     const netoConDesc=Math.max(0,tot-descMonto);
     const factorDesc=tot>0?netoConDesc/tot:1;
-    const itemsCalc=items.map(it=>({netoItem:it.subtotal*factorDesc,tipo:it.tipoImpuesto||'general'}));
+    const itemsCalc=items.map(it=>({netoItem:(it._subtotalReal||it.subtotal)*factorDesc,tipo:it.tipoImpuesto||'general'}));
     const r=calcImpFactura(itemsCalc);
     // Costo real por unidad YA con el descuento del proveedor aplicado: es el valor que
     // debe quedar reflejado en el producto (stock) y en el historial de precios, para que
@@ -4269,7 +4342,7 @@ async function guardarFactura(){
       const cDesc=calcImp(netoUnitDesc,it.tipoImpuesto);
       return{...it,precioNetoUnitDesc:Math.round(netoUnitDesc*100)/100,precioUnitStockDesc:cDesc.total};
     });
-    const itemsParaGuardar=items.map(({_netoUnitExacto,...resto})=>resto);
+    const itemsParaGuardar=items.map(({_netoUnitExacto,_subtotalReal,...resto})=>resto);
     const ref=await addDoc(collection(db,'facturas'),{
       numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
       fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
@@ -4391,7 +4464,7 @@ function renderProds(){
     return`<div class="prod-card">
       <div class="prod-hdr">
         <div><div class="prod-nom">${p.nombre}${p.codigoProducto?` <span style="font-size:10px;color:var(--txm)">· ${p.codigoProducto}</span>`:''}</div><div class="prod-cat">${p.categoria||'—'}${p.subcategoria?' › '+p.subcategoria:''}</div></div>
-        <div style="display:flex;gap:5px"><button class="dbtn" style="color:var(--blue)" onclick="abrirProd('${p.id}')">✏️</button><button class="dbtn" onclick="elimProd('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">✕</button></div>
+        <span style="display:inline-flex;gap:5px"><button class="dbtn" style="color:var(--blue)" onclick="abrirProd('${p.id}')">✏️</button><button class="dbtn" onclick="elimProd('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">✕</button></span>
       </div>
       <div style="font-size:10px;color:var(--txm);margin-top:4px">${bod.icono} ${bod.nombre}</div>
       ${spbTags?`<div class="stock-bodegas">${spbTags}</div>`:''}
@@ -4742,6 +4815,78 @@ async function confirmarMerma(){
     await addDoc(collection(db,'movimientos'),{tipo:'merma',productoId:merProdId,nombreProducto:p.nombre,cantidad:cant,bodega:bodId,motivo,realizadoPor:role,creadoEn:serverTimestamp()});
     toast(`✓ Merma registrada: ${clpn(cant)} ${p.unidadMedida||''} (${clp(valorMerma)})`);
     closeM('mo-merma');merProdId=null;
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+// ── AJUSTE DE STOCK ──────────────────────────────────────────────────────────────
+// Permite corregir el stock de un producto puntualmente (ej: error de tipeo, conteo
+// rápido de un solo producto, pérdida no registrada) sin tener que iniciar un
+// inventario completo. Sigue el mismo patrón de doble escritura que la merma:
+// 1) actualiza el stock real en el documento del producto (misma estructura
+//    stockPorBodega/stock que ya usan merma, traspaso e inventario), y
+// 2) deja un registro de auditoría (colección 'ajustesStock' + 'movimientos' con
+//    tipo:'ajuste', el cual los reportes existentes ignoran de forma segura porque
+//    todos sus filtros de consumo solo miran tipo==='salida').
+function abrirAjusteStock(pid,bodIdPreseleccionada=null){
+  ajsProdId=pid;
+  const p=prods.find(x=>x.id===pid);if(!p)return;
+  document.getElementById('ajs-prod-sel').textContent=p.nombre+' · '+(p.unidadMedida||'');
+  const sel=document.getElementById('ajs-bodega');
+  if(sel)sel.innerHTML=bodegas.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
+  if(sel)sel.value=bodIdPreseleccionada||p.bodega||'seca';
+  const isKg=['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
+  const ri=document.getElementById('ajs-real');if(ri){ri.step=isKg?'0.1':'1';ri.value='';}
+  document.getElementById('ajs-obs').value='';
+  document.getElementById('ajs-motivo').value='conteo_puntual';
+  document.getElementById('ajs-diff').textContent='';
+  ajsBodegaChange();
+  openM('mo-ajuste-stock');
+}
+function ajsBodegaChange(){
+  const p=prods.find(x=>x.id===ajsProdId);if(!p)return;
+  const bodId=document.getElementById('ajs-bodega').value;
+  const st=stockEnBodega(p,bodId);
+  document.getElementById('ajs-stock-actual').textContent=clpn(st)+' '+(p.unidadMedida||'');
+  ajsInput();
+}
+function ajsInput(){
+  const p=prods.find(x=>x.id===ajsProdId);if(!p)return;
+  const bodId=document.getElementById('ajs-bodega').value;
+  const st=stockEnBodega(p,bodId);
+  const raw=document.getElementById('ajs-real').value;
+  const d=document.getElementById('ajs-diff');
+  if(raw===''||isNaN(parseFloat(raw))){d.textContent='';return;}
+  const val=parseFloat(raw);
+  const diff=val-st;
+  d.style.color=diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)';
+  d.textContent=diff>0?'▲ +'+clpn(diff)+' '+(p.unidadMedida||''):diff<0?'▼ '+clpn(diff)+' '+(p.unidadMedida||''):'= Sin diferencia';
+}
+async function confirmarAjusteStock(){
+  if(!ajsProdId){toast('Selecciona un producto','err');return;}
+  const p=prods.find(x=>x.id===ajsProdId);if(!p)return;
+  const bodId=document.getElementById('ajs-bodega').value;
+  const raw=document.getElementById('ajs-real').value;
+  if(raw===''||isNaN(parseFloat(raw))){toast('Ingresa el stock real contado','err');return;}
+  const nuevoValor=Math.max(0,parseFloat(raw));
+  const motivo=document.getElementById('ajs-motivo').value;
+  const obs=document.getElementById('ajs-obs').value.trim();
+  const stockAnterior=stockEnBodega(p,bodId);
+  const diff=nuevoValor-stockAnterior;
+  if(diff===0){toast('No hay diferencia que ajustar','err');return;}
+  try{
+    const spb={...(p.stockPorBodega||{})};
+    if(!p.stockPorBodega&&(p.stock||0)>0)spb[p.bodega||'seca']=p.stock||0;
+    spb[bodId]=nuevoValor;
+    const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+    await updateDoc(doc(db,'productos',ajsProdId),{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+    await addDoc(collection(db,'ajustesStock'),{
+      productoId:ajsProdId,nombreProducto:p.nombre,unidadMedida:p.unidadMedida||'',
+      bodega:bodId,stockAnterior,stockNuevo:nuevoValor,diferencia:diff,motivo,observacion:obs,
+      realizadoPor:role,creadoEn:serverTimestamp()
+    });
+    await addDoc(collection(db,'movimientos'),{tipo:'ajuste',productoId:ajsProdId,nombreProducto:p.nombre,cantidad:Math.abs(diff),diferencia:diff,bodega:bodId,motivo,realizadoPor:role,creadoEn:serverTimestamp()});
+    toast(`✓ Stock ajustado: ${diff>0?'+':''}${clpn(diff)} ${p.unidadMedida||''}`);
+    closeM('mo-ajuste-stock');ajsProdId=null;
   }catch(e){toast('Error: '+e.message,'err');}
 }
 let mermaFiltroFecha='';
