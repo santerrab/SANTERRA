@@ -2437,9 +2437,19 @@ function closeM(id){document.getElementById(id)?.classList.remove('on');}
 function toggleMas(){document.getElementById('mas-ovl')?.classList.toggle('on');}
 function closeMas(){document.getElementById('mas-ovl')?.classList.remove('on');}
 document.querySelectorAll('.ovl').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on');}));
+// Escape cierra el modal activo (excepto PIN que tiene su propio handler)
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('pin-ovl')?.classList.contains('on')){const open=document.querySelector('.ovl.on');if(open)open.classList.remove('on');}});
 // Eventos de scroll con passive:true para mejor rendimiento en móvil
 document.querySelector('.pages-wrap')?.addEventListener('scroll',()=>{},{passive:true});
 document.getElementById('pin-ovl').addEventListener('click',e=>{if(e.target===document.getElementById('pin-ovl'))cPin();});
+// Soporte de teclado para el PIN (útil en tablets/escritorio)
+document.addEventListener('keydown',e=>{
+  const pinOvl=document.getElementById('pin-ovl');
+  if(!pinOvl?.classList.contains('on'))return;
+  if(e.key>='0'&&e.key<='9'){e.preventDefault();pi(parseInt(e.key));}
+  else if(e.key==='Backspace'){e.preventDefault();pb2();}
+  else if(e.key==='Escape'){e.preventDefault();cPin();}
+});
 function clk(){
   const d=new Date();
   const e=document.getElementById('hdr-tm');if(e)e.innerHTML=d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})+'<br>'+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
@@ -2454,7 +2464,8 @@ window.addEventListener('online',()=>{document.getElementById('ob').classList.re
 window.addEventListener('offline',()=>{document.getElementById('ob').classList.add('show');sdot('er');});
 
 // MODO DÍA/NOCHE
-let modoOscuro=localStorage.getItem('modo')!=='claro';
+const _savedMode=localStorage.getItem('modo');
+let modoOscuro=_savedMode?_savedMode!=='claro':!window.matchMedia('(prefers-color-scheme: light)').matches;
 function toggleMode(){modoOscuro=!modoOscuro;localStorage.setItem('modo',modoOscuro?'oscuro':'claro');applyMode();}
 function applyMode(){document.body.classList.toggle('light',!modoOscuro);const btn=document.getElementById('mode-btn');if(btn)btn.textContent=modoOscuro?'🌙':'☀️';}
 applyMode();
@@ -3285,7 +3296,7 @@ function renderCarrito(){
     const isKg=['kg','g','lt','ml'].includes((it.unidad||'').toLowerCase());
     const lowStock=it.stock<it.cantidad;
     const step=isKg?.1:1;
-    const borde=lowStock?'border-color:var(--yellowb);background:rgba(var(--yellow-rgb),.06)':'';
+    const borde=lowStock?'border-color:var(--yellowb);background:var(--yellowd)':'';
     const detColor=lowStock?'color:var(--yellow)':'';
     const detTxt=lowStock
       ?'⚠️ Stock insuficiente ('+clpn(it.stock)+' '+it.unidad+')'
@@ -5948,6 +5959,8 @@ Object.assign(window,{
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
   renderConteo,setConteo,actualizarContadores,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
   renderHistPrecios,exportarPDF,verFact,
+  abrirAjusteStock,ajsBodegaChange,ajsInput,confirmarAjusteStock,
+  fMermaFecha,
 });
 
 if('serviceWorker' in navigator){
