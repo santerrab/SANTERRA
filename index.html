@@ -239,6 +239,68 @@ body.light .nav{background:rgba(255,255,255,.92)}
 .dbtn-verde{color:var(--green)}
 .dbtn-verde:active{background:var(--greend)}
 
+/* ── PRODUCTO DUAL (kg en bodega, piezas para cocina) ───────────────── */
+.dual-info-box{
+  background:linear-gradient(135deg,var(--purpled),var(--blued));
+  border:1px solid var(--purpleb);border-radius:12px;
+  padding:12px 14px;margin-bottom:11px;
+}
+.dual-info-box-hdr{
+  display:flex;align-items:center;gap:7px;
+  font-size:10px;font-weight:800;color:var(--purple);
+  text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px
+}
+.dual-toggle{
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  background:none;border:none;padding:0;width:100%;text-align:left;
+  font-family:'DM Sans',sans-serif
+}
+.dual-switch{
+  width:38px;height:22px;border-radius:11px;
+  background:var(--bd);border:1.5px solid var(--bd2);
+  position:relative;flex-shrink:0;transition:background .2s,border-color .2s
+}
+.dual-switch::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--txd);transition:transform .2s,background .2s
+}
+.dual-switch.on{background:var(--purpled);border-color:var(--purpleb)}
+.dual-switch.on::after{transform:translateX(16px);background:var(--purple)}
+.dual-toggle-lbl{font-size:13px;font-weight:700;color:var(--tx)}
+.dual-toggle-sub{font-size:10px;color:var(--txm);margin-top:1px;font-weight:500}
+.dual-fields{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--purpleb)}
+.dual-fields.on{display:block}
+.dual-peso-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--purpled);border:1px solid var(--purpleb);
+  color:var(--purple);border-radius:8px;
+  padding:4px 10px;font-size:11px;font-weight:700;margin-top:6px
+}
+/* Badge "X piezas" en listas de stock */
+.dual-stock-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--purpled);border:1px solid var(--purpleb);
+  color:var(--purple);border-radius:6px;
+  padding:2px 7px;font-size:9px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.4px;margin-left:5px
+}
+/* Campo de piezas en factura */
+.fn-dual-box{
+  background:linear-gradient(135deg,var(--purpled),rgba(0,0,0,0));
+  border:1px solid var(--purpleb);border-radius:9px;
+  padding:10px 12px;margin-top:6px;
+}
+.fn-dual-lbl{
+  font-size:9px;color:var(--purple);font-weight:800;
+  text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;
+  display:flex;align-items:center;gap:5px
+}
+.fn-dual-result{
+  font-size:11px;color:var(--txm);margin-top:5px;font-weight:600;
+  min-height:16px
+}
+
 /* ── TOAST ───────────────────────────────────────────────────── */
 .toast{
   position:fixed;top:calc(var(--st) + 68px);left:50%;
@@ -1731,6 +1793,29 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
       </div>
       <div id="conv-preview" style="display:none;background:var(--sf2);border-radius:8px;padding:10px;font-size:12px;color:var(--txm);line-height:1.8"></div>
     </div>
+    <!-- ── PRODUCTO DUAL ──────────────────────────────────────────── -->
+    <div class="dual-info-box">
+      <div class="dual-info-box-hdr">🔀 Producto con unidad dual <span style="color:var(--txm);font-weight:500;text-transform:none;letter-spacing:0">(opcional)</span></div>
+      <button type="button" class="dual-toggle" onclick="toggleDual()">
+        <div class="dual-switch" id="dual-switch"></div>
+        <div>
+          <div class="dual-toggle-lbl">Factura en kg — Cocina lo pide en piezas</div>
+          <div class="dual-toggle-sub">Ej: Barra de queso, Lomo de cerdo, Pollo entero</div>
+        </div>
+      </button>
+      <div class="dual-fields" id="dual-fields">
+        <div class="fg" style="margin-bottom:8px">
+          <label class="fl">¿Cómo lo llama cocina? *</label>
+          <input class="fi" type="text" id="pp-unidad-pedido" placeholder="Ej: barra, lomo, pollo, pieza" style="font-size:15px">
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Peso promedio por pieza (kg)</label>
+          <input class="fi" type="number" inputmode="decimal" id="pp-peso-pieza" placeholder="Ej: 2.5" min="0.01" step="0.01" oninput="actualizarDualPreview()">
+          <div style="font-size:10px;color:var(--txm);margin-top:4px" id="dual-peso-hint">Se actualiza automáticamente al ingresar facturas con piezas.</div>
+        </div>
+        <div id="dual-preview-box" style="display:none;margin-top:8px"></div>
+      </div>
+    </div>
     <div class="fg"><label class="fl">Nombre del producto *</label><input class="fi" type="text" id="pp-nombre" placeholder="Ej: Camarón 1kg"></div>
     <div class="fr" style="margin-bottom:11px">
       <div class="fg" style="margin-bottom:0"><label class="fl">Categoría *</label><select class="fi" id="pp-cat" onchange="renderSubs()"><option value="">Seleccionar...</option></select></div>
@@ -3185,6 +3270,7 @@ function _renderStockNow(){
     const st=stockTotal(p),m=p.stockMinimo??null;
     const cls=st===0?'bg-r-s':(m!=null&&st<=m)?'bg-y-s':'bg-g-s';
     const puedeAjustar=role==='encargado';
+    const isDual=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
     const bodTags=bodegas.map(b=>{
       const s=stockEnBodega(p,b.id);
       if(!s&&p.bodega!==b.id)return'';
@@ -3193,11 +3279,12 @@ function _renderStockNow(){
       // seleccionada — clave cuando el producto está repartido en varias bodegas, para no
       // tener que adivinar/reseleccionar la bodega correcta dentro del modal.
       const clickAttr=puedeAjustar?` onclick="abrirAjusteStock('${p.id}','${b.id}')" style="cursor:pointer"`:'';
-      return`<span class="stock-bod-tag ${sc}"${clickAttr}>${b.icono} ${b.nombre}: ${clpn(s)} ${p.unidadMedida||''}</span>`;
+      const isDualB=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
+      const sBodLabel=isDualB?(s===0?'0 '+p.unidadPedido+'s':`~${Math.floor(s/p.pesoPorUnidad)} ${p.unidadPedido}s`):(`${clpn(s)} ${p.unidadMedida||''}`);      return`<span class="stock-bod-tag ${sc}"${clickAttr}>${b.icono} ${b.nombre}: ${sBodLabel}</span>`;
     }).filter(Boolean).join('');
     return`<div class="prod-card">
       <div class="prod-hdr"><div><div class="prod-nom">${p.nombre}</div><div class="prod-cat">${p.subcategoria||p.categoria||'—'}${p.proveedor?' · '+p.proveedor:''}</div></div>
-        <span style="display:inline-flex;align-items:center;gap:6px">${puedeAjustar?`<button class="dbtn dbtn-verde" onclick="abrirAjusteStock('${p.id}')" title="Ajustar stock">⚖️</button>`:''}<span class="badge ${cls}">${st===0?'Sin stock':clpn(st)+' '+(p.unidadMedida||'')}</span></span>
+        <span style="display:inline-flex;align-items:center;gap:6px">${puedeAjustar?`<button class="dbtn dbtn-verde" onclick="abrirAjusteStock('${p.id}')" title="Ajustar stock">⚖️</button>`:''}<span class="badge ${cls}">${st===0?'Sin stock':isDual?(Math.floor(st/(p.pesoPorUnidad||1))+' '+(p.unidadPedido||'piezas')+' ('+clpn(st)+' kg)'):(clpn(st)+' '+(p.unidadMedida||''))}</span></span>
       </div>
       ${bodTags?`<div class="stock-bodegas">${bodTags}</div>`:''}
       <div class="prod-precios">
@@ -3250,8 +3337,13 @@ function pBuscar(q){
   const clr=document.getElementById('p-clear');if(clr)clr.style.display='block';
   res.innerHTML=m.map(p=>{
     const s=stockTotal(p),mn=p.stockMinimo??null,inC=carrito.find(c=>c.pid===p.id);
+    const isDualP=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
+    const piezasDisp=isDualP?Math.floor(s/p.pesoPorUnidad):0;
+    const stockLabel=isDualP
+      ?(s===0?'⚠️ Sin stock':`${piezasDisp} ${p.unidadPedido}${piezasDisp!==1?'s':''} disponibles`)
+      :(s===0?'⚠️ Sin stock':'Stock: '+clpn(s)+' '+(p.unidadMedida||''));
     return`<div class="sri" onclick="addCart('${p.id}')">
-      <div class="sri-info"><div class="sri-nom">${p.nombre}</div><div class="sri-det" style="color:${s===0?'var(--red)':(mn!=null&&s<=mn)?'var(--yellow)':'var(--txm)'}">${s===0?'⚠️ Sin stock':'Stock: '+clpn(s)+' '+(p.unidadMedida||'')}</div></div>
+      <div class="sri-info"><div class="sri-nom">${p.nombre}${isDualP?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}</div><div class="sri-det" style="color:${s===0?'var(--red)':(mn!=null&&s<=mn)?'var(--yellow)':'var(--txm)'}">${stockLabel}</div></div>
       <button class="sri-btn${inC?' added':''}">${inC?'✓':'＋'}</button>
     </div>`;
   }).join('');
@@ -3260,7 +3352,14 @@ function addCart(pid){
   const p=prods.find(x=>x.id===pid);if(!p)return;
   const ex=carrito.find(c=>c.pid===pid);
   if(ex)ex.cantidad++;
-  else carrito.push({pid,nombre:p.nombre,cantidad:1,stock:stockTotal(p),unidad:p.unidadMedida||'unidad'});
+  else{
+    const isDual=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
+    const stockDisp=isDual?Math.floor(stockTotal(p)/p.pesoPorUnidad):stockTotal(p);
+    carrito.push({pid,nombre:p.nombre,cantidad:1,stock:stockDisp,
+      unidad:isDual?p.unidadPedido:(p.unidadMedida||'unidad'),
+      esDual:isDual,pesoPorUnidad:isDual?p.pesoPorUnidad:null,
+      unidadReal:p.unidadMedida||'unidad'});
+  }
   toast('✓ '+p.nombre);
   document.getElementById('p-buscar').value='';
   document.getElementById('p-res').style.display='none';
@@ -3414,11 +3513,15 @@ function renderDesp(){
       // Stock disponible en la bodega elegida
       const stockBod=p?stockEnBodega(p,est.bodega||p?.bodega||'seca'):0;
       const stockTot=p?stockTotal(p):0;
-      const sinStock=stockTot===0;const bajStock=stockTot>0&&stockTot<it.cantidad;
+      const isDualIt=!!(p?.esDual&&p?.unidadPedido&&p?.pesoPorUnidad>0);
+      const piezasTot=isDualIt?Math.floor(stockTot/p.pesoPorUnidad):0;
+      // Para comparación de stock bajo: convertir piezas pedidas a kg si es dual
+      const cantEnKgIt=isDualIt?(it.cantidad*(p?.pesoPorUnidad||1)):it.cantidad;
+      const sinStock=stockTot===0;const bajStock=stockTot>0&&stockTot<cantEnKgIt;
       const chkClr=est.tipo==='ok'?'background:var(--green);border-color:var(--green);color:#001a12;box-shadow:0 0 14px rgba(0,201,141,.4)':est.tipo==='ss'?'background:var(--redd);border-color:var(--redb);color:var(--red)':est.tipo==='parcial'?'background:var(--yellowd);border-color:var(--yellowb);color:var(--yellow)':'background:var(--sf2);border-color:var(--bd2);color:var(--txd)';
       const chkIcon=est.tipo==='ok'?'✓':est.tipo==='ss'?'✗':est.tipo==='parcial'?'✓':'○';
       const badgeClr=sinStock?'bg-r-s':bajStock?'bg-y-s':'bg-g-s';
-      const badgeTxt=sinStock?'Sin stock':bajStock?'Stock bajo: '+clpn(stockTot)+' '+it.unidadMedida:'Stock: '+clpn(stockTot)+' '+it.unidadMedida;
+      const badgeTxt=sinStock?'Sin stock':isDualIt?(bajStock?`Stock bajo: ~${piezasTot} ${p.unidadPedido}s`:`~${piezasTot} ${p.unidadPedido}s en stock`):(bajStock?'Stock bajo: '+clpn(stockTot)+' '+it.unidadMedida:'Stock: '+clpn(stockTot)+' '+it.unidadMedida);
       return`<div style="padding:10px 0;border-bottom:1px solid var(--bd3)">
         <!-- Fila 1: check + nombre + badge -->
         <div style="display:flex;align-items:flex-start;gap:10px">
@@ -3431,7 +3534,7 @@ function renderDesp(){
             <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;line-height:1.2;margin-bottom:4px">${it.nombreProducto}</div>
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
               <span class="badge ${badgeClr}" style="font-size:8px;padding:3px 7px">${sinStock?'⚠️ ':bajStock?'⚠️ ':''}${badgeTxt}</span>
-              <span style="font-size:10.5px;color:var(--txm);font-weight:600">Pedido: ${clpn(it.cantidad)} ${it.unidadMedida||''}</span>
+              <span style="font-size:10.5px;color:var(--txm);font-weight:600">Pedido: ${isDualIt?`${it.cantidad} ${p.unidadPedido||it.unidadMedida||''}`:(`${clpn(it.cantidad)} ${it.unidadMedida||''}`)} </span>${isDualIt?`<span class="dual-stock-badge">🔀 dual</span>`:''}
             </div>
           </div>
         </div>
@@ -3446,9 +3549,10 @@ function renderDesp(){
                 const stk=p?stockEnBodega(p,b.id):0;
                 const sel=(est.bodega||p?.bodega||'seca')===b.id;
                 const suficiente=stk>=it.cantidad;
-                const label=stk===0?`${b.icono} ${b.nombre} — Sin stock ✕`
-                  :suficiente?`${b.icono} ${b.nombre} — ${clpn(stk)} ${it.unidadMedida||''} ✓`
-                  :`${b.icono} ${b.nombre} — ${clpn(stk)} ${it.unidadMedida||''} ⚠`;
+                const stkLabel=isDualIt
+                  ?(stk===0?'Sin stock ✕':(`~${Math.floor(stk/p.pesoPorUnidad)} ${p.unidadPedido}s${Math.floor(stk/p.pesoPorUnidad)>=it.cantidad?' ✓':' ⚠'}`))
+                  :(stk===0?'Sin stock ✕':(`${clpn(stk)} ${it.unidadMedida||''}`+(stk>=cantEnKgIt?' ✓':' ⚠')));
+                const label=`${b.icono} ${b.nombre} — ${stkLabel}`;
                 return`<option value="${b.id}" ${sel?'selected':''} ${stk===0?'disabled':''}>${label}</option>`;
               }).join('')}
             </select>
@@ -3456,13 +3560,13 @@ function renderDesp(){
           <div style="text-align:center">
             <div style="font-size:8px;color:var(--txm);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Cantidad</div>
             <div style="display:flex;align-items:center;gap:0">
-              <button onclick="stepCant('${sol.id}','${it.productoId}',${isKg?-0.1:-1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-right:none;border-radius:9px 0 0 9px;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">−</button>
+              <button onclick="stepCant('${sol.id}','${it.productoId}',${isDualIt?-1:isKg?-0.1:-1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-right:none;border-radius:9px 0 0 9px;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">−</button>
               <input class="di-cin" type="number" min="0" step="${isKg?'0.1':'1'}" value="${est.cant}"
                 style="width:52px;height:36px;border-radius:0;border-left:none;border-right:none;font-size:14px;font-weight:900;text-align:center"
                 oninput="setD('${sol.id}','${it.productoId}',this.value)" onfocus="this.select()">
-              <button onclick="stepCant('${sol.id}','${it.productoId}',${isKg?0.1:1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-left:none;border-radius:0 9px 9px 0;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">+</button>
+              <button onclick="stepCant('${sol.id}','${it.productoId}',${isDualIt?1:isKg?0.1:1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-left:none;border-radius:0 9px 9px 0;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">+</button>
             </div>
-            <div style="font-size:9px;color:var(--txd);margin-top:2px;font-weight:600">${it.unidadMedida||''}</div>
+            <div style="font-size:9px;color:var(--txd);margin-top:2px;font-weight:600">${isDualIt?(p.unidadPedido||it.unidadMedida||''):(it.unidadMedida||'')} ${isDualIt?`<span style="color:var(--purple)">(${clpn((est.cant||0)*(p.pesoPorUnidad||1))} kg)</span>`:''}</div>
           </div>
         </div>`}
       </div>`;
@@ -3647,8 +3751,13 @@ async function despachar(solId){
     const p=prods.find(x=>x.id===it.productoId);
     const bodId=est.bodega||p?.bodega||'seca';
     const stockDispo=p?stockEnBodega(p,bodId):0;
-    const cantFinal=Math.min(est.cant,stockDispo);
-    if(cantFinal>0)items.push({...it,cantidadDespachada:cantFinal,bodegaOrigen:bodId,precioUnitStock:p?.precioTotal||0,precioUnitNeto:p?.precioNeto||0});
+    // Dual: la solicitud guardó cantidad en piezas → convertir a kg para descontar stock
+    const isDualItem=!!(p?.esDual&&p?.unidadPedido&&p?.pesoPorUnidad>0);
+    const cantEnKg=isDualItem?(est.cant*(p.pesoPorUnidad||1)):est.cant;
+    const cantFinal=Math.min(cantEnKg,stockDispo);
+    if(cantFinal>0)items.push({...it,cantidadDespachada:cantFinal,
+      cantidadPiezas:isDualItem?est.cant:null,unidadPedido:isDualItem?p.unidadPedido:null,
+      bodegaOrigen:bodId,precioUnitStock:p?.precioTotal||0,precioUnitNeto:p?.precioNeto||0});
   }
   if(!items.length){
     // Sin esto, si todos los productos quedan marcados ✗ "sin stock" el botón se
@@ -4059,7 +4168,11 @@ function fnAdd(pid){
   fnItems.push({pid,nombre:p.nombre,cantidad:1,precio:precioBultoNeto,
     unidad:p.unidadMedida||'unidad',unidadCompra:tB?p.unidadCompra:null,
     factorConversion:tB?(p.factorConversion||1):1,tieneBulto:tB,
-    bodega:p.bodega||'seca'});
+    bodega:p.bodega||'seca',
+    esDual:!!(p.esDual&&p.unidadPedido&&p.unidadMedida?.toLowerCase()==='kg'),
+    unidadPedido:p.unidadPedido||null,
+    pesoPorUnidad:p.pesoPorUnidad||null,
+    piezasRecibidas:null});
   toast('✓ '+p.nombre);
   document.getElementById('fn-buscar').value='';document.getElementById('fn-res').style.display='none';
   renderFnItems();
@@ -4136,6 +4249,20 @@ function renderFnItems(){
     <div class="fn-pg-ctrl fn-pg-bod">
       <select class="fn-bod-select" onchange="fnBodega(${i},this.value)">${bodSel}</select>
     </div>
+    ${it.esDual?`
+    <div class="fn-pg-lbl fn-pg-lbl-acento" style="color:var(--purple)">🔀 Piezas recibidas</div>
+    <div class="fn-pg-ctrl">
+      <input id="fn-piezas-${i}" type="number" inputmode="numeric" min="1" step="1"
+        class="fn-precio-input" style="border-color:var(--purpleb)"
+        placeholder="¿Cuántas ${it.unidadPedido||'piezas'} llegaron?"
+        value="${it.piezasRecibidas||''}"
+        oninput="fnPiezas(${i},this.value)">
+    </div>
+    <div class="fn-pg-lbl" style="color:var(--txm)">Peso promedio calculado</div>
+    <div class="fn-pg-resultado" id="fn-dual-res-${i}" style="color:var(--purple)">
+      ${it.piezasRecibidas>0?`${clpn(it.cantidad/it.piezasRecibidas)} kg/${it.unidadPedido||'pieza'} · ${it.piezasRecibidas} ${it.unidadPedido||'piezas'}`:
+      `<span style="color:var(--txd);font-size:11px">Ingresa las piezas para calcular</span>`}
+    </div>`:''}
   </div>
   <div id="var-badge-${i}">${fnVarBadgeHTML(it)}</div>
 </div>`;
@@ -4302,6 +4429,19 @@ function fnSubtotal(i,el){
 }
 function fnDel(i){fnItems.splice(i,1);renderFnItems();const q=document.getElementById('fn-buscar').value;if(q)fnBuscar(q);}
 function fnBodega(i,bodId){fnItems[i].bodega=bodId;}
+function fnPiezas(i,v){
+  const n=parseInt(v);
+  const it=fnItems[i];if(!it||!it.esDual)return;
+  it.piezasRecibidas=(isNaN(n)||n<=0)?null:n;
+  const resEl=document.getElementById('fn-dual-res-'+i);
+  if(!resEl)return;
+  if(it.piezasRecibidas&&it.cantidad>0){
+    const pprom=it.cantidad/it.piezasRecibidas;
+    resEl.innerHTML=`<span style="color:var(--purple)">${clpn(pprom)} kg/${it.unidadPedido||'pieza'} promedio · <strong>${it.piezasRecibidas} ${it.unidadPedido||'piezas'}</strong> ingresadas</span>`;
+  }else{
+    resEl.innerHTML=`<span style="color:var(--txd);font-size:11px">Ingresa las piezas para calcular</span>`;
+  }
+}
 function calcFnTotal(){
   if(!fnItems.length){const el=document.getElementById('fn-total');if(el)el.innerHTML='$0';const pill=document.getElementById('fn-total-pill');if(pill)pill.textContent='$0';return;}
   const descMonto=desfmtMiles(document.getElementById('fn-desc-monto')?.value);
@@ -4336,6 +4476,7 @@ async function guardarFactura(){
         precioPorBulto:it.precio,precioNetoUnit:Math.round(netoUnitExacto*100)/100,
         precioUnitStock:c.total,subtotal:it.subtotalReal||it.cantidad*it.precio,
         tipoImpuesto:tipo,unidadMedida:it.unidad,bodegaDestino:it.bodega||'seca',
+        piezasRecibidas:it.piezasRecibidas||null,
         _netoUnitExacto:netoUnitExacto,_subtotalReal:it.subtotalReal||null};
     });
     const tot=items.reduce((a,it)=>a+(it._subtotalReal||it.subtotal),0);
@@ -4376,18 +4517,33 @@ async function guardarFactura(){
         spb[it.bodegaDestino]=(spb[it.bodegaDestino]||0)+it.cantidadStock;
         const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
         const productRef=doc(db,'productos',it.productoId);
+        // ── Dual: calcular peso promedio ponderado si se informaron piezas ──
+        const dualUpdate={};
+        if(it.piezasRecibidas>0&&data.esDual){
+          const kgPrevios=data.stock||0;          // kg antes de esta factura
+          const kgNuevos=it.cantidadStock;         // kg que entran ahora
+          const piezasPrevias=data.pesoPorUnidad>0?Math.round(kgPrevios/data.pesoPorUnidad):0;
+          const piezasNuevas=it.piezasRecibidas;
+          const totalKg=kgPrevios+kgNuevos;
+          const totalPiezas=piezasPrevias+piezasNuevas;
+          const nuevoPeso=totalPiezas>0?Math.round((totalKg/totalPiezas)*1000)/1000:kgNuevos/piezasNuevas;
+          dualUpdate.pesoPorUnidad=nuevoPeso;
+          // piezasStock es derivado, no autoritativo — solo para referencia en dashboard
+          dualUpdate.piezasStock=totalPiezas;
+        }
         batch.update(productRef,{stockPorBodega:spb,stock:newTotal,
           precioNeto:it.precioNetoUnitDesc,
           precioTotal:it.precioUnitStockDesc,
           totalImpuestos:it.precioUnitStockDesc-it.precioNetoUnitDesc,
+          ...dualUpdate,
           actualizadoEn:serverTimestamp()});
-        // Historial de precios (con el descuento del proveedor ya aplicado), incluyendo
-        // cantidad y unidad de esta compra puntual para poder ver cuánto se gastó en total.
+        // Historial de precios (con el descuento del proveedor ya aplicado)
         historialPendiente.push({
           productoId:it.productoId,nombreProducto:it.nombreProducto,
           precio:it.precioUnitStockDesc,precioNeto:it.precioNetoUnitDesc,
           tipoImpuesto:it.tipoImpuesto,
           cantidadStock:it.cantidadStock,cantidadBultos:it.cantidadBultos,unidadMedida:it.unidadMedida,
+          piezasRecibidas:it.piezasRecibidas||null,pesoPorUnidadCalculado:dualUpdate.pesoPorUnidad||null,
           proveedor:prov,facturaId:ref.id,creadoEn:serverTimestamp()
         });
       }
@@ -4505,6 +4661,15 @@ function abrirProd(id=null){
   document.getElementById('pp-imp').value=p?.tipoImpuesto||'general';
   document.getElementById('pp-ucompra').value=p?.unidadCompra||'';
   document.getElementById('pp-conv').value=(p?.factorConversion||1)>1?p.factorConversion:'';
+  // Dual product fields
+  const isDual=!!(p?.esDual);
+  const sw=document.getElementById('dual-switch');
+  const df=document.getElementById('dual-fields');
+  if(sw){sw.classList.toggle('on',isDual);}
+  if(df){df.classList.toggle('on',isDual);}
+  document.getElementById('pp-unidad-pedido').value=p?.unidadPedido||'';
+  document.getElementById('pp-peso-pieza').value=p?.pesoPorUnidad||'';
+  actualizarDualPreview();
   renderBodegaSelects();
   document.getElementById('pp-bodega').value=p?.bodega||'seca';
   document.getElementById('pp-bodega-hint').textContent='';
@@ -4586,6 +4751,9 @@ async function guardarProd(){
     stockMinimo:document.getElementById('pp-min').value!==''?parseInt(document.getElementById('pp-min').value):null,proveedor:document.getElementById('pp-prov').value.trim(),
     precioNeto:Math.round(netoUnit*100)/100,tipoImpuesto:tipo,precioTotal:c.total,totalImpuestos:Math.round(c.imp),
     unidadCompra:ucompra||null,factorConversion:ucompra&&conv>1?conv:1,
+    esDual:!!(document.getElementById('dual-switch')?.classList.contains('on')),
+    unidadPedido:document.getElementById('pp-unidad-pedido')?.value.trim().toLowerCase()||null,
+    pesoPorUnidad:parseFloat(document.getElementById('pp-peso-pieza')?.value)||null,
     bodega,actualizadoEn:serverTimestamp()
   };
   try{
@@ -4601,6 +4769,29 @@ async function guardarProd(){
   finally{btn.disabled=false;btn.textContent='Guardar producto';}
 }
 async function elimProd(id,n){if(!confirm('¿Eliminar "'+n+'"?'))return;await deleteDoc(doc(db,'productos',id));toast('Eliminado');}
+function toggleDual(){
+  const sw=document.getElementById('dual-switch');
+  const df=document.getElementById('dual-fields');
+  if(!sw||!df)return;
+  sw.classList.toggle('on');
+  df.classList.toggle('on');
+  actualizarDualPreview();
+}
+function actualizarDualPreview(){
+  const sw=document.getElementById('dual-switch');
+  const on=sw?.classList.contains('on');
+  const box=document.getElementById('dual-preview-box');
+  if(!box)return;
+  if(!on){box.style.display='none';return;}
+  const ud=(document.getElementById('pp-unidad-pedido')?.value||'').trim();
+  const pp=parseFloat(document.getElementById('pp-peso-pieza')?.value)||0;
+  if(!ud||!pp){box.style.display='none';return;}
+  const pActual=editProdId?prods.find(x=>x.id===editProdId):null;
+  const stockActual=pActual?stockTotal(pActual):0;
+  const piezas=stockActual>0?Math.floor(stockActual/pp):0;
+  box.style.display='block';
+  box.innerHTML=`<div class="dual-peso-badge">🔀 ${pp} kg = 1 ${ud}${stockActual>0?` · ~${piezas} ${ud}${piezas!==1?'s':''} en stock`:''}</div>`;
+}
 // ── BODEGAS CONFIG ────────────────────────────────────────────────────────────
 function renderBodegasM(){
   const lista=document.getElementById('bodegas-lista');if(!lista)return;
@@ -5625,21 +5816,27 @@ function renderConteo(){
   const isKg=p=>['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
   const renderProd=p=>{
     const contado=conteoLocal[p.id]!==undefined;
-    const val=contado?conteoLocal[p.id]:0;
-    const diff=contado?val-stockTotal(p):null;
+    const isDualInv=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
+    // conteoLocal siempre en kg (regla de oro: Firestore=kg)
+    const valKg=contado?conteoLocal[p.id]:0;
+    // Para input visual: si es dual, mostrar en piezas
+    const valDisplay=isDualInv&&contado?Math.round(valKg/p.pesoPorUnidad*100)/100:valKg;
+    const diff=contado?valKg-stockTotal(p):null;
+    const diffDisplay=isDualInv&&diff!==null?Math.round(diff/p.pesoPorUnidad*10)/10:diff;
+    const stkDisplay=isDualInv?`~${Math.floor(stockTotal(p)/p.pesoPorUnidad)} ${p.unidadPedido}s`:`${clpn(stockTotal(p))} ${p.unidadMedida||''}`;
     return`<div class="inv-row ${contado?'contado':'pendiente'}">
       <div class="inv-row-top">
-        <div><div class="inv-nom">${p.nombre}</div><div class="inv-cat">${p.categoria||''}${p.subcategoria?' · '+p.subcategoria:''}</div></div>
-        <span class="badge ${contado?'bg-g-s':'bg-b-s'}">${contado?clp(val*(p.precioTotal||0)):'Pendiente'}</span>
+        <div><div class="inv-nom">${p.nombre}${isDualInv?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}</div><div class="inv-cat">${p.categoria||''}${p.subcategoria?' · '+p.subcategoria:''}</div></div>
+        <span class="badge ${contado?'bg-g-s':'bg-b-s'}">${contado?clp(valKg*(p.precioTotal||0)):'Pendiente'}</span>
       </div>
       <div class="inv-input-wrap">
-        <span class="inv-stock-lbl">Sistema: <strong>${clpn(stockTotal(p))} ${p.unidadMedida||''}</strong></span>
-        <input class="inv-input ${contado?'ok':''}" type="number" min="0" step="${isKg(p)?'0.1':'1'}"
-          placeholder="0" value="${contado?val:''}"
-          oninput="setConteo('${p.id}',this.value,this)"
+        <span class="inv-stock-lbl">Sistema: <strong>${stkDisplay}</strong></span>
+        <input class="inv-input ${contado?'ok':''}" type="number" min="0" step="${isDualInv?'1':isKg(p)?'0.1':'1'}"
+          placeholder="0" value="${contado?valDisplay:''}"
+          oninput="setConteo('${p.id}',this.value,this,${isDualInv?p.pesoPorUnidad:0})"
           onblur="renderConteo()">
-        <span class="inv-stock-lbl">${p.unidadMedida||''}</span>
-        <span id="inv-diff-${p.id}" style="font-size:11px;font-weight:700;color:${diff===null?'transparent':diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)'}">${diff===null?'':diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK'}</span>
+        <span class="inv-stock-lbl">${isDualInv?(p.unidadPedido+'s'):(p.unidadMedida||'')}${isDualInv&&contado?` <span style="color:var(--purple);font-size:9px">(${clpn(valKg)} kg)</span>`:''}</span>
+        <span id="inv-diff-${p.id}" style="font-size:11px;font-weight:700;color:${diff===null?'transparent':diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)'}">${diff===null?'':(isDualInv?(diffDisplay>0?'▲ +'+diffDisplay:diffDisplay<0?'▼ '+diffDisplay:'= OK'):(diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK'))}</span>
       </div>
     </div>`;
   };
@@ -5654,10 +5851,30 @@ function renderConteo(){
     }).join('');
   }else{lista.innerHTML=pp.map(renderProd).join('');}
 }
-function setConteo(pid,v,el){
-  const val=parseFloat(v);
-  if(v===''||isNaN(val)){delete conteoLocal[pid];el.classList.remove('ok');const d=document.getElementById('inv-diff-'+pid);if(d)d.textContent='';}
-  else{conteoLocal[pid]=val;el.classList.add('ok');const p=prods.find(x=>x.id===pid);if(p){const diff=val-stockTotal(p);const d=document.getElementById('inv-diff-'+pid);if(d){d.textContent=diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK';d.style.color=diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)';}}}
+function setConteo(pid,v,el,pesoPorUnidad=0){
+  const raw=parseFloat(v);
+  if(v===''||isNaN(raw)){
+    delete conteoLocal[pid];el.classList.remove('ok');
+    const d=document.getElementById('inv-diff-'+pid);if(d)d.textContent='';
+  }else{
+    // Si pesoPorUnidad>0 el input es en piezas → convertir a kg para guardar
+    const valKg=pesoPorUnidad>0?Math.round(raw*pesoPorUnidad*1000)/1000:raw;
+    conteoLocal[pid]=valKg;
+    el.classList.add('ok');
+    const p=prods.find(x=>x.id===pid);
+    if(p){
+      const diff=valKg-stockTotal(p);
+      const d=document.getElementById('inv-diff-'+pid);
+      if(d){
+        const isDualD=pesoPorUnidad>0;
+        const diffDisplay=isDualD?Math.round(diff/pesoPorUnidad*10)/10:diff;
+        d.textContent=isDualD
+          ?(diffDisplay>0?'▲ +'+diffDisplay:diffDisplay<0?'▼ '+diffDisplay:'= OK')
+          :(diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK');
+        d.style.color=diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)';
+      }
+    }
+  }
   actualizarContadores();
 }
 function actualizarContadores(){
@@ -5961,6 +6178,7 @@ Object.assign(window,{
   renderHistPrecios,exportarPDF,verFact,
   abrirAjusteStock,ajsBodegaChange,ajsInput,confirmarAjusteStock,
   fMermaFecha,
+  toggleDual,actualizarDualPreview,fnPiezas,
 });
 
 if('serviceWorker' in navigator){
