@@ -377,13 +377,6 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 }
 .area-kpi-lbl{font-size:9px;color:var(--txd);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
 .area-kpi-val{font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:var(--tx);letter-spacing:-.2px}
-/* Food cost row */
-.area-fc-row{
-  display:flex;justify-content:space-between;
-  font-size:11px;color:var(--txm);
-  padding:6px 2px;border-top:1px solid var(--bd3);margin-bottom:8px
-}
-.area-fc-row strong{font-family:'Inter',sans-serif;font-weight:800;color:var(--tx)}
 /* Tabs internos del área */
 .area-tabs{
   display:flex;gap:0;background:var(--sf2);border:1px solid var(--bd2);
@@ -465,18 +458,6 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 /* KPIs de ritmo — 2 columnas */
 .rep-kpi-ritmo{border-radius:14px!important}
 .rep-kpi-daily{font-size:20px!important;letter-spacing:-.3px}
-
-/* Food cost card */
-.rep-kpi-fc{border-radius:14px!important;border-width:2px!important}
-.rep-fc-grid{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
-.rep-fc-main{display:flex;flex-direction:column;align-items:center;gap:4px;padding-right:12px;border-right:1px solid var(--bd3)}
-.rep-fc-pct{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;letter-spacing:-.5px;line-height:1}
-.rep-fc-badge{font-size:10px;font-weight:800;border-radius:8px;padding:3px 8px;letter-spacing:.3px}
-.rep-fc-detalle{display:flex;flex-direction:column;gap:5px}
-.rep-fc-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.rep-fc-row span{font-size:11px;color:var(--txm);font-weight:500}
-.rep-fc-row strong{font-family:'Inter',sans-serif;font-size:13px;font-weight:800}
-.rep-fc-margen{padding-top:5px;border-top:1px solid var(--bd3);margin-top:2px}
 
 /* Barras: card contenedora */
 .rep-barras-card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:16px;margin-bottom:12px}
@@ -857,6 +838,13 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 .inv-input{width:96px;background:var(--sf);border:2px solid var(--accent);border-radius:10px;color:var(--tx);font-family:'Inter',sans-serif;font-size:20px;font-weight:900;padding:8px 10px;text-align:center;outline:none;-webkit-appearance:none;transition:border-color .2s}
 .inv-input:focus{border-color:var(--blue)}
 .inv-input.ok{border-color:var(--green);background:var(--greend)}
+/* Inventario por bodega: una fila por cada bodega donde el producto tiene stock */
+.inv-row.parcial{border-left:4px solid var(--yellow)}
+.inv-multibod-badge{display:inline-block;background:var(--blued);color:var(--blue);border:1px solid var(--blueb);border-radius:6px;padding:1px 7px;font-size:9px;font-weight:800;margin-left:6px;vertical-align:middle}
+.inv-bod-fila{display:flex;flex-direction:column;gap:6px;padding:9px 0;border-top:1px dashed var(--bd3)}
+.inv-bod-fila:first-of-type{border-top:none;padding-top:0}
+.inv-bod-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--tx);background:var(--sf);border:1px solid var(--bd2);border-radius:8px;padding:3px 9px;width:fit-content}
+.inv-bod-tag-sm{display:inline-block;font-size:10px;font-weight:700;color:var(--txm);background:var(--sf2);border-radius:6px;padding:1px 6px;margin-left:6px}
 .inv-diff-row{padding:11px 14px;border-bottom:1px solid var(--bd3);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .inv-diff-row:last-child{border-bottom:none}
 .inv-diff-nom{font-size:13px;font-weight:700;flex:1;min-width:120px}
@@ -1609,29 +1597,6 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 </div>
 
 <!-- VENTAS -->
-<div class="pg" id="pg-ventas">
-  <div class="pgt">Ventas</div><div class="pgs">Registro de ventas por área para calcular food cost</div>
-  <div class="fg">
-    <label class="fl">Fecha</label>
-    <input class="fi" type="date" id="vt-fecha">
-  </div>
-  <div class="fg">
-    <label class="fl">Área</label>
-    <div class="chips" id="vt-area-chips" style="margin-bottom:0"></div>
-  </div>
-  <div class="fg">
-    <label class="fl">Monto vendido ($)</label>
-    <input class="fi" type="number" id="vt-monto" min="0" placeholder="0">
-  </div>
-  <div class="fg">
-    <label class="fl">Nota (opcional)</label>
-    <input class="fi" type="text" id="vt-nota" placeholder="Ej: turno almuerzo">
-  </div>
-  <button class="btn bg-acc" onclick="guardarVenta()">+ Registrar venta</button>
-  <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:20px 0 10px">Ventas recientes</div>
-  <div id="ventas-lista"></div>
-</div>
-
 <!-- INVENTARIO -->
 <div class="pg" id="pg-inv">
   <div class="ph">
@@ -1665,20 +1630,6 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
     <div style="font-size:10px;color:var(--txm);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px">Historial de inventarios</div>
     <div id="inv-hist-lista"></div>
   </div>
-</div>
-
-<!-- MERMA -->
-<div class="pg" id="pg-merma">
-  <div class="ph"><div><div class="pgt">Merma</div><div class="pgs">Registro de pérdidas y ajustes</div></div><button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirMerma()">+ Registrar merma</button></div>
-  <div class="chips" id="merma-fecha-chips"></div>
-  <div id="merma-lista"></div>
-</div>
-
-<!-- HISTORIAL PRECIOS -->
-<div class="pg" id="pg-precios">
-  <div class="pgt">Historial de Precios</div><div class="pgs">Evolución de costos por producto</div>
-  <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="precio-buscar" type="text" placeholder="Buscar producto..." autocomplete="off" oninput="renderHistPrecios()"></div>
-  <div id="precio-hist-lista"></div>
 </div>
 
 </div><!-- /pages-wrap -->
@@ -1941,32 +1892,6 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
   </div>
 </div>
 
-<div class="ovl" id="mo-merma">
-  <div class="modal"><div class="mh"></div><div class="mt">📉 Registrar Merma</div>
-    <div class="fg"><label class="fl">Producto *</label>
-      <div class="swrap" style="margin-bottom:4px"><span class="sicon">🔍</span><input class="sinput" id="mer-buscar" type="text" placeholder="Buscar producto..." oninput="merBuscar(this.value)"></div>
-      <div id="mer-res" class="sres"></div>
-      <div id="mer-prod-sel" style="display:none;background:var(--sf2);border-radius:9px;padding:10px 12px;margin-top:4px;font-size:13px;font-weight:600"></div>
-    </div>
-    <div class="fr" style="margin-bottom:11px">
-      <div class="fg" style="margin-bottom:0"><label class="fl">Bodega</label><select class="fi" id="mer-bodega"></select></div>
-      <div class="fg" style="margin-bottom:0"><label class="fl">Cantidad</label><input class="fi" type="number" inputmode="decimal" id="mer-cant" min="0.1" step="0.1" placeholder="0"></div>
-    </div>
-    <div class="fg"><label class="fl">Motivo *</label>
-      <select class="fi" id="mer-motivo">
-        <option value="vencimiento">Vencimiento</option>
-        <option value="dano">Daño / Rotura</option>
-        <option value="deterioro">Deterioro de calidad</option>
-        <option value="ajuste">Ajuste de inventario</option>
-        <option value="otro">Otro</option>
-      </select>
-    </div>
-    <div class="fg"><label class="fl">Observación</label><input class="fi" type="text" id="mer-obs" placeholder="Descripción adicional..."></div>
-    <button class="btn bg-red" onclick="confirmarMerma()">📉 Registrar merma</button>
-    <button class="btn bg-ghost" onclick="closeM('mo-merma')">Cancelar</button>
-  </div>
-</div>
-
 <div class="ovl" id="mo-ajuste-stock">
   <div class="modal"><div class="mh"></div><div class="mt">⚖️ Ajustar Stock</div>
     <div style="font-size:11px;color:var(--txm);margin-bottom:11px;line-height:1.5">Corrige el stock de un producto cuando detectes una diferencia, sin tener que iniciar un inventario completo.</div>
@@ -2172,8 +2097,8 @@ function initFCMForeground(){
 
 // ── ESTADO ──────────────────────────────────────────────────────────────────
 let role=null,pbuf='',pinTarget=null;
-let prods=[],cats=[],sols=[],facts=[],movs=[],invDocs=[],mermas=[],bodegas=[],ventas=[];
-let uP=null,uS=null,uF=null,uC=null,uM=null,uI=null,uMer=null,uBod=null,uCfg=null,uVt=null;
+let prods=[],cats=[],sols=[],facts=[],movs=[],invDocs=[],bodegas=[];
+let uP=null,uS=null,uF=null,uC=null,uM=null,uI=null,uBod=null,uCfg=null;
 let editProdId=null,rechazandoId=null,editCatId=null;
 let carrito=[],fnItems=[],despEst={},semOffset=0;
 let invActivo=null,conteoLocal={},csvData=[];
@@ -2182,10 +2107,9 @@ let diffFiltro='diff',detalleFiltro='diff',detalleInv=null;
 const _vistoSent=new Set();
 const _maxVisto=200;
 let subAreaActual='';
-let trProdId=null,merProdId=null,verifSolId=null,ajsProdId=null;
+let trProdId=null,verifSolId=null,ajsProdId=null;
 let fProdBodegaActual='',fStockBodega='',fStockCat='';
 let fPC='',fDE='pendiente',fSE='',fME='';
-let ventaAreaSel='c3';
 
 // ── BODEGAS POR DEFECTO ──────────────────────────────────────────────────────
 const BODEGAS_DEFAULT=[
@@ -2791,7 +2715,7 @@ function logout(){
 }
 function _logoutBase(){
   liberarWakeLock();
-  stopL();role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];mermas=[];bodegas=[];ventas=[];
+  stopL();role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];bodegas=[];
   carrito=[];fnItems=[];despEst={};solsPrevCount=null;alarmaActiva=false;invActivo=null;conteoLocal={};_vistoSent.clear();
   if(alarmaTimer){clearTimeout(alarmaTimer);alarmaTimer=null;}
   localStorage.removeItem('saved_role');
@@ -2817,9 +2741,7 @@ function buildNav(r){
     {id:'pg-dash',i:iD(),l:'Inicio'},{id:'pg-stock',i:iSt(),l:'Almacén'},
     {id:'pg-sols',i:iSo(),l:'Solicitudes'},{id:'pg-fact',i:iF(),l:'Facturas'},
     {id:'pg-prods',i:iPr(),l:'Productos'},{id:'pg-rep',i:iR(),l:'Reporte'},
-    {id:'pg-ventas',i:iVt(),l:'Ventas'},
-    {id:'pg-inv',i:iInv(),l:'Inventario'},{id:'pg-merma',i:iMer(),l:'Merma'},
-    {id:'pg-precios',i:iChart(),l:'Precios'},
+    {id:'pg-inv',i:iInv(),l:'Inventario'},
   ];
   const bod=[
     {id:'pg-desp',i:iDe(),l:'Despachos',badge:true},
@@ -2876,8 +2798,6 @@ function goTo(id){
   window.scrollTo(0,0);
   if(id==='pg-rep')renderReporte();
   if(id==='pg-inv')renderInvHistorial();
-  if(id==='pg-merma')renderMermas();
-  if(id==='pg-precios')renderHistPrecios();
   if(id==='pg-dash')_renderDashNow();
   if(id==='pg-fact')renderFact();
   if(id==='pg-desp')renderDesp();
@@ -2885,11 +2805,6 @@ function goTo(id){
   if(id==='pg-mispedidos')renderMisPed();
   if(id==='pg-stock')_renderStockNow();
   if(id==='pg-prods')renderProds();
-  if(id==='pg-ventas'){
-    const vf=document.getElementById('vt-fecha');
-    if(vf&&!vf.value)vf.value=new Date().toISOString().split('T')[0];
-    renderVentaAreaChips();renderVentasLista();
-  }
   if(id==='pg-stock'){
     const sb=document.getElementById('stock-buscar');
     if(sb&&sb.value)sb.value=''; // limpiar búsqueda, renderStock() ya fue llamado arriba
@@ -2979,14 +2894,8 @@ function startL(){
     if(document.getElementById('pg-dash')?.classList.contains('on'))renderDash();
   },err=>console.warn('movs:',err.message));
   uI=onSnapshot(query(collection(db,'inventarios'),orderBy('creadoEn','desc'),limit(200)),s=>{invDocs=s.docs.map(d=>({id:d.id,...d.data()}));renderInvHistorial();},err=>console.warn('inv:',err.message));
-  uMer=onSnapshot(query(collection(db,'mermas'),orderBy('creadoEn','desc'),limit(500)),s=>{mermas=s.docs.map(d=>({id:d.id,...d.data()}));renderMermas();},err=>console.warn('mer:',err.message));
-  uVt=onSnapshot(query(collection(db,'ventas'),orderBy('creadoEn','desc'),limit(500)),s=>{
-    ventas=s.docs.map(d=>({id:d.id,...d.data()}));
-    renderVentasLista();
-    if(document.getElementById('pg-rep')?.classList.contains('on'))renderReporte();
-  },err=>console.warn('ventas:',err.message));
 }
-function stopL(){[uP,uS,uF,uC,uM,uI,uMer,uBod,uCfg,uVt].forEach(u=>u&&u());uP=uS=uF=uC=uM=uI=uMer=uBod=uCfg=uVt=null;}
+function stopL(){[uP,uS,uF,uC,uM,uI,uBod,uCfg].forEach(u=>u&&u());uP=uS=uF=uC=uM=uI=uBod=uCfg=null;}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 let _rdTimer=null;
@@ -4488,7 +4397,7 @@ async function guardarFactura(){
     const r=calcImpFactura(itemsCalc);
     // Costo real por unidad YA con el descuento del proveedor aplicado: es el valor que
     // debe quedar reflejado en el producto (stock) y en el historial de precios, para que
-    // la valorización de inventario y el food cost reflejen lo que efectivamente se pagó.
+    // la valorización de inventario reflejen lo que efectivamente se pagó.
     const itemsConDescuento=items.map(it=>{
       const netoUnitDesc=it._netoUnitExacto*factorDesc;
       const cDesc=calcImp(netoUnitDesc,it.tipoImpuesto);
@@ -4552,7 +4461,6 @@ async function guardarFactura(){
     // Fase 2: escribir el historial de precios en paralelo (antes era secuencial)
     await Promise.all(historialPendiente.map(h=>addDoc(collection(db,'historialPrecios'),h)));
     await addDoc(collection(db,'movimientos'),{tipo:'ingreso',facturaId:ref.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp()});
-    histPreciosCache=null; // invalidar cache: hay registros nuevos
     toast('✓ '+fnItems.length+' productos ingresados');closeM('mo-fact');fnItems=[];
   }catch(e){toast('Error: '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='✓ Ingresar al stock';}
@@ -4954,81 +4862,7 @@ async function confirmarTransferencia(){
   finally{if(btn){btn.disabled=false;btn.textContent='🔄 Confirmar transferencia';}}
 }
 
-// ── MERMA ─────────────────────────────────────────────────────────────────────
-function abrirMerma(){
-  merProdId=null;
-  document.getElementById('mer-buscar').value='';
-  document.getElementById('mer-res').style.display='none';
-  document.getElementById('mer-prod-sel').style.display='none';
-  document.getElementById('mer-cant').value='';
-  document.getElementById('mer-obs').value='';
-  // Llenar bodega select
-  const sel=document.getElementById('mer-bodega');
-  if(sel)sel.innerHTML=bodegas.map(b=>`<option value="${b.id}">${b.icono} ${b.nombre}</option>`).join('');
-  openM('mo-merma');
-}
-function merBuscar(q){
-  const res=document.getElementById('mer-res');
-  if(!q.trim()){res.style.display='none';return;}
-  const t=q.toLowerCase();
-  const m=prods.filter(p=>p.nombre.toLowerCase().includes(t)&&stockTotal(p)>0).slice(0,8);
-  res.style.display='block';
-  if(!m.length){res.innerHTML='<div style="padding:12px;text-align:center;color:var(--txd);font-size:13px">Sin resultados</div>';return;}
-  res.innerHTML=m.map(p=>`
-    <div class="sri" onclick="merSelProd('${p.id}')">
-      <div class="sri-info"><div class="sri-nom">${p.nombre}</div><div class="sri-det">Stock: ${clpn(stockTotal(p))} ${p.unidadMedida||''}</div></div>
-      <button class="sri-btn">Seleccionar</button>
-    </div>`).join('');
-}
-function merSelProd(pid){
-  merProdId=pid;
-  const p=prods.find(x=>x.id===pid);if(!p)return;
-  document.getElementById('mer-res').style.display='none';
-  document.getElementById('mer-buscar').value='';
-  const sel=document.getElementById('mer-prod-sel');
-  sel.style.display='block';sel.textContent=p.nombre+' · Stock: '+clpn(stockTotal(p))+' '+p.unidadMedida;
-  // Pre-seleccionar bodega principal
-  const bodSel=document.getElementById('mer-bodega');if(bodSel)bodSel.value=p.bodega||'seca';
-  const isKg=['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
-  const ci=document.getElementById('mer-cant');if(ci)ci.step=isKg?'0.1':'1';
-}
-async function confirmarMerma(){
-  if(!merProdId){toast('Selecciona un producto','err');return;}
-  const cant=parseFloat(document.getElementById('mer-cant').value)||0;
-  if(cant<=0){toast('Ingresa la cantidad','err');return;}
-  const bodId=document.getElementById('mer-bodega').value;
-  const motivo=document.getElementById('mer-motivo').value;
-  const obs=document.getElementById('mer-obs').value.trim();
-  const p=prods.find(x=>x.id===merProdId);if(!p)return;
-  const stockBod=stockEnBodega(p,bodId);
-  if(cant>stockBod){toast(`Stock insuficiente en esa bodega. Disponible: ${clpn(stockBod)}`,'err');return;}
-  try{
-    const spb={...(p.stockPorBodega||{})};
-    if(!p.stockPorBodega&&(p.stock||0)>0)spb[p.bodega||'seca']=p.stock||0;
-    spb[bodId]=Math.max(0,(spb[bodId]||0)-cant);
-    const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-    const valorMerma=cant*(p.precioTotal||0);
-    await updateDoc(doc(db,'productos',merProdId),{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
-    await addDoc(collection(db,'mermas'),{
-      productoId:merProdId,nombreProducto:p.nombre,cantidad:cant,unidadMedida:p.unidadMedida||'',
-      bodega:bodId,motivo,observacion:obs,valorMerma,
-      realizadoPor:role,creadoEn:serverTimestamp()
-    });
-    await addDoc(collection(db,'movimientos'),{tipo:'merma',productoId:merProdId,nombreProducto:p.nombre,cantidad:cant,bodega:bodId,motivo,realizadoPor:role,creadoEn:serverTimestamp()});
-    toast(`✓ Merma registrada: ${clpn(cant)} ${p.unidadMedida||''} (${clp(valorMerma)})`);
-    closeM('mo-merma');merProdId=null;
-  }catch(e){toast('Error: '+e.message,'err');}
-}
-
-// ── AJUSTE DE STOCK ──────────────────────────────────────────────────────────────
-// Permite corregir el stock de un producto puntualmente (ej: error de tipeo, conteo
-// rápido de un solo producto, pérdida no registrada) sin tener que iniciar un
-// inventario completo. Sigue el mismo patrón de doble escritura que la merma:
-// 1) actualiza el stock real en el documento del producto (misma estructura
-//    stockPorBodega/stock que ya usan merma, traspaso e inventario), y
-// 2) deja un registro de auditoría (colección 'ajustesStock' + 'movimientos' con
-//    tipo:'ajuste', el cual los reportes existentes ignoran de forma segura porque
-//    todos sus filtros de consumo solo miran tipo==='salida').
+// ── AJUSTE DE STOCK PUNTUAL ──────────────────────────────────────────────────
 function abrirAjusteStock(pid,bodIdPreseleccionada=null){
   ajsProdId=pid;
   const p=prods.find(x=>x.id===pid);if(!p)return;
@@ -5090,92 +4924,6 @@ async function confirmarAjusteStock(){
     toast(`✓ Stock ajustado: ${diff>0?'+':''}${clpn(diff)} ${p.unidadMedida||''}`);
     closeM('mo-ajuste-stock');ajsProdId=null;
   }catch(e){toast('Error: '+e.message,'err');}
-}
-let mermaFiltroFecha='';
-function fMermaFecha(f,btn){mermaFiltroFecha=f;document.querySelectorAll('#merma-fecha-chips .chip').forEach(c=>c.classList.remove('on'));if(btn)btn.classList.add('on');renderMermas();}
-function renderMermaChips(){
-  const el=document.getElementById('merma-fecha-chips');if(!el)return;
-  el.innerHTML=`
-    <button class="chip ${!mermaFiltroFecha?'on':''}" onclick="fMermaFecha('',this)">Todo</button>
-    <button class="chip ${mermaFiltroFecha==='mes'?'on':''}" onclick="fMermaFecha('mes',this)">Este mes</button>
-    <button class="chip ${mermaFiltroFecha==='mesant'?'on':''}" onclick="fMermaFecha('mesant',this)">Mes anterior</button>`;
-}
-function renderMermas(){
-  renderMermaChips();
-  const lista=document.getElementById('merma-lista');if(!lista)return;
-  let lst=mermas;
-  if(mermaFiltroFecha==='mes'||mermaFiltroFecha==='mesant'){
-    const{inicio,fin}=getMes(mermaFiltroFecha==='mesant'?-1:0);
-    lst=mermas.filter(m=>{const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=inicio&&d<=fin;});
-  }
-  if(!lst.length){lista.innerHTML='<div class="empty"><div class="ei">📉</div><div class="et">Sin mermas en este período</div></div>';return;}
-  const totalMerma=lst.reduce((a,m)=>a+(m.valorMerma||0),0);
-  lista.innerHTML=`<div class="st full ac-r" style="margin-bottom:12px"><div class="sl">Valor total de mermas</div><div class="sv" style="color:var(--red)">${clp(totalMerma)}</div></div>`+
-    lst.map(m=>{
-      const b=getBodegaById(m.bodega||'seca');
-      return`<div class="merma-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-          <div><div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800">${m.nombreProducto}</div><div style="font-size:11px;color:var(--txm);margin-top:2px">${fDate(m.creadoEn)} · ${b.icono} ${b.nombre}</div></div>
-          <span class="badge bg-r-s">-${clpn(m.cantidad)} ${m.unidadMedida||''}</span>
-        </div>
-        <div style="font-size:12px;color:var(--txm)">Motivo: <strong>${m.motivo}</strong>${m.observacion?' · '+m.observacion:''}</div>
-        <div style="font-size:12px;color:var(--red);font-weight:700;margin-top:4px">Pérdida: ${clp(m.valorMerma||0)}</div>
-      </div>`;
-    }).join('');
-}
-
-// ── HISTORIAL PRECIOS ─────────────────────────────────────────────────────────
-// Cache en memoria del historial de precios — evita ir a Firestore en cada letra
-// que el usuario escribe en el buscador. Se invalida (histPreciosCache=null) cada vez
-// que se guarda una factura nueva, para que el historial recién agregado aparezca.
-let histPreciosCache=null;
-async function fetchHistPrecios(forzar){
-  if(histPreciosCache&&!forzar)return histPreciosCache;
-  const snap=await getDocs(query(collection(db,'historialPrecios'),orderBy('creadoEn','desc'),limit(300)));
-  histPreciosCache=snap.docs.map(d=>({id:d.id,...d.data()}));
-  return histPreciosCache;
-}
-async function renderHistPrecios(){
-  const lista=document.getElementById('precio-hist-lista');if(!lista)return;
-  const q=(document.getElementById('precio-buscar')?.value||'').toLowerCase();
-  const yaTeniaCache=!!histPreciosCache;
-  if(!yaTeniaCache)lista.innerHTML='<div style="text-align:center;padding:16px;color:var(--txm)">Cargando...</div>';
-  try{
-    const all=await fetchHistPrecios(false);
-    let items=q?all.filter(i=>i.nombreProducto?.toLowerCase().includes(q)):all;
-    if(!items.length){lista.innerHTML='<div class="empty"><div class="ei">📊</div><div class="et">Sin historial de precios</div></div>';return;}
-    // Agrupar por producto (items viene ordenado de más reciente a más antiguo)
-    const byProd={};
-    items.forEach(i=>{if(!byProd[i.productoId])byProd[i.productoId]={nombre:i.nombreProducto,items:[]};byProd[i.productoId].items.push(i);});
-    // Variación total acumulada: precio más reciente vs. el primer precio registrado de cada producto
-    const grupos=Object.values(byProd).map(g=>{
-      const newest=g.items[0],oldest=g.items[g.items.length-1];
-      const totalDiff=g.items.length>1?newest.precio-oldest.precio:0;
-      const totalPct=g.items.length>1&&oldest.precio>0?Math.round((totalDiff/oldest.precio)*100):0;
-      return{...g,newest,oldest,totalDiff,totalPct};
-    });
-    // Mostrar primero los productos que más han subido de precio
-    grupos.sort((a,b)=>b.totalPct-a.totalPct);
-    lista.innerHTML=grupos.map(g=>{
-      const items=g.items.slice(0,5);
-      const restantes=g.items.length-items.length;
-      return`<div class="prod-card" style="margin-bottom:10px">
-        <div class="prod-nom" style="margin-bottom:6px">📊 ${g.nombre}</div>
-        ${g.items.length>1&&g.totalDiff!==0?`<div style="font-size:11px;font-weight:700;margin-bottom:10px;${g.totalDiff>0?'color:#ef4444':'color:var(--green)'}">${g.totalDiff>0?'📈 Subió':'📉 Bajó'} ${Math.abs(g.totalPct)}% en total · ${clp(g.oldest.precio)} → ${clp(g.newest.precio)} (desde ${fDateOnly(g.oldest.creadoEn)})</div>`:''}
-        ${items.map((it,i)=>{
-          const prev=items[i+1];
-          const diff=prev?it.precio-prev.precio:0;
-          const pct=prev&&prev.precio>0?Math.round((diff/prev.precio)*100):0;
-          const cantTxt=it.cantidadStock?`${it.cantidadStock} ${it.unidadMedida||''}`.trim():'';
-          return`<div class="precio-hist-item">
-            <div><div style="font-size:12px;font-weight:600">${clp(it.precio)}/unit${cantTxt?` · ${cantTxt}`:''}</div><div style="font-size:10px;color:var(--txm)">${it.proveedor||'—'} · ${fDateOnly(it.creadoEn)}</div></div>
-            ${diff!==0?`<span class="badge ${diff>0?'bg-r-s':'bg-g-s'}">${diff>0?'▲':'▼'} ${Math.abs(pct)}%</span>`:'<span class="badge" style="background:var(--sf2);color:var(--txm)">= Sin cambio</span>'}
-          </div>`;
-        }).join('')}
-        ${restantes>0?`<div style="text-align:center;font-size:11px;color:var(--txm);padding-top:8px;font-weight:600">+ ${restantes} compra${restantes>1?'s':''} más</div>`:''}
-      </div>`;
-    }).join('');
-  }catch(e){lista.innerHTML='<div class="empty"><div class="et">Error al cargar</div></div>';}
 }
 
 // ── REPORTE + EXPORTAR PDF ────────────────────────────────────────────────────
@@ -5459,13 +5207,6 @@ function renderReporte(){
       totS+=val;totU+=cant;
     });
   });
-  // Ventas de la misma semana, por área (para food cost % y margen)
-  const dstr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const desdeStr=dstr(desde),hastaStr=dstr(hasta);
-  const ventasSem=ventas.filter(v=>v.fecha>=desdeStr&&v.fecha<=hastaStr);
-  const ventasPorArea={};
-  ventasSem.forEach(v=>{ventasPorArea[v.area]=(ventasPorArea[v.area]||0)+(v.monto||0);});
-  const totalVentasSem=Object.values(ventasPorArea).reduce((a,v)=>a+v,0);
   // Facturas ingresadas en la semana (compras a proveedores, no despachos)
   const factSem=facts.filter(f=>{const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;return d&&d>=desde&&d<=hasta;});
   const totFact=factSem.reduce((a,f)=>a+(f.totalFactura||0),0);
@@ -5473,10 +5214,6 @@ function renderReporte(){
   const dias=Math.max(1,Math.round((hasta-desde)/(1000*60*60*24))+1);
   const costoDiario=Math.round(totFact/dias);
   const costoSemanal=Math.round(costoDiario*7);
-  const fc=totalVentasSem>0?Math.round((totS/totalVentasSem)*100):null;
-  const margenTotal=totalVentasSem>0?totalVentasSem-totS:null;
-  const fcColor=fc===null?'var(--tx)':fc>38?'var(--red)':fc>30?'var(--yellow)':'var(--green)';
-  const fcLabel=fc===null?'—':(fc>38?'⚠️ Alto':'✓ Ok');
 
   document.getElementById('rep-stats').innerHTML=`
     <!-- 1. GASTO TOTAL — lo más importante -->
@@ -5496,24 +5233,7 @@ function renderReporte(){
       <div class="sl">Consumo despachado</div>
       <div class="sv" style="color:var(--purple);font-size:18px">${clp(totS)}</div>
       <div class="su">${movSem.length} despacho${movSem.length===1?'':'s'}</div>
-    </div>
-
-    <!-- 3. FOOD COST (solo si hay ventas) -->
-    ${fc!==null?`
-    <div class="st full rep-kpi-fc" style="border-color:${fcColor}20">
-      <div class="rep-fc-grid">
-        <div class="rep-fc-main">
-          <div class="rep-kpi-eyebrow">📊 Food cost</div>
-          <div class="rep-fc-pct" style="color:${fcColor}">${fc}%</div>
-          <div class="rep-fc-badge" style="background:${fcColor}18;color:${fcColor}">${fcLabel}</div>
-        </div>
-        <div class="rep-fc-detalle">
-          <div class="rep-fc-row"><span>Ventas</span><strong>${clp(totalVentasSem)}</strong></div>
-          <div class="rep-fc-row"><span>Consumo</span><strong style="color:var(--red)">${clp(totS)}</strong></div>
-          <div class="rep-fc-row rep-fc-margen"><span>Margen</span><strong style="color:var(--green)">${clp(margenTotal)}</strong></div>
-        </div>
-      </div>
-    </div>`:''}`;
+    </div>`;
 
   // ── DONA DE PROVEEDORES ─────────────────────────────────────────────────────
   const porProv={};
@@ -5606,10 +5326,6 @@ function renderReporte(){
     const items=Object.values(area.items).sort((a,b)=>b.valor-a.valor);
     const tot=items.reduce((s,i)=>s+i.valor,0);
     if(!tot&&!items.length)return; // ocultar áreas sin consumo
-    const ventaArea=ventasPorArea[key]||0;
-    const fc=ventaArea>0?Math.round((tot/ventaArea)*100):null;
-    const margen=ventaArea>0?ventaArea-tot:null;
-    const fcColor=fc===null?'var(--tx)':fc>38?'var(--red)':fc>30?'var(--yellow)':'var(--green)';
 
     // ── Desglose diario de esta área ─────────────────────────────────────────
     // Agrupar los movimientos del período por día para esta área
@@ -5655,13 +5371,7 @@ function renderReporte(){
           <div class="area-kpi-lbl">Pedidos</div>
           <div class="area-kpi-val">${movArea.length}</div>
         </div>
-        ${ventaArea>0?`<div class="area-kpi"><div class="area-kpi-lbl">Food cost</div><div class="area-kpi-val" style="color:${fcColor}">${fc}%</div></div>`:''}
       </div>
-      ${ventaArea>0?`
-      <div class="area-fc-row">
-        <span>Ventas <strong>${clp(ventaArea)}</strong></span>
-        <span>Margen <strong style="color:var(--green)">${clp(margen)}</strong></span>
-      </div>`:''}
 
       <!-- Tabs internos: Resumen / Diario / Productos -->
       <div class="area-tabs" id="area-tabs-${key}">
@@ -5753,39 +5463,6 @@ function exportarPDF(){
   toast('✓ Reporte descargado (ábrelo en Chrome e imprime como PDF)');
 }
 
-// ── VENTAS ─────────────────────────────────────────────────────────────────────
-function renderVentaAreaChips(){
-  const el=document.getElementById('vt-area-chips');if(!el)return;
-  const n=gN();
-  const areas=[{k:'c1',ic:'🌅'},{k:'c3',ic:'🍽️'},{k:'c2',ic:'🍮'},{k:'c4',ic:'🍹'}];
-  el.innerHTML=areas.map(a=>`<button class="chip ${ventaAreaSel===a.k?'on':''}" onclick="selVentaArea('${a.k}',this)">${a.ic} ${n[a.k]}</button>`).join('');
-}
-function selVentaArea(k,btn){ventaAreaSel=k;document.querySelectorAll('#vt-area-chips .chip').forEach(c=>c.classList.remove('on'));if(btn)btn.classList.add('on');}
-async function guardarVenta(){
-  const fecha=document.getElementById('vt-fecha').value;
-  const monto=parseFloat(document.getElementById('vt-monto').value)||0;
-  const nota=document.getElementById('vt-nota').value.trim();
-  if(!fecha){toast('Selecciona la fecha','err');return;}
-  if(!ventaAreaSel){toast('Selecciona el área','err');return;}
-  if(monto<=0){toast('Ingresa el monto vendido','err');return;}
-  try{
-    await addDoc(collection(db,'ventas'),{fecha,area:ventaAreaSel,monto,nota:nota||null,registradoPor:role,creadoEn:serverTimestamp()});
-    toast('✓ Venta registrada');
-    document.getElementById('vt-monto').value='';document.getElementById('vt-nota').value='';
-  }catch(e){toast('Error: '+e.message,'err');}
-}
-function renderVentasLista(){
-  const el=document.getElementById('ventas-lista');if(!el)return;
-  if(!ventas.length){el.innerHTML='<div class="empty"><div class="ei">💵</div><div class="et">Sin ventas registradas</div></div>';return;}
-  const n=gN();
-  const areaInfo={c1:{ic:'🌅',n:n.c1},c2:{ic:'🍮',n:n.c2},c3:{ic:'🍽️',n:n.c3},c4:{ic:'🍹',n:n.c4}};
-  el.innerHTML=ventas.slice(0,40).map(v=>{
-    const a=areaInfo[v.area]||{ic:'📍',n:v.area};
-    return`<div class="li"><div><div class="lt">${a.ic} ${a.n} · ${v.fecha}</div>${v.nota?`<div class="ls">${v.nota}</div>`:''}</div><div style="display:flex;align-items:center;gap:8px"><span class="badge bg-g-s">${clp(v.monto)}</span><button class="dbtn" onclick="elimVenta('${v.id}')">✕</button></div></div>`;
-  }).join('');
-}
-async function elimVenta(id){if(!confirm('¿Eliminar este registro de venta?'))return;try{await deleteDoc(doc(db,'ventas',id));toast('Eliminado');}catch(e){toast('Error: '+e.message,'err');}}
-
 // ── INVENTARIO ─────────────────────────────────────────────────────────────────
 let invFiltroCategoria='',invFiltroBodega='';
 function renderInvChips(){
@@ -5801,70 +5478,102 @@ function renderConteo(){
   if(!invActivo)return;
   const q=(document.getElementById('inv-buscar')?.value||'').toLowerCase();
   let pp=[...prods];
-  if(invFiltroBodega)pp=pp.filter(p=>(p.bodega||'seca')===invFiltroBodega);
+  if(invFiltroBodega)pp=pp.filter(p=>(p.stockPorBodega?.[invFiltroBodega]||0)>0||(p.bodega||'seca')===invFiltroBodega);
   if(invFiltroCategoria)pp=pp.filter(p=>p.categoria===invFiltroCategoria);
   if(q)pp=pp.filter(p=>p.nombre.toLowerCase().includes(q));
-  const contados=prods.filter(p=>conteoLocal[p.id]!==undefined).length;
-  const pendientes=prods.length-contados;
-  const valorFisico=prods.reduce((a,p)=>a+(conteoLocal[p.id]!==undefined?conteoLocal[p.id]:0)*(p.precioTotal||0),0);
-  document.getElementById('inv-cnt-c').textContent=contados;
-  document.getElementById('inv-cnt-p').textContent=pendientes;
+  // ── Conteo por PRODUCTO+BODEGA: conteoLocal[pid] = {bodId: valorKg, ...} ──
+  // Una "línea" de conteo = una combinación producto×bodega donde el producto tiene stock real.
+  const lineasTotales=[];
+  prods.forEach(p=>{
+    const spb=p.stockPorBodega||{[p.bodega||'seca']:p.stock||0};
+    Object.keys(spb).forEach(bodId=>{if((spb[bodId]||0)>0||bodId===(p.bodega||'seca'))lineasTotales.push(pid_bod(p.id,bodId));});
+  });
+  const contado=k=>conteoLocal[k]!==undefined;
+  const contadasN=lineasTotales.filter(contado).length;
+  const pendientesN=lineasTotales.length-contadasN;
+  const valorFisico=lineasTotales.reduce((a,k)=>{
+    if(!contado(k))return a;
+    const[pid]=k.split('||');const p=prods.find(x=>x.id===pid);
+    return a+conteoLocal[k]*(p?.precioTotal||0);
+  },0);
+  document.getElementById('inv-cnt-c').textContent=contadasN;
+  document.getElementById('inv-cnt-p').textContent=pendientesN;
   document.getElementById('inv-cnt-v').textContent=clp(valorFisico);
   const lista=document.getElementById('inv-conteo-lista');
   if(!pp.length){lista.innerHTML='<div class="empty"><div class="et">Sin productos en esta sección</div></div>';return;}
-  pp.sort((a,b)=>{const ac=conteoLocal[a.id]!==undefined?1:0,bc=conteoLocal[b.id]!==undefined?1:0;return ac-bc;});
   const isKg=p=>['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
+  // Renderiza UNA fila por cada bodega donde el producto tiene stock (o su bodega principal si no tiene stock en ninguna)
   const renderProd=p=>{
-    const contado=conteoLocal[p.id]!==undefined;
     const isDualInv=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
-    // conteoLocal siempre en kg (regla de oro: Firestore=kg)
-    const valKg=contado?conteoLocal[p.id]:0;
-    // Para input visual: si es dual, mostrar en piezas
-    const valDisplay=isDualInv&&contado?Math.round(valKg/p.pesoPorUnidad*100)/100:valKg;
-    const diff=contado?valKg-stockTotal(p):null;
-    const diffDisplay=isDualInv&&diff!==null?Math.round(diff/p.pesoPorUnidad*10)/10:diff;
-    const stkDisplay=isDualInv?`~${Math.floor(stockTotal(p)/p.pesoPorUnidad)} ${p.unidadPedido}s`:`${clpn(stockTotal(p))} ${p.unidadMedida||''}`;
-    return`<div class="inv-row ${contado?'contado':'pendiente'}">
+    const spb=p.stockPorBodega||{};
+    let bodIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
+    if(!bodIds.length)bodIds=[p.bodega||'seca'];
+    // Si hay un filtro de bodega activo, solo mostrar esa línea (evita ruido innecesario)
+    if(invFiltroBodega)bodIds=bodIds.filter(b=>b===invFiltroBodega);
+    if(!bodIds.length)return'';
+    const filasBod=bodIds.map(bodId=>{
+      const bod=bodegas.find(b=>b.id===bodId);
+      const key=pid_bod(p.id,bodId);
+      const yaContado=conteoLocal[key]!==undefined;
+      const stockSistemaKg=spb[bodId]||0;
+      const valKg=yaContado?conteoLocal[key]:0;
+      const valDisplay=isDualInv&&yaContado?Math.round(valKg/p.pesoPorUnidad*100)/100:valKg;
+      const diff=yaContado?valKg-stockSistemaKg:null;
+      const diffDisplay=isDualInv&&diff!==null?Math.round(diff/p.pesoPorUnidad*10)/10:diff;
+      const stkDisplay=isDualInv?`~${Math.floor(stockSistemaKg/p.pesoPorUnidad)} ${p.unidadPedido}s`:`${clpn(stockSistemaKg)} ${p.unidadMedida||''}`;
+      return`<div class="inv-bod-fila">
+        <span class="inv-bod-tag">${bod?.icono||'📦'} ${bod?.nombre||bodId}</span>
+        <div class="inv-input-wrap">
+          <span class="inv-stock-lbl">Sistema: <strong>${stkDisplay}</strong></span>
+          <input class="inv-input ${yaContado?'ok':''}" type="number" min="0" step="${isDualInv?'1':isKg(p)?'0.1':'1'}"
+            placeholder="0" value="${yaContado?valDisplay:''}"
+            oninput="setConteo('${p.id}','${bodId}',this.value,this,${isDualInv?p.pesoPorUnidad:0})"
+            onblur="renderConteo()">
+          <span class="inv-stock-lbl">${isDualInv?(p.unidadPedido+'s'):(p.unidadMedida||'')}${isDualInv&&yaContado?` <span style="color:var(--purple);font-size:9px">(${clpn(valKg)} kg)</span>`:''}</span>
+          <span id="inv-diff-${key}" style="font-size:11px;font-weight:700;color:${diff===null?'transparent':diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)'}">${diff===null?'':(isDualInv?(diffDisplay>0?'▲ +'+diffDisplay:diffDisplay<0?'▼ '+diffDisplay:'= OK'):(diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK'))}</span>
+        </div>
+      </div>`;
+    }).join('');
+    const todasContadas=bodIds.every(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
+    const algunaContada=bodIds.some(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
+    return`<div class="inv-row ${todasContadas?'contado':algunaContada?'parcial':'pendiente'}">
       <div class="inv-row-top">
-        <div><div class="inv-nom">${p.nombre}${isDualInv?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}</div><div class="inv-cat">${p.categoria||''}${p.subcategoria?' · '+p.subcategoria:''}</div></div>
-        <span class="badge ${contado?'bg-g-s':'bg-b-s'}">${contado?clp(valKg*(p.precioTotal||0)):'Pendiente'}</span>
+        <div><div class="inv-nom">${p.nombre}${isDualInv?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}${bodIds.length>1?`<span class="inv-multibod-badge">${bodIds.length} bodegas</span>`:''}</div><div class="inv-cat">${p.categoria||''}${p.subcategoria?' · '+p.subcategoria:''}</div></div>
+        <span class="badge ${todasContadas?'bg-g-s':algunaContada?'bg-y-s':'bg-b-s'}">${todasContadas?'Completo':algunaContada?'Parcial':'Pendiente'}</span>
       </div>
-      <div class="inv-input-wrap">
-        <span class="inv-stock-lbl">Sistema: <strong>${stkDisplay}</strong></span>
-        <input class="inv-input ${contado?'ok':''}" type="number" min="0" step="${isDualInv?'1':isKg(p)?'0.1':'1'}"
-          placeholder="0" value="${contado?valDisplay:''}"
-          oninput="setConteo('${p.id}',this.value,this,${isDualInv?p.pesoPorUnidad:0})"
-          onblur="renderConteo()">
-        <span class="inv-stock-lbl">${isDualInv?(p.unidadPedido+'s'):(p.unidadMedida||'')}${isDualInv&&contado?` <span style="color:var(--purple);font-size:9px">(${clpn(valKg)} kg)</span>`:''}</span>
-        <span id="inv-diff-${p.id}" style="font-size:11px;font-weight:700;color:${diff===null?'transparent':diff>0?'var(--green)':diff<0?'var(--red)':'var(--txm)'}">${diff===null?'':(isDualInv?(diffDisplay>0?'▲ +'+diffDisplay:diffDisplay<0?'▼ '+diffDisplay:'= OK'):(diff>0?'▲ +'+clpn(diff):diff<0?'▼ '+clpn(diff):'= OK'))}</span>
-      </div>
+      ${filasBod}
     </div>`;
   };
-  // Agrupar por bodega si no hay filtro
+  // Agrupar visualmente por bodega principal del producto si no hay filtro/búsqueda
   if(!invFiltroBodega&&!invFiltroCategoria&&!q){
     const grupos={};bodegas.forEach(b=>grupos[b.id]=[]);
     pp.forEach(p=>{const b=p.bodega||'seca';if(!grupos[b])grupos[b]=[];grupos[b].push(p);});
     lista.innerHTML=bodegas.map((b,bi)=>{
       const items=grupos[b.id]||[];if(!items.length)return'';
-      const contadosB=items.filter(p=>conteoLocal[p.id]!==undefined).length;
-      return`<div class="bodega-section"><div class="bodega-hdr ${getBodegaClr(bi)}">${b.icono} ${b.nombre}<span class="bodega-badge">${contadosB}/${items.length}</span></div>${items.map(renderProd).join('')}</div>`;
+      const html=items.map(renderProd).filter(Boolean).join('');
+      if(!html)return'';
+      return`<div class="bodega-section"><div class="bodega-hdr ${getBodegaClr(bi)}">${b.icono} ${b.nombre}</div>${html}</div>`;
     }).join('');
-  }else{lista.innerHTML=pp.map(renderProd).join('');}
+  }else{lista.innerHTML=pp.map(renderProd).filter(Boolean).join('');}
 }
-function setConteo(pid,v,el,pesoPorUnidad=0){
+// Clave compuesta producto+bodega usada en conteoLocal — separador "||" no puede aparecer en un Firestore ID
+function pid_bod(pid,bodId){return pid+'||'+bodId;}
+function setConteo(pid,bodId,v,el,pesoPorUnidad=0){
+  const key=pid_bod(pid,bodId);
   const raw=parseFloat(v);
   if(v===''||isNaN(raw)){
-    delete conteoLocal[pid];el.classList.remove('ok');
-    const d=document.getElementById('inv-diff-'+pid);if(d)d.textContent='';
+    delete conteoLocal[key];el.classList.remove('ok');
+    const d=document.getElementById('inv-diff-'+key);if(d)d.textContent='';
   }else{
     // Si pesoPorUnidad>0 el input es en piezas → convertir a kg para guardar
     const valKg=pesoPorUnidad>0?Math.round(raw*pesoPorUnidad*1000)/1000:raw;
-    conteoLocal[pid]=valKg;
+    conteoLocal[key]=valKg;
     el.classList.add('ok');
     const p=prods.find(x=>x.id===pid);
     if(p){
-      const diff=valKg-stockTotal(p);
-      const d=document.getElementById('inv-diff-'+pid);
+      const stockSistemaKg=p.stockPorBodega?.[bodId]||0;
+      const diff=valKg-stockSistemaKg;
+      const d=document.getElementById('inv-diff-'+key);
       if(d){
         const isDualD=pesoPorUnidad>0;
         const diffDisplay=isDualD?Math.round(diff/pesoPorUnidad*10)/10:diff;
@@ -5878,67 +5587,105 @@ function setConteo(pid,v,el,pesoPorUnidad=0){
   actualizarContadores();
 }
 function actualizarContadores(){
-  const c=prods.filter(p=>conteoLocal[p.id]!==undefined).length;
-  const v=prods.reduce((a,p)=>a+(conteoLocal[p.id]!==undefined?conteoLocal[p.id]:0)*(p.precioTotal||0),0);
+  // Recalcula sobre las claves "pid||bodId" presentes en conteoLocal
+  const claves=Object.keys(conteoLocal);
+  const c=claves.length;
+  const v=claves.reduce((a,key)=>{
+    const[pid]=key.split('||');const p=prods.find(x=>x.id===pid);
+    return a+conteoLocal[key]*(p?.precioTotal||0);
+  },0);
+  // Total de líneas posibles (producto×bodega con stock) para calcular pendientes
+  let totalLineas=0;
+  prods.forEach(p=>{
+    const spb=p.stockPorBodega||{[p.bodega||'seca']:p.stock||0};
+    const bodIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
+    totalLineas+=bodIds.length||1;
+  });
   const ec=document.getElementById('inv-cnt-c'),ep=document.getElementById('inv-cnt-p'),ev=document.getElementById('inv-cnt-v');
-  if(ec)ec.textContent=c;if(ep)ep.textContent=prods.length-c;if(ev)ev.textContent=clp(v);
+  if(ec)ec.textContent=c;if(ep)ep.textContent=Math.max(0,totalLineas-c);if(ev)ev.textContent=clp(v);
+}
+// Arma la lista de diferencias a partir de conteoLocal (claves "pid||bodId")
+// Se usa tanto al finalizar inventario como al refiltrar dentro del modal.
+function getDiffsConteo(){
+  return Object.keys(conteoLocal).map(key=>{
+    const[pid,bodId]=key.split('||');
+    const p=prods.find(x=>x.id===pid);if(!p)return null;
+    const sistema=p.stockPorBodega?.[bodId]||0;
+    const fisico=conteoLocal[key];
+    const bod=bodegas.find(b=>b.id===bodId);
+    return{pid,bodId,key,nombre:p.nombre,bodNombre:bod?.nombre||bodId,bodIcono:bod?.icono||'📦',
+      categoria:p.categoria||'',unidad:p.unidadMedida||'',sistema,fisico,diff:fisico-sistema,precio:p.precioTotal||0};
+  }).filter(Boolean);
 }
 function finalizarInventario(){
   if(!invActivo)return;
-  const contados=prods.filter(p=>conteoLocal[p.id]!==undefined);
-  if(!contados.length){toast('Contea al menos un producto','err');return;}
-  const diffs=prods.map(p=>{const f=conteoLocal[p.id];if(f===undefined)return null;return{pid:p.id,nombre:p.nombre,categoria:p.categoria||'',unidad:p.unidadMedida||'',sistema:stockTotal(p),fisico:f,diff:f-stockTotal(p),precio:p.precioTotal||0};}).filter(Boolean);
+  const diffs=getDiffsConteo();
+  if(!diffs.length){toast('Contea al menos un producto','err');return;}
   diffFiltro='diff';
   const valSistema=diffs.reduce((a,d)=>a+d.sistema*d.precio,0);
   const valFisico=diffs.reduce((a,d)=>a+d.fisico*d.precio,0);
-  document.getElementById('inv-diff-sub').textContent=contados.length+' productos contados';
+  document.getElementById('inv-diff-sub').textContent=diffs.length+' línea'+(diffs.length===1?'':'s')+' contada'+(diffs.length===1?'':'s')+' (producto × bodega)';
   document.getElementById('inv-diff-stats').innerHTML=`<div class="st ac-b"><div class="sl">Valor sistema</div><div class="sv" style="color:var(--blue);font-size:16px">${clp(valSistema)}</div></div><div class="st ac-g"><div class="sl">Valor físico</div><div class="sv" style="color:var(--green);font-size:16px">${clp(valFisico)}</div></div><div class="st full ${valFisico>=valSistema?'ac-g':'ac-r'}"><div class="sl">Diferencia</div><div class="sv" style="color:${valFisico>=valSistema?'var(--green)':'var(--red)'};">${valFisico>=valSistema?'+':''}${clp(valFisico-valSistema)}</div></div>`;
   renderDiffLista(diffs);openM('mo-inv-diff');
 }
-function fDiff(f,btn){diffFiltro=f;document.querySelectorAll('#mo-inv-diff .chip').forEach(c=>c.classList.remove('on'));btn.classList.add('on');
-  const diffs=prods.map(p=>{const f2=conteoLocal[p.id];if(f2===undefined)return null;return{pid:p.id,nombre:p.nombre,unidad:p.unidadMedida||'',sistema:stockTotal(p),fisico:f2,diff:f2-stockTotal(p),precio:p.precioTotal||0};}).filter(Boolean);renderDiffLista(diffs);}
+function fDiff(f,btn){diffFiltro=f;document.querySelectorAll('#mo-inv-diff .chip').forEach(c=>c.classList.remove('on'));btn.classList.add('on');renderDiffLista(getDiffsConteo());}
 function renderDiffLista(diffs){
   let lista=diffs;if(diffFiltro==='diff')lista=diffs.filter(d=>d.diff!==0);if(diffFiltro==='ok')lista=diffs.filter(d=>d.diff===0);
   const el=document.getElementById('inv-diff-lista');
   if(!lista.length){el.innerHTML='<div style="padding:14px;text-align:center;color:var(--txd);font-size:13px">Sin items</div>';return;}
-  el.innerHTML=lista.map(d=>`<div class="inv-diff-row"><div class="inv-diff-nom">${d.nombre}</div><div class="inv-diff-nums"><div class="inv-diff-num"><div class="inv-diff-lbl">Sistema</div><div class="inv-diff-val" style="color:var(--txm)">${clpn(d.sistema)}</div></div><div class="inv-diff-num"><div class="inv-diff-lbl">Físico</div><div class="inv-diff-val">${clpn(d.fisico)}</div></div><span class="inv-diff-delta ${d.diff>0?'pos':d.diff<0?'neg':'zero'}">${d.diff>0?'+':''}${clpn(d.diff)} ${d.unidad}</span></div></div>`).join('');
+  el.innerHTML=lista.map(d=>`<div class="inv-diff-row"><div class="inv-diff-nom">${d.nombre} <span class="inv-bod-tag-sm">${d.bodIcono} ${d.bodNombre}</span></div><div class="inv-diff-nums"><div class="inv-diff-num"><div class="inv-diff-lbl">Sistema</div><div class="inv-diff-val" style="color:var(--txm)">${clpn(d.sistema)}</div></div><div class="inv-diff-num"><div class="inv-diff-lbl">Físico</div><div class="inv-diff-val">${clpn(d.fisico)}</div></div><span class="inv-diff-delta ${d.diff>0?'pos':d.diff<0?'neg':'zero'}">${d.diff>0?'+':''}${clpn(d.diff)} ${d.unidad}</span></div></div>`).join('');
 }
 async function confirmarAjuste(){
   if(!invActivo)return;
   const btn=document.querySelector('#mo-inv-diff .bg-acc');if(btn){btn.disabled=true;btn.textContent='Aplicando...';}
   try{
     const items=[];const batch=writeBatch(db);
-    for(const p of prods){
-      const fisico=conteoLocal[p.id];if(fisico===undefined)continue;
-      const r=doc(db,'productos',p.id);
+    // Agrupar las claves "pid||bodId" contadas por producto, para escribir un solo
+    // batch.update por producto con TODAS sus bodegas corregidas a la vez.
+    const porProducto={};
+    Object.keys(conteoLocal).forEach(key=>{
+      const[pid,bodId]=key.split('||');
+      if(!porProducto[pid])porProducto[pid]={};
+      porProducto[pid][bodId]=conteoLocal[key];
+    });
+    for(const pid of Object.keys(porProducto)){
+      const p=prods.find(x=>x.id===pid);if(!p)continue;
+      const r=doc(db,'productos',pid);
       const sistemaAntes=stockTotal(p);
-      // Distribuir el stock físico a la bodega principal del producto
+      // Partimos del stockPorBodega actual y SOLO sobreescribimos las bodegas que
+      // efectivamente se contaron — el resto de bodegas quedan exactamente igual
+      // que estaban (cero adivinanza, cero reparto proporcional, cero decimales fantasma).
       const spb={...(p.stockPorBodega||{})};
-      const bodPrincipal=p.bodega||'seca';
-      // Calcular proporcional si hay múltiples bodegas
-      const totalSistema=sistemaAntes||0;
-      if(totalSistema>0&&Object.keys(spb).length>1){
-        const factor=fisico/totalSistema;
-        Object.keys(spb).forEach(k=>{spb[k]=Math.round((spb[k]||0)*factor*10)/10;});
-      }else{spb[bodPrincipal]=fisico;}
-      batch.update(r,{stockPorBodega:spb,stock:fisico,actualizadoEn:serverTimestamp()});
-      const diferencia=fisico-sistemaAntes;
-      items.push({productoId:p.id,nombreProducto:p.nombre,stockAnterior:sistemaAntes,stockFisico:fisico,diferencia,unidadMedida:p.unidadMedida||''});
-      // Si el conteo físico es menor que el sistema, es una pérdida descubierta al contar:
-      // se registra como merma valorizada para que no quede fuera del total de pérdidas.
-      if(diferencia<0){
-        const mref=doc(collection(db,'mermas'));
-        batch.set(mref,{
-          productoId:p.id,nombreProducto:p.nombre,cantidad:Math.abs(diferencia),unidadMedida:p.unidadMedida||'',
-          bodega:bodPrincipal,motivo:'Diferencia de inventario',
-          observacion:'Detectado al finalizar: '+(invActivo.nombre||'inventario físico'),
-          valorMerma:Math.abs(diferencia)*(p.precioTotal||0),
-          origen:'inventario',realizadoPor:role,creadoEn:serverTimestamp()
-        });
-      }
+      Object.keys(porProducto[pid]).forEach(bodId=>{spb[bodId]=porProducto[pid][bodId];});
+      const fisicoTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+      batch.update(r,{stockPorBodega:spb,stock:fisicoTotal,actualizadoEn:serverTimestamp()});
+      const diferencia=fisicoTotal-sistemaAntes;
+      // Detalle por bodega contada, para trazabilidad completa en el historial
+      const detalleBodegas=Object.keys(porProducto[pid]).map(bodId=>{
+        const bod=bodegas.find(b=>b.id===bodId);
+        const antesB=(p.stockPorBodega||{})[bodId]||0;
+        const fisicoB=porProducto[pid][bodId];
+        return{bodegaId:bodId,bodegaNombre:bod?.nombre||bodId,stockAnterior:antesB,stockFisico:fisicoB,diferencia:fisicoB-antesB};
+      });
+      items.push({productoId:pid,nombreProducto:p.nombre,stockAnterior:sistemaAntes,stockFisico:fisicoTotal,diferencia,unidadMedida:p.unidadMedida||'',bodegasContadas:detalleBodegas});
+      // Si alguna bodega contada quedó con menos stock del que el sistema esperaba,
+      // se registra como merma valorizada — una línea por cada bodega con faltante,
+      // para que la pérdida quede asociada a la bodega correcta y no a una "principal" arbitraria.
+      detalleBodegas.forEach(db_=>{
+        if(db_.diferencia<0){
+          const mref=doc(collection(db,'mermas'));
+          batch.set(mref,{
+            productoId:pid,nombreProducto:p.nombre,cantidad:Math.abs(db_.diferencia),unidadMedida:p.unidadMedida||'',
+            bodega:db_.bodegaId,motivo:'Diferencia de inventario',
+            observacion:'Detectado al finalizar: '+(invActivo.nombre||'inventario físico'),
+            valorMerma:Math.abs(db_.diferencia)*(p.precioTotal||0),
+            origen:'inventario',realizadoPor:role,creadoEn:serverTimestamp()
+          });
+        }
+      });
     }
     await batch.commit();
-    const valFisico=prods.reduce((a,p)=>{const f=conteoLocal[p.id];return a+(f!==undefined?f:stockTotal(p))*(p.precioTotal||0);},0);
+    const valFisico=items.reduce((a,it)=>a+it.stockFisico*(prods.find(p=>p.id===it.productoId)?.precioTotal||0),0);
     await addDoc(collection(db,'inventarios'),{nombre:invActivo.nombre,fechaInicio:invActivo.fechaInicio,fechaFin:new Date(),items,totalProductosContados:items.length,valorFisico:valFisico,realizadoPor:role,creadoEn:serverTimestamp()});
     await addDoc(collection(db,'movimientos'),{tipo:'ajuste_inventario',items,realizadoPor:role,creadoEn:serverTimestamp()});
     toast('✓ Stock actualizado con el conteo físico');
@@ -6004,7 +5751,14 @@ function leerCSV(input){
     document.getElementById('btn-csv-imp').textContent=`✓ Importar ${matched} productos`;
   };reader.readAsText(file);
 }
-function aplicarCSV(){csvData.filter(r=>r.match).forEach(r=>{conteoLocal[r.prod.id]=r.cant;});toast('✓ '+csvData.filter(r=>r.match).length+' importados');closeM('mo-inv-csv');renderConteo();}
+function aplicarCSV(){
+  // El CSV no distingue bodega — se asigna explícitamente a la bodega principal del
+  // producto (p.bodega). Si el producto tiene stock en otras bodegas, esas quedan
+  // intactas y deberán contarse aparte manualmente (evita adivinar/repartir).
+  csvData.filter(r=>r.match).forEach(r=>{conteoLocal[pid_bod(r.prod.id,r.prod.bodega||'seca')]=r.cant;});
+  toast('✓ '+csvData.filter(r=>r.match).length+' importados a su bodega principal');
+  closeM('mo-inv-csv');renderConteo();
+}
 
 // ── CATEGORÍAS ────────────────────────────────────────────────────────────────
 function renderCatsM(){
@@ -6166,18 +5920,15 @@ Object.assign(window,{
   fnPrecioBlur,fnSubtotalBlur,
   togD,aceptarTodo,setD,setBodegaD,stepCant,despachar,abrirRechazo,confirmarRechazo,abrirVerif,confirmarVerif,
   fnBuscar,fnAdd,fnChg,setCantFn,fnPrecio,fnSubtotal,fnDel,fnBodega,abrirFact,guardarFactura,filtrarProveedores,selProv,filtrarProveedoresProd,selProvProd,calcDescuento,
-  selVentaArea,guardarVenta,elimVenta,
   abrirProd,renderSubs,calcPrev,calcConversion,guardarProd,elimProd,
   guardarCat,guardarCatEdit,cancelarCatEdit,editarCat,elimCat,cSug,renderCatsM,
   guardarBodega,elimBodega,renderBodegasM,
   abrirTransfer,trBuscar,trSelProd,trActualizarStock,confirmarTransferencia,
-  abrirMerma,merBuscar,merSelProd,confirmarMerma,
   guardarPins,guardarNombres,abrirCfg,guardarBodegasArea,limpiarDatosPrueba,guardarHorario,
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
   renderConteo,setConteo,actualizarContadores,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
-  renderHistPrecios,exportarPDF,verFact,
+  exportarPDF,verFact,
   abrirAjusteStock,ajsBodegaChange,ajsInput,confirmarAjusteStock,
-  fMermaFecha,
   toggleDual,actualizarDualPreview,fnPiezas,
 });
 
