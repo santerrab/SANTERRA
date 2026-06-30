@@ -5501,15 +5501,19 @@ function renderConteo(){
   document.getElementById('inv-cnt-v').textContent=clp(valorFisico);
   const lista=document.getElementById('inv-conteo-lista');
   if(!pp.length){lista.innerHTML='<div class="empty"><div class="et">Sin productos en esta sección</div></div>';return;}
-  const isKg=p=>['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
-  // Renderiza UNA fila por cada bodega donde el producto tiene stock (o su bodega principal si no tiene stock en ninguna)
-  const renderProd=p=>{
+  // Renderiza UNA fila por cada bodega donde el producto tiene stock (o su bodega principal si no tiene stock en ninguna).
+  // bodegaFiltro (opcional): cuando la tarjeta se dibuja DENTRO de una sección de bodega específica,
+  // restringe las filas a esa única bodega para que el header de la sección y el contenido coincidan
+  // siempre — evita el caso confuso de ver "Buffet" dentro de una tarjeta agrupada bajo "Seca".
+  const renderProd=(p,bodegaFiltro=null)=>{
     const isDualInv=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
     const spb=p.stockPorBodega||{};
     let bodIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
     if(!bodIds.length)bodIds=[p.bodega||'seca'];
-    // Si hay un filtro de bodega activo, solo mostrar esa línea (evita ruido innecesario)
+    // Filtro de bodega de la barra de chips (selección manual del usuario)
     if(invFiltroBodega)bodIds=bodIds.filter(b=>b===invFiltroBodega);
+    // Filtro de sección (agrupación visual): solo la bodega de esta sección
+    if(bodegaFiltro)bodIds=bodIds.filter(b=>b===bodegaFiltro);
     if(!bodIds.length)return'';
     const filasBod=bodIds.map(bodId=>{
       const bod=bodegas.find(b=>b.id===bodId);
@@ -5534,27 +5538,39 @@ function renderConteo(){
         </div>
       </div>`;
     }).join('');
-    const todasContadas=bodIds.every(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
-    const algunaContada=bodIds.some(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
+    // El badge "Completo/Parcial/Pendiente" siempre refleja el estado real de TODAS las bodegas
+    // donde el producto tiene stock — independiente de cuántas filas se muestren en esta tarjeta.
+    const bodIdsReales=Object.keys(spb).filter(b=>(spb[b]||0)>0);
+    const bodIdsParaEstado=bodIdsReales.length?bodIdsReales:[p.bodega||'seca'];
+    const todasContadas=bodIdsParaEstado.every(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
+    const algunaContada=bodIdsParaEstado.some(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
     return`<div class="inv-row ${todasContadas?'contado':algunaContada?'parcial':'pendiente'}">
       <div class="inv-row-top">
-        <div><div class="inv-nom">${p.nombre}${isDualInv?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}${bodIds.length>1?`<span class="inv-multibod-badge">${bodIds.length} bodegas</span>`:''}</div><div class="inv-cat">${p.categoria||''}${p.subcategoria?' · '+p.subcategoria:''}</div></div>
+        <div><div class="inv-nom">${p.nombre}${isDualInv?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}${bodIdsParaEstado.length>1?`<span class="inv-multibod-badge">${bodIdsParaEstado.length} bodegas</span>`:''}</div><div class="inv-cat">${p.categoria||''}${p.subcategoria?' · '+p.subcategoria:''}</div></div>
         <span class="badge ${todasContadas?'bg-g-s':algunaContada?'bg-y-s':'bg-b-s'}">${todasContadas?'Completo':algunaContada?'Parcial':'Pendiente'}</span>
       </div>
       ${filasBod}
     </div>`;
   };
-  // Agrupar visualmente por bodega principal del producto si no hay filtro/búsqueda
+  // Agrupar por bodega real donde el producto tiene stock (no por p.bodega "principal", que
+  // puede no coincidir con dónde efectivamente hay inventario físico que contar).
+  // Un producto con stock en 2 bodegas aparecerá en AMBAS secciones, pero cada tarjeta
+  // mostrará únicamente la fila de esa bodega — sin ambigüedad entre header y contenido.
   if(!invFiltroBodega&&!invFiltroCategoria&&!q){
     const grupos={};bodegas.forEach(b=>grupos[b.id]=[]);
-    pp.forEach(p=>{const b=p.bodega||'seca';if(!grupos[b])grupos[b]=[];grupos[b].push(p);});
+    pp.forEach(p=>{
+      const spb=p.stockPorBodega||{};
+      let bIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
+      if(!bIds.length)bIds=[p.bodega||'seca'];
+      bIds.forEach(b=>{if(!grupos[b])grupos[b]=[];grupos[b].push(p);});
+    });
     lista.innerHTML=bodegas.map((b,bi)=>{
       const items=grupos[b.id]||[];if(!items.length)return'';
-      const html=items.map(renderProd).filter(Boolean).join('');
+      const html=items.map(p=>renderProd(p,b.id)).filter(Boolean).join('');
       if(!html)return'';
       return`<div class="bodega-section"><div class="bodega-hdr ${getBodegaClr(bi)}">${b.icono} ${b.nombre}</div>${html}</div>`;
     }).join('');
-  }else{lista.innerHTML=pp.map(renderProd).filter(Boolean).join('');}
+  }else{lista.innerHTML=pp.map(p=>renderProd(p)).filter(Boolean).join('');}
 }
 // Clave compuesta producto+bodega usada en conteoLocal — separador "||" no puede aparecer en un Firestore ID
 function pid_bod(pid,bodId){return pid+'||'+bodId;}
