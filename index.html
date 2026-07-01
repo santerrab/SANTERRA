@@ -780,6 +780,15 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 .stk-filtros-panel.open{max-height:200px;opacity:1;pointer-events:auto}
 .stk-filtros-seccion{margin-bottom:8px}
 .stk-filtros-label-sm{font-size:10px;color:var(--txd);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.stk-filtros-label{font-size:12px;font-weight:700;color:var(--txm)}
+/* Preview de precio en modal de producto */
+.prev-box{background:var(--sf2);border:1px solid var(--bd2);border-radius:10px;padding:10px 13px;margin-top:6px}
+.prev-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--txm);padding:3px 0;border-bottom:1px solid var(--bd3)}
+.prev-row:last-child{border-bottom:none}
+.prev-row span:last-child{font-weight:700;color:var(--tx);font-family:'Inter',sans-serif}
+.prev-total span:last-child{color:var(--accent)!important;font-size:14px}
+/* cat-edit-form (inline en config de categorías) */
+.cat-edit-form{background:var(--sf2);border:1px solid var(--bd2);border-radius:12px;padding:12px 14px;margin-bottom:10px}
 /* Scroll horizontal de bodegas — 1 sola fila, sin wrap */
 .stk-bod-scroll{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .stk-bod-scroll::-webkit-scrollbar{display:none}
@@ -2685,6 +2694,9 @@ function pb2(){pbuf=pbuf.slice(0,-1);updPD();}
 function cPin(){document.getElementById('pin-ovl').classList.remove('on');pbuf='';pinTarget=null;document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));}
 function updPD(){const tipo=document.getElementById('pin-ovl').dataset.tipo||'enc';for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.remove('f','fb');if(i<pbuf.length)d.classList.add(tipo==='bod'?'fb':'f');}}
 function enterApp(r){
+  // Guard: si ya hay un rol activo y los listeners están vivos, no re-entrar.
+  // Esto previene doble-tap o callbacks _onCfgReady tardíos disparando enterApp dos veces.
+  if(role){console.warn('enterApp ignorado — sesión ya activa como',role);return;}
   role=r;
   document.body.classList.remove('login-active');
   document.body.style.overflow='';
@@ -2715,7 +2727,11 @@ function logout(){
 }
 function _logoutBase(){
   liberarWakeLock();
-  stopL();role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];bodegas=[];
+  stopL();
+  // Resetear estado de config para próxima sesión
+  _cfgReady=false;
+  _onCfgReady=[];
+  role=null;prods=[];cats=[];sols=[];facts=[];movs=[];invDocs=[];bodegas=[];
   carrito=[];fnItems=[];despEst={};solsPrevCount=null;alarmaActiva=false;invActivo=null;conteoLocal={};_vistoSent.clear();
   if(alarmaTimer){clearTimeout(alarmaTimer);alarmaTimer=null;}
   localStorage.removeItem('saved_role');
@@ -2723,6 +2739,10 @@ function _logoutBase(){
   document.getElementById('app').style.display='none';
   document.body.classList.add('login-active');
   document.querySelectorAll('.rcard').forEach(c=>c.classList.remove('on','on-blue','on-purple'));pbuf='';
+  // Re-iniciar el listener de configuración para que selRole(cocina) pueda esperar
+  // _cfgReady antes de entrar — sin esto, stopL() mata uCfg y el ciclo de espera
+  // _onCfgReady.push() queda huérfano: el snapshot nunca llega y cocina no entra.
+  startCfgListener();
 }
 function logoutCambiarPerfil(){
   closeM('mo-logout');
@@ -2838,8 +2858,20 @@ function iMore(){return`<svg viewBox="0 0 24 24" fill="currentColor" stroke="non
 
 // ── LISTENERS ────────────────────────────────────────────────────────────────
 function startL(){
+  // Guard: si hay listeners vivos (login rápido / doble-tap), detenerlos primero
+  // antes de crear nuevos. Sin esto, dos instancias de onSnapshot corren en paralelo
+  // generando renders duplicados y datos mezclados entre roles.
+  if(uP||uS||uF||uC||uM||uI||uBod){
+    console.warn('startL: detectados listeners previos, deteniendo antes de re-iniciar');
+    // Solo detener los listeners de datos, NO el de config (uCfg) que está
+    // permanentemente activo desde el arranque / logout para manejar la pantalla de login.
+    [uP,uS,uF,uC,uM,uI,uBod].forEach(u=>u&&u());
+    uP=uS=uF=uC=uM=uI=uBod=null;
+  }
   sdot('sy');
-  startCfgListener();
+  // uCfg ya está corriendo (iniciado al cargar el script o al salir con _logoutBase).
+  // Solo lo (re)inicializamos si por algún motivo está muerto — nunca duplicamos.
+  if(!uCfg)startCfgListener();
   uBod=onSnapshot(query(collection(db,'bodegas'),orderBy('orden')),s=>{
     bodegas=s.docs.map(d=>({id:d.id,...d.data()}));
     renderBodegaChipsAll();renderProdBodegaChips();renderBodegaSelects();
@@ -4485,10 +4517,6 @@ function renderBodegaSelects(){
     if(curH)trHacia.value=curH;
     else if(src.length>1)trHacia.selectedIndex=1;
   }
-
-  // Modal merma
-  const merSel=document.getElementById('mer-bodega');
-  if(merSel){const cur=merSel.value;merSel.innerHTML=opts;if(cur)merSel.value=cur;}
 }
 function renderProdBodegaChips(){
   const el=document.getElementById('prod-bodega-chips');if(!el)return;
