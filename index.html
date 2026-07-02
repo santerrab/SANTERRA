@@ -240,6 +240,59 @@ body.light .nav{background:rgba(255,255,255,.92)}
 .dbtn-verde:active{background:var(--greend)}
 
 /* ── PRODUCTO DUAL (kg en bodega, piezas para cocina) ───────────────── */
+/* ══ ASESOR IA ══════════════════════════════════════════════════════════════ */
+.asesor-ia-badge{
+  display:inline-block;background:linear-gradient(135deg,var(--purple),var(--blue));
+  color:#fff;font-size:9px;font-weight:900;border-radius:6px;
+  padding:2px 7px;letter-spacing:.5px;text-transform:uppercase;vertical-align:middle
+}
+.asesor-tabs{display:flex;gap:6px;margin:10px 0 12px;background:var(--sf2);border-radius:14px;padding:4px}
+.asesor-tab{flex:1;padding:9px 4px;border:none;background:none;border-radius:10px;font-size:12px;font-weight:700;color:var(--txm);cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .18s,color .18s;touch-action:manipulation}
+.asesor-tab.on{background:var(--sf);color:var(--tx);box-shadow:0 1px 6px rgba(0,0,0,.18)}
+.asesor-semsel{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px}
+.asesor-semsel-btn{background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;color:var(--tx);font-size:18px;font-weight:700;padding:4px 14px;cursor:pointer;touch-action:manipulation;line-height:1}
+#asesor-sem-lbl{font-size:12px;font-weight:700;color:var(--txm);min-width:160px;text-align:center}
+.asesor-card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:14px;margin-bottom:12px}
+.asesor-card-hdr{margin-bottom:12px}
+.asesor-card-tit{font-size:14px;font-weight:800;color:var(--tx);letter-spacing:-.1px}
+.asesor-card-sub{font-size:10px;color:var(--txd);font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.asesor-leyenda{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.asesor-leyenda-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--txm);font-weight:600}
+.asesor-leyenda-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+/* Heatmap */
+.asesor-heatmap-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.asesor-heatmap-table{border-collapse:collapse;min-width:100%;font-size:10px}
+.asesor-hm-day{text-align:center;color:var(--txd);font-weight:700;padding:4px 3px;font-size:9px;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.asesor-hm-prod{font-size:10px;font-weight:700;color:var(--tx);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 6px 5px 0}
+.asesor-hm-cell{width:32px;height:28px;border-radius:5px;position:relative;cursor:default;transition:transform .12s;text-align:center;vertical-align:middle;font-size:9px;font-weight:800;color:rgba(255,255,255,.85)}
+.asesor-hm-cell:hover{transform:scale(1.15);z-index:10}
+
+/* Tabla stock mínimo */
+.asesor-tbl-row{display:grid;grid-template-columns:1fr 60px 60px 60px 54px 70px;gap:0;align-items:center;padding:9px 14px;border-bottom:1px solid var(--bd3);font-size:11px}
+.asesor-tbl-hdr{font-size:9px;font-weight:800;color:var(--txd);text-transform:uppercase;letter-spacing:.5px;background:var(--sf2);padding:7px 14px;display:grid;grid-template-columns:1fr 60px 60px 60px 54px 70px;gap:0}
+.asesor-tbl-nom{font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asesor-tbl-num{font-family:'Inter',sans-serif;font-weight:700;text-align:right}
+.asesor-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.asesor-dias-bar{height:4px;border-radius:2px;margin-top:3px;max-width:100%}
+
+/* IA output */
+.asesor-ia-card{background:linear-gradient(135deg,var(--purpled),var(--blued));border-color:var(--purpleb)}
+.asesor-ia-output{background:var(--sf2);border:1px solid var(--bd2);border-radius:14px;padding:14px;min-height:120px;max-height:65vh;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--tx)}
+.asesor-ia-output h3{font-size:13px;font-weight:800;margin:12px 0 4px;color:var(--accent)}
+.asesor-ia-output h4{font-size:12px;font-weight:700;margin:10px 0 3px;color:var(--blue)}
+.asesor-ia-output ul{margin:4px 0 8px 16px;padding:0}
+.asesor-ia-output li{margin-bottom:3px}
+.asesor-ia-output strong{color:var(--tx);font-weight:800}
+.asesor-ia-output .ia-alerta{background:var(--redd);border-left:3px solid var(--red);border-radius:0 8px 8px 0;padding:6px 10px;margin:6px 0;font-size:12px}
+.asesor-ia-output .ia-ok{background:var(--greend);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:6px 10px;margin:6px 0;font-size:12px}
+.asesor-ia-pedido{background:var(--sf);border:1px solid var(--bd2);border-radius:12px;padding:10px 12px;margin-top:6px;font-size:12px}
+.asesor-ia-pedido-tit{font-weight:800;margin-bottom:6px;font-size:13px;color:var(--accent)}
+.asesor-spin{display:inline-block;animation:asesor-spin 1s linear infinite;font-size:20px}
+@keyframes asesor-spin{to{transform:rotate(360deg)}}
+
+.asesor-velocidad-wrap svg{width:100%;height:auto}
+
 .dual-info-box{
   background:linear-gradient(135deg,var(--purpled),var(--blued));
   border:1px solid var(--purpleb);border-radius:12px;
@@ -1481,10 +1534,60 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 
 <!-- PRODUCTOS -->
 <div class="pg" id="pg-prods">
-  <div class="ph"><div><div class="pgt">Productos</div><div class="pgs" id="prods-sub">Base de datos maestra</div></div><button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirProd()">+ Nuevo</button></div>
-  <div class="swrap"><span class="sicon">🔍</span><input class="sinput" id="prod-buscar" type="text" placeholder="Buscar por nombre, código o proveedor..." autocomplete="off" oninput="onProdBuscar(this.value)"></div>
-  <div class="chips" id="prod-bodega-chips"></div>
-  <div class="chips" id="prod-chips"></div>
+  <!-- Topbar: título + nuevo + buscador + filtros (mismo patrón que Almacén) -->
+  <div class="ph" style="margin-bottom:10px">
+    <div><div class="pgt">Productos</div><div class="pgs" id="prods-sub">Base de datos maestra</div></div>
+    <button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="abrirProd()">+ Nuevo</button>
+  </div>
+  <div class="stk-topbar">
+    <div class="stk-buscar-wrap">
+      <span class="sicon">🔍</span>
+      <input class="sinput stk-input" id="prod-buscar" type="text"
+        placeholder="Buscar por nombre, código o proveedor..." autocomplete="off"
+        oninput="onProdBuscar(this.value)" onsearch="onProdBuscar(this.value)">
+    </div>
+    <button class="stk-filtros-btn" id="prod-filtros-btn" onclick="toggleProdFiltros()">
+      <span>⚙️</span>
+      <span class="stk-filtros-label">Filtros</span>
+      <span class="stk-filtros-badge" id="prod-filtros-badge" style="display:none">0</span>
+    </button>
+  </div>
+
+  <!-- Panel colapsable de filtros -->
+  <div class="stk-filtros-panel" id="prod-filtros-panel">
+    <div class="stk-filtros-seccion">
+      <div class="stk-filtros-label-sm">🏪 Bodega</div>
+      <div class="stk-bod-scroll" id="prod-bodega-chips"></div>
+    </div>
+    <div class="stk-filtros-fila">
+      <div class="stk-select-wrap" style="flex:1.4">
+        <span class="stk-select-ico">🏷️</span>
+        <select id="prod-cat-sel" onchange="fProdCatSel(this.value)" class="stk-select">
+          <option value="">Todas las categorías</option>
+        </select>
+      </div>
+      <div class="stk-select-wrap" style="flex:1">
+        <span class="stk-select-ico">↕️</span>
+        <select id="prod-sort" onchange="renderProds()" class="stk-select">
+          <option value="">Nombre / Cat.</option>
+          <option value="precio-desc">Precio ↓</option>
+          <option value="precio-asc">Precio ↑</option>
+          <option value="neto-desc">Neto ↓</option>
+          <option value="neto-asc">Neto ↑</option>
+          <option value="stock-desc">Stock ↓</option>
+          <option value="stock-asc">Stock ↑</option>
+        </select>
+      </div>
+    </div>
+    <!-- Chips ocultos (compatibilidad interna con funciones existentes) -->
+    <div id="prod-chips" style="display:none"></div>
+    <div class="stk-filtros-resumen" id="prod-filtros-resumen" style="display:none">
+      <span id="prod-filtros-resumen-txt"></span>
+      <button onclick="limpiarFiltrosProds()">✕ Limpiar</button>
+    </div>
+  </div>
+
+  <div class="stk-resultados" id="prod-resultados"></div>
   <div id="prods-lista"></div>
 </div>
 
@@ -1642,6 +1745,117 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 </div>
 
 </div><!-- /pages-wrap -->
+
+<!-- ══ ASESOR IA ════════════════════════════════════════════════════════════ -->
+<div class="pg" id="pg-asesor">
+  <!-- Header -->
+  <div class="ph" style="margin-bottom:4px">
+    <div>
+      <div class="pgt" style="display:flex;align-items:center;gap:8px">🤖 Asesor
+        <span class="asesor-ia-badge">IA</span>
+      </div>
+      <div class="pgs" id="asesor-sub">Análisis de consumo · 4 semanas</div>
+    </div>
+    <button class="btn bg-acc" style="width:auto;padding:10px 16px;font-size:13px" onclick="renderAsesor()">↻ Actualizar</button>
+  </div>
+
+  <!-- Tabs principales -->
+  <div class="asesor-tabs" id="asesor-tabs">
+    <button class="asesor-tab on" onclick="aTab('graficos',this)">📊 Gráficos</button>
+    <button class="asesor-tab" onclick="aTab('tabla',this)">📋 Stock mínimo</button>
+    <button class="asesor-tab" onclick="aTab('ia',this)">🤖 IA</button>
+  </div>
+
+  <!-- ─── TAB 1: GRÁFICOS ─────────────────────────────────────────────── -->
+  <div id="asesor-panel-graficos">
+
+    <!-- Selector de semana para zoom -->
+    <div class="asesor-semsel" id="asesor-semsel">
+      <button class="asesor-semsel-btn" onclick="aNavSem(-1)">‹</button>
+      <span id="asesor-sem-lbl"></span>
+      <button class="asesor-semsel-btn" onclick="aNavSem(1)">›</button>
+    </div>
+
+    <!-- GRÁFICO 1: Heatmap día×producto -->
+    <div class="asesor-card">
+      <div class="asesor-card-hdr">
+        <div class="asesor-card-tit">🔥 Heatmap consumo</div>
+        <div class="asesor-card-sub">Intensidad por día · top 10 productos</div>
+      </div>
+      <div id="asesor-heatmap-wrap" class="asesor-heatmap-wrap"></div>
+    </div>
+
+    <!-- GRÁFICO 2: Radar por área -->
+    <div class="asesor-card">
+      <div class="asesor-card-hdr">
+        <div class="asesor-card-tit">🕸️ Consumo por área</div>
+        <div class="asesor-card-sub">Semana actual vs promedio histórico</div>
+      </div>
+      <div style="display:flex;justify-content:center;align-items:center">
+        <svg id="asesor-radar-svg" viewBox="0 0 300 300" width="260" height="260" style="overflow:visible"></svg>
+      </div>
+      <div id="asesor-radar-leyenda" class="asesor-leyenda"></div>
+    </div>
+
+    <!-- GRÁFICO 3: Barras apiladas por bodega × semana -->
+    <div class="asesor-card">
+      <div class="asesor-card-hdr">
+        <div class="asesor-card-tit">🏠 Consumo por bodega / semana</div>
+        <div class="asesor-card-sub">Últimas 4 semanas · valor despachado</div>
+      </div>
+      <div id="asesor-bodegas-wrap"></div>
+      <div id="asesor-bodegas-leyenda" class="asesor-leyenda" style="margin-top:8px"></div>
+    </div>
+
+    <!-- GRÁFICO 4: Velocidad de consumo por producto -->
+    <div class="asesor-card">
+      <div class="asesor-card-hdr">
+        <div class="asesor-card-tit">📈 Velocidad de consumo</div>
+        <div class="asesor-card-sub">Unidades/día promedio · últimas 4 semanas</div>
+      </div>
+      <div style="margin-bottom:8px">
+        <select id="asesor-prod-sel" class="stk-select" style="width:100%" onchange="buildVelocidadChart()">
+          <option value="">Selecciona un producto...</option>
+        </select>
+      </div>
+      <div id="asesor-velocidad-wrap"></div>
+    </div>
+
+  </div><!-- /panel-graficos -->
+
+  <!-- ─── TAB 2: TABLA STOCK MÍNIMO ───────────────────────────────────── -->
+  <div id="asesor-panel-tabla" style="display:none">
+    <div class="asesor-card" style="padding:0;overflow:hidden">
+      <div class="asesor-card-hdr" style="padding:12px 14px 10px">
+        <div class="asesor-card-tit">📋 Stock mínimo recomendado</div>
+        <div class="asesor-card-sub">Basado en promedio de consumo semanal + 20% buffer</div>
+      </div>
+      <div id="asesor-tabla-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 3: IA ────────────────────────────────────────────────────── -->
+  <div id="asesor-panel-ia" style="display:none">
+    <div class="asesor-card asesor-ia-card">
+      <div class="asesor-card-hdr">
+        <div class="asesor-card-tit">🤖 Análisis inteligente</div>
+        <div class="asesor-card-sub">Claude analiza tus patrones y recomienda qué pedir</div>
+      </div>
+      <button class="btn bg-acc" style="width:100%;margin-bottom:12px;font-size:14px;padding:14px" onclick="runAsesorIA()">
+        ✨ Analizar con IA ahora
+      </button>
+      <div id="asesor-ia-output" class="asesor-ia-output">
+        <div style="text-align:center;color:var(--txd);padding:24px 12px">
+          <div style="font-size:32px;margin-bottom:8px">🤖</div>
+          <div style="font-weight:700;margin-bottom:4px">Listo para analizar</div>
+          <div style="font-size:12px;line-height:1.6">Presiona el botón para que Claude revise tus patrones de consumo, stock actual y te diga exactamente qué pedir esta semana.</div>
+        </div>
+      </div>
+      <div id="asesor-ia-pedido-wrap" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>
+
+</div><!-- /pg-asesor -->
 <div class="mas-ovl" id="mas-ovl" onclick="if(event.target===this)closeMas()">
   <div class="mas-panel" id="mas-panel"><div id="mas-items"></div></div>
 </div>
@@ -2762,6 +2976,7 @@ function buildNav(r){
     {id:'pg-sols',i:iSo(),l:'Solicitudes'},{id:'pg-fact',i:iF(),l:'Facturas'},
     {id:'pg-prods',i:iPr(),l:'Productos'},{id:'pg-rep',i:iR(),l:'Reporte'},
     {id:'pg-inv',i:iInv(),l:'Inventario'},
+    {id:'pg-asesor',i:'🤖',l:'Asesor'},
   ];
   const bod=[
     {id:'pg-desp',i:iDe(),l:'Despachos',badge:true},
@@ -2824,7 +3039,8 @@ function goTo(id){
   if(id==='pg-sols')renderSolsPage();
   if(id==='pg-mispedidos')renderMisPed();
   if(id==='pg-stock')_renderStockNow();
-  if(id==='pg-prods')renderProds();
+  if(id==='pg-prods'){renderProdBodegaChips();renderProdChips();actualizarFiltrosProds();renderProds();}
+  if(id==='pg-asesor')renderAsesor();
   if(id==='pg-stock'){
     const sb=document.getElementById('stock-buscar');
     if(sb&&sb.value)sb.value=''; // limpiar búsqueda, renderStock() ya fue llamado arriba
@@ -4520,70 +4736,146 @@ function renderBodegaSelects(){
 }
 function renderProdBodegaChips(){
   const el=document.getElementById('prod-bodega-chips');if(!el)return;
-  el.innerHTML=`<button class="chip ${!fProdBodegaActual?'on':''}" onclick="fProdBodega('',this)">Todas las bodegas</button>`+
+  el.innerHTML=`<button class="chip ${!fProdBodegaActual?'on':''}" onclick="fProdBodega('',this)">Todas</button>`+
     bodegas.map(b=>`<button class="chip ${fProdBodegaActual===b.id?'on':''}" onclick="fProdBodega('${b.id}',this)">${b.icono} ${b.nombre}</button>`).join('');
 }
 function fProdBodega(b,btn){
-  fProdBodegaActual=b;document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));if(btn)btn.classList.add('on');
-  fPC='';renderProdChips();renderProds();
+  fProdBodegaActual=b;
+  document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  fPC='';
+  const catSel=document.getElementById('prod-cat-sel');if(catSel)catSel.value='';
+  renderProdChips();
+  actualizarFiltrosProds();
+  renderProds();
 }
 function renderProdChips(){
   const prodsFilt=fProdBodegaActual?prods.filter(p=>(p.bodega||'seca')===fProdBodegaActual):prods;
-  const cs=[...new Set(prodsFilt.map(p=>p.categoria).filter(Boolean))];
-  document.getElementById('prod-chips').innerHTML=
-    `<button class="chip ${!fPC?'on':''}" onclick="fProds('',this)">Todas las categorías</button>`+
-    cs.map(c=>`<button class="chip ${fPC===c?'on':''}" onclick="fProds('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
+  const cs=[...new Set(prodsFilt.map(p=>p.categoria).filter(Boolean))].sort();
+  // Chips ocultos — compatibilidad con fProds existente
+  const el=document.getElementById('prod-chips');
+  if(el){
+    el.innerHTML=`<button class="chip ${!fPC?'on':''}" onclick="fProds('',this)">Todas</button>`+
+      cs.map(c=>`<button class="chip ${fPC===c?'on':''}" onclick="fProds('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
+  }
+  // Poblar select visible del panel colapsable
+  const catSel=document.getElementById('prod-cat-sel');
+  if(catSel){
+    catSel.innerHTML='<option value="">Todas las categorías</option>'+
+      cs.map(c=>`<option value="${c}" ${fPC===c?'selected':''}>${c}</option>`).join('');
+  }
 }
-function fProds(c,btn){fPC=c;document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));btn.classList.add('on');renderProds();}
+function fProds(c,btn){
+  fPC=c;
+  document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  actualizarFiltrosProds();
+  renderProds();
+}
+function fProdCatSel(c){
+  fPC=c;
+  // Sincronizar chips ocultos
+  document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));
+  const chip=document.querySelector(`#prod-chips .chip[onclick*="${c.replace(/'/g,"\\'")}"]`);
+  if(chip)chip.classList.add('on');
+  actualizarFiltrosProds();
+  renderProds();
+}
+function toggleProdFiltros(){
+  const panel=document.getElementById('prod-filtros-panel');
+  const btn=document.getElementById('prod-filtros-btn');
+  if(!panel||!btn)return;
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('active',open);
+}
+function actualizarFiltrosProds(){
+  let n=0;const partes=[];
+  if(fProdBodegaActual){n++;const b=getBodegaById(fProdBodegaActual);partes.push(b.icono+' '+b.nombre);}
+  if(fPC){n++;partes.push('🏷️ '+fPC);}
+  const sortEl=document.getElementById('prod-sort');
+  if(sortEl&&sortEl.value){n++;partes.push('↕️ '+sortEl.selectedOptions[0]?.text);}
+  const badge=document.getElementById('prod-filtros-badge');
+  if(badge){badge.textContent=n;badge.style.display=n?'inline':'none';}
+  const resumen=document.getElementById('prod-filtros-resumen');
+  const resumenTxt=document.getElementById('prod-filtros-resumen-txt');
+  if(resumen&&resumenTxt){resumen.style.display=n?'flex':'none';resumenTxt.textContent=partes.join(' · ');}
+}
+function limpiarFiltrosProds(){
+  fProdBodegaActual='';fPC='';
+  document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));
+  const primera=document.querySelector('#prod-bodega-chips .chip');if(primera)primera.classList.add('on');
+  document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));
+  const primeraC=document.querySelector('#prod-chips .chip');if(primeraC)primeraC.classList.add('on');
+  const catSel=document.getElementById('prod-cat-sel');if(catSel)catSel.value='';
+  const sortEl=document.getElementById('prod-sort');if(sortEl)sortEl.value='';
+  actualizarFiltrosProds();
+  renderProdChips();
+  renderProds();
+}
 function onProdBuscar(q){
-  // Si hay texto: quitar filtros para buscar en todo
   if(q.trim()){
+    // Con texto: quitar filtros de bodega/cat para buscar en todo
     fProdBodegaActual='';fPC='';
     document.querySelectorAll('#prod-bodega-chips .chip').forEach(x=>x.classList.remove('on'));
-    document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));
     const t=document.querySelector('#prod-bodega-chips .chip');if(t)t.classList.add('on');
+    document.querySelectorAll('#prod-chips .chip').forEach(x=>x.classList.remove('on'));
     const t2=document.querySelector('#prod-chips .chip');if(t2)t2.classList.add('on');
+    const catSel=document.getElementById('prod-cat-sel');if(catSel)catSel.value='';
   }
+  actualizarFiltrosProds();
   renderProds();
 }
 function renderProds(){
   const lista=document.getElementById('prods-lista');
-  // Pre-indexar bodegas para O(1) lookup en vez de Array.find por producto
   const bodMap=new Map(bodegas.map(b=>[b.id,b]));
-  const bodIdxMap=new Map(bodegas.map((b,i)=>[b.id,i]));
   const q=(document.getElementById('prod-buscar')?.value||'').toLowerCase().trim();
+  const sortVal=document.getElementById('prod-sort')?.value||'';
   let pp=[...prods];
   if(fProdBodegaActual)pp=pp.filter(p=>(p.bodega||'seca')===fProdBodegaActual);
   if(fPC)pp=pp.filter(p=>p.categoria===fPC);
   if(q)pp=pp.filter(p=>p.nombre.toLowerCase().includes(q)||(p.codigoProducto||'').toLowerCase().includes(q)||(p.proveedor||'').toLowerCase().includes(q));
+  // Ordenar
+  if(sortVal==='precio-desc')pp.sort((a,b)=>(b.precioTotal||0)-(a.precioTotal||0));
+  else if(sortVal==='precio-asc')pp.sort((a,b)=>(a.precioTotal||0)-(b.precioTotal||0));
+  else if(sortVal==='neto-desc')pp.sort((a,b)=>(b.precioNeto||0)-(a.precioNeto||0));
+  else if(sortVal==='neto-asc')pp.sort((a,b)=>(a.precioNeto||0)-(b.precioNeto||0));
+  else if(sortVal==='stock-desc')pp.sort((a,b)=>stockTotal(b)-stockTotal(a));
+  else if(sortVal==='stock-asc')pp.sort((a,b)=>stockTotal(a)-stockTotal(b));
+  // Contador de resultados
+  const resDiv=document.getElementById('prod-resultados');
+  if(resDiv){
+    const fActivos=!!(fProdBodegaActual||fPC||q||sortVal);
+    resDiv.textContent=fActivos?(pp.length+' de '+prods.length+' productos'):'';
+    resDiv.style.display=(fActivos&&pp.length<prods.length)?'block':'none';
+  }
   document.getElementById('prods-sub').textContent=pp.length+' de '+prods.length+' productos';
-  if(!pp.length){lista.innerHTML='<div class="empty"><div class="ei">📦</div><div class="et">Sin productos</div></div>';return;}
+  if(!pp.length){lista.innerHTML='<div class="empty"><div class="ei">\u{1F4E6}</div><div class="et">Sin productos que coincidan</div><div class="es" style="font-size:13px;color:var(--txd);margin-top:6px">Prueba cambiando los filtros</div></div>';return;}
   lista.innerHTML=pp.map(p=>{
     const bodId=p.bodega||'seca';
-    const bod=bodMap.get(bodId)||BODEGAS_DEFAULT.find(b=>b.id===bodId)||{id:bodId,nombre:bodId,icono:'📦',orden:99};
-    const bodIdx=bodIdxMap.get(bodId)??0;
+    const bod=bodMap.get(bodId)||BODEGAS_DEFAULT.find(b=>b.id===bodId)||{id:bodId,nombre:bodId,icono:'\u{1F4E6}',orden:99};
     const st=stockTotal(p);
     const spbTags=Object.entries(p.stockPorBodega||{}).filter(([,v])=>v>0).map(([k,v])=>{const b=getBodegaById(k);return`<span class="stock-bod-tag has-stock">${b.icono} ${b.nombre}: ${clpn(v)} ${p.unidadMedida||''}</span>`;}).join('');
     return`<div class="prod-card">
       <div class="prod-hdr">
-        <div><div class="prod-nom">${p.nombre}${p.codigoProducto?` <span style="font-size:10px;color:var(--txm)">· ${p.codigoProducto}</span>`:''}</div><div class="prod-cat">${p.categoria||'—'}${p.subcategoria?' › '+p.subcategoria:''}</div></div>
-        <span style="display:inline-flex;gap:5px"><button class="dbtn" style="color:var(--blue)" onclick="abrirProd('${p.id}')">✏️</button><button class="dbtn" onclick="elimProd('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">✕</button></span>
+        <div><div class="prod-nom">${p.nombre}${p.codigoProducto?` <span style="font-size:10px;color:var(--txm)">\u00B7 ${p.codigoProducto}</span>`:''}</div><div class="prod-cat">${p.categoria||'\u2014'}${p.subcategoria?' \u203A '+p.subcategoria:''}</div></div>
+        <span style="display:inline-flex;gap:5px"><button class="dbtn" style="color:var(--blue)" onclick="abrirProd('${p.id}')">\u270F\uFE0F</button><button class="dbtn" onclick="elimProd('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">\u2715</button></span>
       </div>
       <div style="font-size:10px;color:var(--txm);margin-top:4px">${bod.icono} ${bod.nombre}</div>
       ${spbTags?`<div class="stock-bodegas">${spbTags}</div>`:''}
-      ${p.unidadCompra&&(p.factorConversion||1)>1?`<div style="font-size:11px;color:var(--blue);margin-top:6px">📦 1 ${p.unidadCompra} = ${p.factorConversion} ${p.unidadMedida||''}</div>`:''}
+      ${p.unidadCompra&&(p.factorConversion||1)>1?`<div style="font-size:11px;color:var(--blue);margin-top:6px">\u{1F4E6} 1 ${p.unidadCompra} = ${p.factorConversion} ${p.unidadMedida||''}</div>`:''}
       <div class="prod-precios">
         <div class="prod-precio-item"><div class="prod-precio-lbl">Neto/unit</div><div class="prod-precio-val" style="color:var(--txm)">${clp(p.precioNeto||0)}</div></div>
         <div class="prod-precio-item"><div class="prod-precio-lbl">${IMPS[p.tipoImpuesto]?.l||'IVA 19%'}</div><div class="prod-precio-val" style="color:var(--yellow);font-size:11px">${clp(p.totalImpuestos||0)}</div></div>
         <div class="prod-precio-item"><div class="prod-precio-lbl">Final/unit</div><div class="prod-precio-val" style="color:var(--green)">${clp(p.precioTotal||0)}</div></div>
       </div>
       <div class="prod-stock-bar">
-        <div style="font-size:11px;color:var(--txm)">${p.proveedor||'—'}${p.stockMinimo!=null?' · Mín: '+p.stockMinimo:''}</div>
+        <div style="font-size:11px;color:var(--txm)">${p.proveedor||'\u2014'}${p.stockMinimo!=null?' \u00B7 M\u00EDn: '+p.stockMinimo:''}</div>
         <span class="badge ${st===0?'bg-r-s':(p.stockMinimo!=null&&st<=p.stockMinimo)?'bg-y-s':'bg-g-s'}">Total: ${clpn(st)} ${p.unidadMedida||''}</span>
       </div>
     </div>`;
   }).join('');
 }
+
 function abrirProd(id=null){
   editProdId=id;
   document.getElementById('prod-titulo').textContent=id?'Editar Producto':'Nuevo Producto';
@@ -4952,6 +5244,440 @@ async function confirmarAjusteStock(){
     toast(`✓ Stock ajustado: ${diff>0?'+':''}${clpn(diff)} ${p.unidadMedida||''}`);
     closeM('mo-ajuste-stock');ajsProdId=null;
   }catch(e){toast('Error: '+e.message,'err');}
+}
+
+// ── ASESOR IA ─────────────────────────────────────────────────────────────────
+// Constantes del módulo
+const ASESOR_SEMANAS=4;           // historial a analizar
+const ASESOR_TOP=10;              // productos en heatmap
+const ASESOR_DIAS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const ASESOR_COLORES=[
+  '#6c63ff','#00c9a7','#f7b731','#fc5c65','#45aaf2',
+  '#fd9644','#a55eea','#26de81','#eb3b5a','#2bcbba'
+];
+const AREA_COLORES={c1:'#f7b731',c2:'#a55eea',c3:'#00c9a7',c4:'#fc5c65'};
+let _asesorSemOffset=0;  // 0=semana actual, -1=semana pasada, etc.
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function aSemanas(nSem,offsetFin=0){
+  // Retorna array de {desde,hasta} para nSem semanas, terminando offsetFin semanas atrás
+  const semanas=[];
+  const ahora=new Date();
+  for(let i=nSem-1+offsetFin;i>=offsetFin;i--){
+    const dom=new Date(ahora);dom.setHours(23,59,59,999);
+    dom.setDate(dom.getDate()-(dom.getDay()+i*7-7+6)%7); // domingo de esa semana
+    // Ajuste: el domingo de la semana i semanas atrás
+    const lun=new Date(dom);lun.setDate(dom.getDate()-6);lun.setHours(0,0,0,0);
+    semanas.push({desde:lun,hasta:dom});
+  }
+  return semanas;
+}
+function aSalidaSemanas(nSem,offset=0){
+  const sems=aSemanas(nSem,offset);
+  return sems.map(({desde,hasta})=>({
+    desde,hasta,
+    movs:movs.filter(m=>{
+      if(m.tipo!=='salida')return false;
+      const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;
+      return d&&d>=desde&&d<=hasta;
+    })
+  }));
+}
+function aDiaSemana(fecha){
+  // 0=Lun...6=Dom
+  return(fecha.getDay()+6)%7;
+}
+
+// ── MOTOR DE CÁLCULO PRINCIPAL ────────────────────────────────────────────────
+function aCalcConsumo(){
+  const semanas=aSalidaSemanas(ASESOR_SEMANAS);
+  // consumo[pid] = {nombre, unidad, porSemana:[cant,...], porDia:[0..6], porArea:{c1,c2,c3,c4}, porBodega:{bodId:cant}, total}
+  const consumo={};
+  semanas.forEach(({movs:ms},si)=>{
+    ms.forEach(m=>{
+      (m.items||[]).forEach(it=>{
+        const pid=it.productoId;const p=prods.find(x=>x.id===pid);
+        if(!consumo[pid])consumo[pid]={
+          nombre:it.nombreProducto||p?.nombre||pid,
+          unidad:it.unidadMedida||p?.unidadMedida||'',
+          precio:it.precioUnitStock||p?.precioTotal||0,
+          porSemana:Array(ASESOR_SEMANAS).fill(0),
+          porDia:Array(7).fill(0),
+          porArea:{c1:0,c2:0,c3:0,c4:0},
+          porBodega:{},
+          total:0
+        };
+        const cant=it.cantidadDespachada||it.cantidad||0;
+        consumo[pid].porSemana[si]+=cant;
+        consumo[pid].total+=cant;
+        const dia=aDiaSemana(m.creadoEn.toDate());
+        consumo[pid].porDia[dia]+=cant;
+        const area=m.area||'c1';
+        if(consumo[pid].porArea[area]!==undefined)consumo[pid].porArea[area]+=cant;
+        const bod=it.bodegaOrigen||'seca';
+        consumo[pid].porBodega[bod]=(consumo[pid].porBodega[bod]||0)+cant;
+      });
+    });
+  });
+  // Calcular promedios y velocidad
+  Object.values(consumo).forEach(c=>{
+    const semanasConData=c.porSemana.filter(v=>v>0).length||1;
+    c.promSemanal=c.total/ASESOR_SEMANAS;
+    c.velDiaria=c.promSemanal/7;
+    c.minRecomendado=Math.ceil(c.promSemanal*1.2*10)/10;
+  });
+  return consumo;
+}
+
+// ── RENDER PRINCIPAL ─────────────────────────────────────────────────────────
+function renderAsesor(){
+  const sub=document.getElementById('asesor-sub');
+  if(sub)sub.textContent='Análisis de consumo · últimas '+ASESOR_SEMANAS+' semanas · '+prods.length+' productos';
+  // Actualizar selector de semana
+  const lbl=document.getElementById('asesor-sem-lbl');
+  if(lbl){
+    const sems=aSemanas(1,Math.abs(_asesorSemOffset));
+    if(sems.length){
+      const{desde,hasta}=sems[0];
+      lbl.textContent=_asesorSemOffset===0?'Esta semana':fDateOnly({toDate:()=>desde})+' – '+fDateOnly({toDate:()=>hasta});
+    }
+  }
+  buildHeatmap();
+  buildRadar();
+  buildBodegasChart();
+  buildVelocidadProdOptions();
+}
+function aNavSem(d){_asesorSemOffset=Math.min(0,_asesorSemOffset+d);renderAsesor();}
+function aTab(tab,btn){
+  ['graficos','tabla','ia'].forEach(t=>{
+    const el=document.getElementById('asesor-panel-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.asesor-tab').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  if(tab==='tabla')buildTablaStock();
+  if(tab==='graficos')renderAsesor();
+}
+
+// ── GRÁFICO 1: HEATMAP ───────────────────────────────────────────────────────
+function buildHeatmap(){
+  const wrap=document.getElementById('asesor-heatmap-wrap');if(!wrap)return;
+  // Filtrar salidas de la semana seleccionada
+  const sems=aSalidaSemanas(1,Math.abs(_asesorSemOffset));
+  const movsSel=sems[0]?.movs||[];
+  // Calcular consumo por pid+dia
+  const datos={};// {pid:{nombre,dias:[0..6]}}
+  movsSel.forEach(m=>{
+    const dia=aDiaSemana(m.creadoEn.toDate());
+    (m.items||[]).forEach(it=>{
+      const pid=it.productoId;
+      if(!datos[pid])datos[pid]={nombre:it.nombreProducto||pid,total:0,dias:Array(7).fill(0)};
+      const cant=it.cantidadDespachada||it.cantidad||0;
+      datos[pid].dias[dia]+=cant;
+      datos[pid].total+=cant;
+    });
+  });
+  // Top 10 por total
+  const top=Object.values(datos).sort((a,b)=>b.total-a.total).slice(0,ASESOR_TOP);
+  if(!top.length){wrap.innerHTML='<div style="text-align:center;color:var(--txd);padding:20px;font-size:12px">Sin despachos en este período</div>';return;}
+  // Máximo global para normalizar colores
+  const maxVal=Math.max(...top.flatMap(p=>p.dias));
+  // Color gradient: 0→transparent, max→accent/red
+  const cellColor=(val)=>{
+    if(!val)return'var(--sf2)';
+    const t=val/maxVal;
+    if(t<.25)return`rgba(100,200,180,${.2+t*.6})`;
+    if(t<.6)return`rgba(247,183,49,${.4+t*.4})`;
+    return`rgba(252,92,101,${.55+t*.45})`;
+  };
+  const cellText=(val)=>val>=1?Math.round(val):'';
+  let html=`<table class="asesor-heatmap-table"><thead><tr><th class="asesor-hm-prod" style="text-align:left">Producto</th>`;
+  ASESOR_DIAS.forEach(d=>html+=`<th class="asesor-hm-day">${d}</th>`);
+  html+=`<th class="asesor-hm-day" style="color:var(--accent)">Total</th></tr></thead><tbody>`;
+  top.forEach(p=>{
+    html+=`<tr><td class="asesor-hm-prod" title="${p.nombre}">${p.nombre.length>18?p.nombre.slice(0,17)+'…':p.nombre}</td>`;
+    p.dias.forEach(v=>{html+=`<td class="asesor-hm-cell" style="background:${cellColor(v)}">${cellText(v)}</td>`;});
+    html+=`<td class="asesor-hm-cell" style="background:var(--accentd);color:var(--accent)">${Math.round(p.total)}</td>`;
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+// ── GRÁFICO 2: RADAR POR ÁREA ─────────────────────────────────────────────────
+function buildRadar(){
+  const svg=document.getElementById('asesor-radar-svg');
+  const leyenda=document.getElementById('asesor-radar-leyenda');
+  if(!svg||!leyenda)return;
+  const n=gN();
+  const areas=['c1','c2','c3','c4'];
+  const nomAreas=[n.c1,n.c2,n.c3,n.c4];
+  const iconAreas=['🌅','🍮','🍽️','🍹'];
+  // Calcular consumo total por área para semana actual y promedio histórico
+  const semActual=aSalidaSemanas(1,Math.abs(_asesorSemOffset))[0]?.movs||[];
+  const semHistorico=aSalidaSemanas(ASESOR_SEMANAS);
+  const calcAreaVal=(ms,area)=>ms.filter(m=>m.area===area).reduce((a,m)=>(m.items||[]).reduce((b,it)=>b+(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||prods.find(x=>x.id===it.productoId)?.precioTotal||0),a),0);
+  const actual=areas.map(ar=>calcAreaVal(semActual,ar));
+  const historico=areas.map(ar=>{
+    const total=semHistorico.reduce((a,s)=>a+calcAreaVal(s.movs,ar),0);
+    return total/ASESOR_SEMANAS;
+  });
+  const maxVal=Math.max(...actual,...historico,1);
+  // Geometría del radar (centro 150,150 radio 110)
+  const cx=150,cy=150,R=110,nAx=4;
+  const angBase=-Math.PI/2;
+  const pto=(val,i)=>{
+    const a=angBase+(2*Math.PI/nAx)*i;
+    const r=R*(val/maxVal);
+    return[cx+r*Math.cos(a),cy+r*Math.sin(a)];
+  };
+  const ptAxis=(r,i)=>{const a=angBase+(2*Math.PI/nAx)*i;return[cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+  // Grid circles
+  let svgHTML='';
+  [.25,.5,.75,1].forEach(f=>{svgHTML+=`<circle cx="${cx}" cy="${cy}" r="${R*f}" fill="none" stroke="var(--bd3)" stroke-width="1"/>`; });
+  // Ejes
+  areas.forEach((_,i)=>{
+    const[x,y]=ptAxis(R,i);svgHTML+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--bd2)" stroke-width="1.5"/>`;
+    const[lx,ly]=ptAxis(R+22,i);
+    svgHTML+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="var(--txm)" font-size="10" font-weight="700">${iconAreas[i]}</text>`;
+    const[ln2x,ln2y]=ptAxis(R+35,i);
+    svgHTML+=`<text x="${ln2x}" y="${ln2y}" text-anchor="middle" dominant-baseline="middle" fill="var(--txm)" font-size="9">${nomAreas[i]}</text>`;
+  });
+  // Polígono histórico (fondo)
+  const ptHist=historico.map((v,i)=>pto(v,i));
+  svgHTML+=`<polygon points="${ptHist.map(p=>p.join(',')).join(' ')}" fill="rgba(69,170,242,.18)" stroke="#45aaf2" stroke-width="2" stroke-dasharray="4,3"/>`;
+  // Polígono actual
+  const ptAct=actual.map((v,i)=>pto(v,i));
+  svgHTML+=`<polygon points="${ptAct.map(p=>p.join(',')).join(' ')}" fill="rgba(108,99,255,.22)" stroke="#6c63ff" stroke-width="2.5"/>`;
+  // Puntos actuales con hover
+  ptAct.forEach(([x,y],i)=>{svgHTML+=`<circle cx="${x}" cy="${y}" r="5" fill="#6c63ff" stroke="var(--sf)" stroke-width="2"/>`;});
+  svg.innerHTML=svgHTML;
+  leyenda.innerHTML=`
+    <div class="asesor-leyenda-item"><span class="asesor-leyenda-dot" style="background:#6c63ff"></span>Esta semana</div>
+    <div class="asesor-leyenda-item"><span class="asesor-leyenda-dot" style="background:#45aaf2;opacity:.7"></span>Promedio histórico</div>
+  `;
+}
+
+// ── GRÁFICO 3: BARRAS APILADAS POR BODEGA ───────────────────────────────────
+function buildBodegasChart(){
+  const wrap=document.getElementById('asesor-bodegas-wrap');
+  const leyenda=document.getElementById('asesor-bodegas-leyenda');
+  if(!wrap)return;
+  const sems=aSalidaSemanas(ASESOR_SEMANAS);
+  // Calcular valor por bodega por semana
+  const bodIds=[...new Set(movs.filter(m=>m.tipo==='salida').flatMap(m=>(m.items||[]).map(it=>it.bodegaOrigen||'seca')))];
+  if(!bodIds.length){wrap.innerHTML='<div style="text-align:center;color:var(--txd);padding:16px;font-size:12px">Sin datos de despacho</div>';return;}
+  const colBod=ASESOR_COLORES;
+  const dataSems=sems.map(({desde,hasta,movs:ms},si)=>{
+    const porBod={};
+    ms.forEach(m=>(m.items||[]).forEach(it=>{
+      const bod=it.bodegaOrigen||'seca';const v=(it.cantidadDespachada||it.cantidad||0)*(it.precioUnitStock||prods.find(x=>x.id===it.productoId)?.precioTotal||0);
+      porBod[bod]=(porBod[bod]||0)+v;
+    }));
+    return{label:'S'+(ASESOR_SEMANAS-si),desde,hasta,porBod,total:Object.values(porBod).reduce((a,v)=>a+v,0)};
+  }).reverse();
+  const maxTot=Math.max(...dataSems.map(s=>s.total),1);
+  // SVG de barras apiladas
+  const W=320,H=150,padL=8,padR=8,padT=10,padB=24;
+  const chartW=W-padL-padR;const chartH=H-padT-padB;
+  const bw=Math.floor(chartW/dataSems.length)-6;
+  const gap=(chartW-bw*dataSems.length)/(dataSems.length+1);
+  let svgHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;display:block;margin:auto">`;
+  // Grid lines
+  [.25,.5,.75,1].forEach(f=>{
+    const y=padT+chartH*(1-f);
+    svgHTML+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--bd3)" stroke-width="1"/>`;
+    if(f<1)svgHTML+=`<text x="${padL}" y="${y-3}" fill="var(--txd)" font-size="8">${clp(Math.round(maxTot*f))}</text>`;
+  });
+  dataSems.forEach((s,si)=>{
+    const x=padL+gap+(bw+gap)*si;
+    let yOff=padT+chartH;
+    bodIds.forEach((bod,bi)=>{
+      const v=s.porBod[bod]||0;if(!v)return;
+      const h=Math.round((v/maxTot)*chartH);
+      yOff-=h;
+      const b=bodegas.find(x=>x.id===bod);
+      svgHTML+=`<rect x="${x}" y="${yOff}" width="${bw}" height="${h}" fill="${colBod[bi%colBod.length]}" rx="3" opacity=".88">
+        <title>${b?.nombre||bod}: ${clp(v)}</title></rect>`;
+    });
+    const lbl=s.label;
+    svgHTML+=`<text x="${x+bw/2}" y="${padT+chartH+14}" text-anchor="middle" fill="var(--txm)" font-size="9" font-weight="700">${lbl}</text>`;
+    if(s.total>0)svgHTML+=`<text x="${x+bw/2}" y="${yOff-4}" text-anchor="middle" fill="var(--txm)" font-size="8">${clp(Math.round(s.total/1000))+'k'}</text>`;
+  });
+  svgHTML+='</svg>';
+  wrap.innerHTML=svgHTML;
+  if(leyenda){
+    leyenda.innerHTML=bodIds.map((bod,bi)=>{
+      const b=bodegas.find(x=>x.id===bod);
+      return`<div class="asesor-leyenda-item"><span class="asesor-leyenda-dot" style="background:${colBod[bi%colBod.length]}"></span>${b?.icono||'📦'} ${b?.nombre||bod}</div>`;
+    }).join('');
+  }
+}
+
+// ── GRÁFICO 4: VELOCIDAD DE CONSUMO ─────────────────────────────────────────
+function buildVelocidadProdOptions(){
+  const sel=document.getElementById('asesor-prod-sel');if(!sel)return;
+  const consumo=aCalcConsumo();
+  const sorted=Object.entries(consumo).sort((a,b)=>b[1].total-a[1].total);
+  sel.innerHTML='<option value="">Selecciona un producto...</option>'+
+    sorted.map(([pid,c])=>`<option value="${pid}">${c.nombre}</option>`).join('');
+  // Auto-select el primero
+  if(sorted.length){sel.value=sorted[0][0];buildVelocidadChart();}
+}
+function buildVelocidadChart(){
+  const wrap=document.getElementById('asesor-velocidad-wrap');if(!wrap)return;
+  const sel=document.getElementById('asesor-prod-sel');
+  const pid=sel?.value;if(!pid){wrap.innerHTML='';return;}
+  const sems=aSalidaSemanas(ASESOR_SEMANAS);
+  // Consumo diario promedio por semana para este producto
+  const datos=sems.map(({desde,hasta,movs:ms},si)=>{
+    const total=ms.reduce((a,m)=>(m.items||[]).reduce((b,it)=>it.productoId===pid?b+(it.cantidadDespachada||it.cantidad||0):b,a),0);
+    const diasConData=ms.filter(m=>(m.items||[]).some(it=>it.productoId===pid)).map(m=>m.creadoEn?.toDate?.().getDay()).filter((v,i,a)=>a.indexOf(v)===i).length||1;
+    return{label:'S'+(ASESOR_SEMANAS-si),semana:si,total,diario:total/7,diasConData};
+  }).reverse();
+  const consumo=aCalcConsumo();
+  const c=consumo[pid];
+  const p=prods.find(x=>x.id===pid);
+  const stockActual=p?stockTotal(p):0;
+  const diasRestantes=c?.velDiaria>0?Math.floor(stockActual/c.velDiaria):null;
+  const alerta=diasRestantes!==null&&diasRestantes<7;
+  // SVG de línea
+  const W=320,H=120,padL=32,padR=10,padT=14,padB=20;
+  const chartW=W-padL-padR,chartH=H-padT-padB;
+  const maxV=Math.max(...datos.map(d=>d.diario),.01);
+  const pts=datos.map((d,i)=>{
+    const x=padL+i*(chartW/(datos.length-1||1));
+    const y=padT+chartH*(1-d.diario/maxV);
+    return[x,y];
+  });
+  const pathD=pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  // Area fill
+  const areaD=pathD+' L'+pts[pts.length-1][0]+' '+(padT+chartH)+' L'+padL+' '+(padT+chartH)+' Z';
+  const col=alerta?'#fc5c65':'#6c63ff';
+  let svgHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;display:block;margin:auto">`;
+  // Grid
+  [0,.5,1].forEach(f=>{
+    const y=padT+chartH*(1-f);
+    svgHTML+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--bd3)" stroke-width="1"/>`;
+    svgHTML+=`<text x="${padL-3}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="var(--txd)" font-size="8">${(maxV*f).toFixed(1)}</text>`;
+  });
+  svgHTML+=`<path d="${areaD}" fill="${col}" opacity=".12"/>`;
+  svgHTML+=`<path d="${pathD}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  pts.forEach(([x,y],i)=>{
+    svgHTML+=`<circle cx="${x}" cy="${y}" r="4" fill="${col}" stroke="var(--sf)" stroke-width="2"/>`;
+    svgHTML+=`<text x="${x}" y="${padT+chartH+14}" text-anchor="middle" fill="var(--txm)" font-size="8" font-weight="700">${datos[i].label}</text>`;
+  });
+  // Línea de promedio
+  const promY=padT+chartH*(1-(c?.velDiaria||0)/maxV);
+  svgHTML+=`<line x1="${padL}" y1="${promY}" x2="${W-padR}" y2="${promY}" stroke="${col}" stroke-width="1" stroke-dasharray="3,3" opacity=".5"/>`;
+  svgHTML+='</svg>';
+  // Stats bajo el gráfico
+  const statsHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
+      <div class="st" style="text-align:center;padding:8px;border-radius:10px;background:var(--sf2)">
+        <div style="font-size:9px;color:var(--txd);font-weight:700;text-transform:uppercase">Consumo/sem</div>
+        <div style="font-size:14px;font-weight:800;color:var(--tx);font-family:'Inter',sans-serif">${clpn(Math.round((c?.promSemanal||0)*10)/10)} <span style="font-size:9px;color:var(--txm)">${c?.unidad||''}</span></div>
+      </div>
+      <div class="st" style="text-align:center;padding:8px;border-radius:10px;background:var(--sf2)">
+        <div style="font-size:9px;color:var(--txd);font-weight:700;text-transform:uppercase">Stock actual</div>
+        <div style="font-size:14px;font-weight:800;color:var(--tx);font-family:'Inter',sans-serif">${clpn(stockActual)} <span style="font-size:9px;color:var(--txm)">${c?.unidad||''}</span></div>
+      </div>
+      <div class="st" style="text-align:center;padding:8px;border-radius:10px;background:${alerta?'var(--redd)':'var(--sf2)'}">
+        <div style="font-size:9px;color:${alerta?'var(--red)':'var(--txd)'};font-weight:700;text-transform:uppercase">Días restantes</div>
+        <div style="font-size:14px;font-weight:800;color:${alerta?'var(--red)':'var(--tx)'};font-family:'Inter',sans-serif">${diasRestantes!==null?diasRestantes+'d':'—'}</div>
+      </div>
+    </div>
+  `;
+  wrap.innerHTML=svgHTML+statsHTML;
+}
+
+// ── TABLA STOCK MÍNIMO ────────────────────────────────────────────────────────
+function buildTablaStock(){
+  const wrap=document.getElementById('asesor-tabla-wrap');if(!wrap)return;
+  const consumo=aCalcConsumo();
+  const rows=Object.entries(consumo)
+    .map(([pid,c])=>{
+      const p=prods.find(x=>x.id===pid);
+      const stock=p?stockTotal(p):0;
+      const dias=c.velDiaria>0?Math.floor(stock/c.velDiaria):999;
+      const estado=dias<=3?'critico':dias<=7?'bajo':'ok';
+      return{pid,nombre:c.nombre,unidad:c.unidad,promSem:c.promSemanal,stock,minRec:c.minRecomendado,dias,estado};
+    })
+    .sort((a,b)=>a.dias-b.dias);
+  if(!rows.length){wrap.innerHTML='<div style="padding:16px;text-align:center;color:var(--txd);font-size:12px">Sin historial de consumo</div>';return;}
+  const estColor={critico:'var(--red)',bajo:'var(--yellow)',ok:'var(--green)'};
+  const estLabel={critico:'🔴 Crítico',bajo:'🟡 Bajo',ok:'🟢 OK'};
+  wrap.innerHTML=`
+    <div class="asesor-tbl-hdr">
+      <span>Producto</span><span style="text-align:right">Prom/sem</span><span style="text-align:right">Stock</span><span style="text-align:right">Mín rec</span><span style="text-align:right">Días</span><span style="text-align:right">Estado</span>
+    </div>`+
+    rows.map(r=>`
+    <div class="asesor-tbl-row">
+      <span class="asesor-tbl-nom" title="${r.nombre}">${r.nombre}</span>
+      <span class="asesor-tbl-num" style="color:var(--txm)">${clpn(Math.round(r.promSem*10)/10)}<span style="font-size:8px"> ${r.unidad}</span></span>
+      <span class="asesor-tbl-num">${clpn(r.stock)}</span>
+      <span class="asesor-tbl-num" style="color:var(--blue)">${clpn(r.minRec)}</span>
+      <span class="asesor-tbl-num" style="color:${estColor[r.estado]};font-weight:800">${r.dias>=999?'∞':r.dias+'d'}</span>
+      <span style="font-size:10px;font-weight:700;text-align:right;color:${estColor[r.estado]}">${estLabel[r.estado]}</span>
+    </div>`).join('');
+}
+
+// ── IA CLAUDE ─────────────────────────────────────────────────────────────────
+async function runAsesorIA(){
+  const out=document.getElementById('asesor-ia-output');if(!out)return;
+  out.innerHTML=`<div style="text-align:center;padding:24px;color:var(--txm)"><div class="asesor-spin">⚙️</div><div style="margin-top:10px;font-size:12px;font-weight:600">Analizando tus datos...</div></div>`;
+  try{
+    const n=gN();
+    const consumo=aCalcConsumo();
+    const top20=Object.entries(consumo).sort((a,b)=>b[1].total-a[1].total).slice(0,20);
+    // Construir resumen de datos para el prompt
+    const resumenProds=top20.map(([pid,c])=>{
+      const p=prods.find(x=>x.id===pid);
+      const stock=p?stockTotal(p):0;
+      const dias=c.velDiaria>0?Math.floor(stock/c.velDiaria):null;
+      const tendencia=c.porSemana.length>=2?(c.porSemana[0]-c.porSemana[c.porSemana.length-1])/(c.porSemana[c.porSemana.length-1]||1)*100:0;
+      return`- ${c.nombre}: stock=${clpn(stock)} ${c.unidad}, consumo/sem=${clpn(Math.round(c.promSemanal*10)/10)} ${c.unidad}, días restantes=${dias!==null?dias+'d':'sin historial suficiente'}, mínimo recomendado=${clpn(c.minRecomendado)} ${c.unidad}, tendencia=${tendencia>10?'↑ subiendo':tendencia<-10?'↓ bajando':'→ estable'}`;
+    }).join('\n');
+    const areaResumen=['c1','c2','c3','c4'].map(ar=>{
+      const total=Object.values(consumo).reduce((a,c)=>a+(c.porArea[ar]||0),0);
+      return`- ${n[ar]}: ${clpn(Math.round(total*10)/10)} unidades totales despachadas`;
+    }).join('\n');
+    const prompt=`Eres el asesor de inventario de un restaurante buffet chileno. Analiza los siguientes datos de consumo de las últimas ${ASESOR_SEMANAS} semanas y entrega recomendaciones precisas y accionables.
+
+DATOS DE CONSUMO (top 20 productos):
+${resumenProds}
+
+CONSUMO POR ÁREA:
+${areaResumen}
+
+Responde en español, de forma directa y práctica. Estructura tu respuesta con estas secciones:
+1. **🚨 Alertas críticas** (productos que se quedarán sin stock en menos de 3 días)
+2. **⚠️ Productos a pedir esta semana** (lista con cantidad exacta a pedir para cubrir 2 semanas)
+3. **📊 Tendencias destacadas** (qué está subiendo o bajando significativamente)
+4. **💡 Recomendaciones** (máximo 3 sugerencias concretas para optimizar el stock)
+
+Sé conciso. Usa números reales del análisis. No expliques conceptos básicos.`;
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    const texto=data.content?.map(b=>b.text||'').join('')||'Sin respuesta';
+    // Render Markdown básico
+    out.innerHTML=texto
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/^### (.+)$/gm,'<h4>$1</h4>')
+      .replace(/^## (.+)$/gm,'<h3>$1</h3>')
+      .replace(/^# (.+)$/gm,'<h3>$1</h3>')
+      .replace(/^- (.+)$/gm,'<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>')
+      .replace(/\n\n/g,'<br><br>')
+      .replace(/🚨[^\n]*/g,m=>`<div class="ia-alerta">${m}</div>`)
+      .replace(/✅[^\n]*/g,m=>`<div class="ia-ok">${m}</div>`);
+  }catch(e){
+    out.innerHTML=`<div class="ia-alerta">❌ Error al conectar con IA: ${e.message}</div>`;
+  }
 }
 
 // ── REPORTE + EXPORTAR PDF ────────────────────────────────────────────────────
@@ -5959,6 +6685,7 @@ startCfgListener();
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,toggleMas,closeMas,navSem,navMes,setRepTab,selProvDona,cerrarDetalleProv,setAreaTab,toggleMode,
   fStockBod,fStockCat2,fStockCatSel,toggleStockFiltros,limpiarFiltrosStock,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
+  toggleProdFiltros,fProdCatSel,limpiarFiltrosProds,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,limpiarBuscar,vaciarCarrito,
   fnPrecioBlur,fnSubtotalBlur,
@@ -5974,6 +6701,7 @@ Object.assign(window,{
   exportarPDF,verFact,
   abrirAjusteStock,ajsBodegaChange,ajsInput,confirmarAjusteStock,
   toggleDual,actualizarDualPreview,fnPiezas,
+  renderAsesor,aNavSem,aTab,buildVelocidadChart,runAsesorIA,
 });
 
 if('serviceWorker' in navigator){
