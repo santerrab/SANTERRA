@@ -291,7 +291,13 @@ body.light .nav{background:rgba(255,255,255,.92)}
 .asesor-spin{display:inline-block;animation:asesor-spin 1s linear infinite;font-size:20px}
 @keyframes asesor-spin{to{transform:rotate(360deg)}}
 
-.asesor-velocidad-wrap svg{width:100%;height:auto}
+.asesor-velocidad-wrap svg{width:100%;height:auto;overflow:visible}
+
+/* Responsive: pantallas muy angostas (<380px) → reducir columnas tabla */
+@media(max-width:379px){
+  .asesor-tbl-row,.asesor-tbl-hdr{grid-template-columns:1fr 52px 52px 52px 44px 60px;gap:0;font-size:10px}
+  .asesor-tbl-nom{font-size:10px}
+}
 
 .dual-info-box{
   background:linear-gradient(135deg,var(--purpled),var(--blued));
@@ -1879,7 +1885,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
   </div>
 </div>
 
-<div class="ovl" id="mo-fact">
+<div class="ovl ovl-no-click-close" id="mo-fact">
   <div class="modal">
     <div class="mh"></div>
     <div class="fact-modal-hdr">
@@ -2668,9 +2674,9 @@ function openM(id){document.getElementById(id)?.classList.add('on');}
 function closeM(id){document.getElementById(id)?.classList.remove('on');}
 function toggleMas(){document.getElementById('mas-ovl')?.classList.toggle('on');}
 function closeMas(){document.getElementById('mas-ovl')?.classList.remove('on');}
-document.querySelectorAll('.ovl').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on');}));
-// Escape cierra el modal activo (excepto PIN que tiene su propio handler)
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('pin-ovl')?.classList.contains('on')){const open=document.querySelector('.ovl.on');if(open)open.classList.remove('on');}});
+document.querySelectorAll('.ovl').forEach(o=>o.addEventListener('click',e=>{if(e.target===o&&!o.classList.contains('ovl-no-click-close'))o.classList.remove('on');}));
+// Escape cierra el modal activo — excepto PIN y modales protegidos contra cierre accidental (ej. factura en progreso)
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('pin-ovl')?.classList.contains('on')){const open=document.querySelector('.ovl.on:not(.ovl-no-click-close)');if(open)open.classList.remove('on');}});
 // Eventos de scroll con passive:true para mejor rendimiento en móvil
 document.querySelector('.pages-wrap')?.addEventListener('scroll',()=>{},{passive:true});
 document.getElementById('pin-ovl').addEventListener('click',e=>{if(e.target===document.getElementById('pin-ovl'))cPin();});
@@ -5260,13 +5266,23 @@ let _asesorSemOffset=0;  // 0=semana actual, -1=semana pasada, etc.
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function aSemanas(nSem,offsetFin=0){
-  // Retorna array de {desde,hasta} para nSem semanas, terminando offsetFin semanas atrás
+  // Retorna array [{desde,hasta}] para nSem semanas.
+  // offsetFin=0 → semana actual como última semana del array.
+  // offsetFin=1 → semana pasada como última, etc.
+  // Cada semana va de lunes 00:00:00 a domingo 23:59:59.
   const semanas=[];
   const ahora=new Date();
-  for(let i=nSem-1+offsetFin;i>=offsetFin;i--){
-    const dom=new Date(ahora);dom.setHours(23,59,59,999);
-    dom.setDate(dom.getDate()-(dom.getDay()+i*7-7+6)%7); // domingo de esa semana
-    // Ajuste: el domingo de la semana i semanas atrás
+  // Domingo de referencia: el domingo de la semana "offsetFin semanas atrás"
+  // getDay(): 0=Dom,1=Lun,...,6=Sáb  →  (getDay()+6)%7 = días desde el lunes
+  const diasDesdelunes=(ahora.getDay()+6)%7;
+  // Domingo de la semana actual
+  const domRef=new Date(ahora);
+  domRef.setDate(ahora.getDate()+(6-diasDesdelunes));
+  domRef.setHours(23,59,59,999);
+  // Retroceder offsetFin semanas adicionales
+  domRef.setDate(domRef.getDate()-offsetFin*7);
+  for(let i=nSem-1;i>=0;i--){
+    const dom=new Date(domRef);dom.setDate(domRef.getDate()-i*7);
     const lun=new Date(dom);lun.setDate(dom.getDate()-6);lun.setHours(0,0,0,0);
     semanas.push({desde:lun,hasta:dom});
   }
@@ -5278,25 +5294,29 @@ function aSalidaSemanas(nSem,offset=0){
     desde,hasta,
     movs:movs.filter(m=>{
       if(m.tipo!=='salida')return false;
-      const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;
+      // null-safe: timestamp de Firestore puede llegar pendiente
+      const d=m.creadoEn?.toDate?.();
       return d&&d>=desde&&d<=hasta;
     })
   }));
 }
 function aDiaSemana(fecha){
-  // 0=Lun...6=Dom
+  // 0=Lun...6=Dom  (getDay: 0=Dom,1=Lun,...,6=Sáb)
   return(fecha.getDay()+6)%7;
 }
 
 // ── MOTOR DE CÁLCULO PRINCIPAL ────────────────────────────────────────────────
 function aCalcConsumo(){
   const semanas=aSalidaSemanas(ASESOR_SEMANAS);
-  // consumo[pid] = {nombre, unidad, porSemana:[cant,...], porDia:[0..6], porArea:{c1,c2,c3,c4}, porBodega:{bodId:cant}, total}
   const consumo={};
   semanas.forEach(({movs:ms},si)=>{
     ms.forEach(m=>{
+      // null-safe: timestamp puede llegar pendiente de sincronización
+      const fecha=m.creadoEn?.toDate?.();
+      if(!fecha)return;
       (m.items||[]).forEach(it=>{
-        const pid=it.productoId;const p=prods.find(x=>x.id===pid);
+        const pid=it.productoId;if(!pid)return;
+        const p=prods.find(x=>x.id===pid);
         if(!consumo[pid])consumo[pid]={
           nombre:it.nombreProducto||p?.nombre||pid,
           unidad:it.unidadMedida||p?.unidadMedida||'',
@@ -5304,27 +5324,24 @@ function aCalcConsumo(){
           porSemana:Array(ASESOR_SEMANAS).fill(0),
           porDia:Array(7).fill(0),
           porArea:{c1:0,c2:0,c3:0,c4:0},
-          porBodega:{},
-          total:0
+          porBodega:{},total:0
         };
         const cant=it.cantidadDespachada||it.cantidad||0;
         consumo[pid].porSemana[si]+=cant;
         consumo[pid].total+=cant;
-        const dia=aDiaSemana(m.creadoEn.toDate());
-        consumo[pid].porDia[dia]+=cant;
-        const area=m.area||'c1';
-        if(consumo[pid].porArea[area]!==undefined)consumo[pid].porArea[area]+=cant;
-        const bod=it.bodegaOrigen||'seca';
+        consumo[pid].porDia[aDiaSemana(fecha)]+=cant;
+        const area=m.area||'';
+        // Acumular cualquier área conocida (c1-c4)
+        if(area&&consumo[pid].porArea[area]!==undefined){consumo[pid].porArea[area]+=cant;}
+        const bod=it.bodegaOrigen||p?.bodega||'seca';
         consumo[pid].porBodega[bod]=(consumo[pid].porBodega[bod]||0)+cant;
       });
     });
   });
-  // Calcular promedios y velocidad
   Object.values(consumo).forEach(c=>{
-    const semanasConData=c.porSemana.filter(v=>v>0).length||1;
     c.promSemanal=c.total/ASESOR_SEMANAS;
     c.velDiaria=c.promSemanal/7;
-    c.minRecomendado=Math.ceil(c.promSemanal*1.2*10)/10;
+    c.minRecomendado=Math.ceil(c.promSemanal*1.2*100)/100;
   });
   return consumo;
 }
@@ -5347,7 +5364,10 @@ function renderAsesor(){
   buildBodegasChart();
   buildVelocidadProdOptions();
 }
-function aNavSem(d){_asesorSemOffset=Math.min(0,_asesorSemOffset+d);renderAsesor();}
+function aNavSem(d){
+  _asesorSemOffset=Math.min(0,Math.max(-ASESOR_SEMANAS,_asesorSemOffset+d));
+  renderAsesor();
+}
 function aTab(tab,btn){
   ['graficos','tabla','ia'].forEach(t=>{
     const el=document.getElementById('asesor-panel-'+t);
@@ -5362,33 +5382,30 @@ function aTab(tab,btn){
 // ── GRÁFICO 1: HEATMAP ───────────────────────────────────────────────────────
 function buildHeatmap(){
   const wrap=document.getElementById('asesor-heatmap-wrap');if(!wrap)return;
-  // Filtrar salidas de la semana seleccionada
   const sems=aSalidaSemanas(1,Math.abs(_asesorSemOffset));
   const movsSel=sems[0]?.movs||[];
-  // Calcular consumo por pid+dia
-  const datos={};// {pid:{nombre,dias:[0..6]}}
+  const datos={};
   movsSel.forEach(m=>{
-    const dia=aDiaSemana(m.creadoEn.toDate());
+    const fecha=m.creadoEn?.toDate?.();if(!fecha)return;
+    const dia=aDiaSemana(fecha);
     (m.items||[]).forEach(it=>{
-      const pid=it.productoId;
+      const pid=it.productoId;if(!pid)return;
       if(!datos[pid])datos[pid]={nombre:it.nombreProducto||pid,total:0,dias:Array(7).fill(0)};
       const cant=it.cantidadDespachada||it.cantidad||0;
       datos[pid].dias[dia]+=cant;
       datos[pid].total+=cant;
     });
   });
-  // Top 10 por total
   const top=Object.values(datos).sort((a,b)=>b.total-a.total).slice(0,ASESOR_TOP);
   if(!top.length){wrap.innerHTML='<div style="text-align:center;color:var(--txd);padding:20px;font-size:12px">Sin despachos en este período</div>';return;}
-  // Máximo global para normalizar colores
-  const maxVal=Math.max(...top.flatMap(p=>p.dias));
-  // Color gradient: 0→transparent, max→accent/red
+  // maxVal mínimo 1 para evitar división por cero y NaN en colores
+  const maxVal=Math.max(...top.flatMap(p=>p.dias),1);
   const cellColor=(val)=>{
     if(!val)return'var(--sf2)';
     const t=val/maxVal;
-    if(t<.25)return`rgba(100,200,180,${.2+t*.6})`;
-    if(t<.6)return`rgba(247,183,49,${.4+t*.4})`;
-    return`rgba(252,92,101,${.55+t*.45})`;
+    if(t<.25)return`rgba(100,200,180,${(.2+t*.6).toFixed(2)})`;
+    if(t<.6)return`rgba(247,183,49,${(.4+t*.4).toFixed(2)})`;
+    return`rgba(252,92,101,${(.55+t*.45).toFixed(2)})`;
   };
   const cellText=(val)=>val>=1?Math.round(val):'';
   let html=`<table class="asesor-heatmap-table"><thead><tr><th class="asesor-hm-prod" style="text-align:left">Producto</th>`;
@@ -5397,7 +5414,7 @@ function buildHeatmap(){
   top.forEach(p=>{
     html+=`<tr><td class="asesor-hm-prod" title="${p.nombre}">${p.nombre.length>18?p.nombre.slice(0,17)+'…':p.nombre}</td>`;
     p.dias.forEach(v=>{html+=`<td class="asesor-hm-cell" style="background:${cellColor(v)}">${cellText(v)}</td>`;});
-    html+=`<td class="asesor-hm-cell" style="background:var(--accentd);color:var(--accent)">${Math.round(p.total)}</td>`;
+    html+=`<td class="asesor-hm-cell" style="background:var(--accentd);color:var(--accent);font-weight:800">${Math.round(p.total)}</td>`;
     html+=`</tr>`;
   });
   html+=`</tbody></table>`;
@@ -5554,7 +5571,7 @@ function buildVelocidadChart(){
   // Area fill
   const areaD=pathD+' L'+pts[pts.length-1][0]+' '+(padT+chartH)+' L'+padL+' '+(padT+chartH)+' Z';
   const col=alerta?'#fc5c65':'#6c63ff';
-  let svgHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;display:block;margin:auto">`;
+  let svgHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;display:block;margin:auto;overflow:visible">`;
   // Grid
   [0,.5,1].forEach(f=>{
     const y=padT+chartH*(1-f);
