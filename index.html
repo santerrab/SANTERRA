@@ -836,7 +836,7 @@ body.light .lw{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,5
 .stk-filtros-badge{background:var(--accent);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:2px}
 /* Panel colapsable */
 .stk-filtros-panel{overflow:hidden;max-height:0;opacity:0;transition:max-height .28s cubic-bezier(.4,0,.2,1),opacity .2s;pointer-events:none}
-.stk-filtros-panel.open{max-height:200px;opacity:1;pointer-events:auto}
+.stk-filtros-panel.open{max-height:280px;opacity:1;pointer-events:auto}
 .stk-filtros-seccion{margin-bottom:8px}
 .stk-filtros-label-sm{font-size:10px;color:var(--txd);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
 .stk-filtros-label{font-size:12px;font-weight:700;color:var(--txm)}
@@ -1425,6 +1425,15 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
           <option value="neto-asc">Neto ↑</option>
           <option value="stock-desc">Stock ↓</option>
           <option value="stock-asc">Stock ↑</option>
+        </select>
+      </div>
+    </div>
+    <!-- Proveedor: fila completa -->
+    <div class="stk-filtros-fila">
+      <div class="stk-select-wrap" style="flex:1">
+        <span class="stk-select-ico">🏪</span>
+        <select id="stk-prov-sel" onchange="fStockProvSel(this.value)" class="stk-select">
+          <option value="">Todos los proveedores</option>
         </select>
       </div>
     </div>
@@ -2337,7 +2346,7 @@ const _vistoSent=new Set();
 const _maxVisto=200;
 let subAreaActual='';
 let trProdId=null,verifSolId=null,ajsProdId=null;
-let fProdBodegaActual='',fStockBodega='',fStockCat='';
+let fProdBodegaActual='',fStockBodega='',fStockCat='',fStockProv='';
 let fPC='',fDE='pendiente',fSE='',fME='';
 
 // ── BODEGAS POR DEFECTO ──────────────────────────────────────────────────────
@@ -3316,20 +3325,28 @@ function renderStockCatChips(){
     el.innerHTML=`<button class="chip ${!fStockCat?'on':''}" onclick="fStockCat2('',this)">Todas</button>`+
       cs.map(c=>`<button class="chip ${fStockCat===c?'on':''}" onclick="fStockCat2('${c.replace(/'/g,"\\'")}',this)">${c}</button>`).join('');
   }
-  // Poblar select visible
+  // Poblar select de categoría
   const catSel=document.getElementById('stk-cat-sel');
   if(catSel){
     catSel.innerHTML='<option value="">Todas las categorías</option>'+
       cs.map(c=>`<option value="${c}" ${fStockCat===c?'selected':''}>${c}</option>`).join('');
+  }
+  // Poblar select de proveedor con proveedores únicos presentes en el filtro actual
+  const provSel=document.getElementById('stk-prov-sel');
+  if(provSel){
+    const provs=[...new Set(prodsFilt.map(p=>p.proveedor).filter(Boolean))].sort();
+    provSel.innerHTML='<option value="">Todos los proveedores</option>'+
+      provs.map(v=>`<option value="${v.replace(/"/g,'&quot;')}" ${fStockProv===v?'selected':''}>${v}</option>`).join('');
   }
 }
 function fStockBod(b,btn){
   fStockBodega=b;
   document.querySelectorAll('#stock-bod-chips .chip').forEach(x=>x.classList.remove('on'));
   if(btn)btn.classList.add('on');
-  fStockCat='';
-  // Resetear el select de categorías
+  fStockCat='';fStockProv='';
+  // Resetear selects de categoría y proveedor
   const catSel=document.getElementById('stk-cat-sel');if(catSel)catSel.value='';
+  const provSel=document.getElementById('stk-prov-sel');if(provSel)provSel.value='';
   renderStockCatChips();
   actualizarFiltrosStock();
   _renderStockNow();
@@ -3350,6 +3367,11 @@ function fStockCatSel(c){
   actualizarFiltrosStock();
   _renderStockNow();
 }
+function fStockProvSel(v){
+  fStockProv=v;
+  actualizarFiltrosStock();
+  _renderStockNow();
+}
 function toggleStockFiltros(){
   const panel=document.getElementById('stk-filtros-panel');
   const btn=document.getElementById('stk-filtros-btn');
@@ -3362,6 +3384,7 @@ function actualizarFiltrosStock(){
   const partes=[];
   if(fStockBodega){n++;const b=getBodegaById(fStockBodega);partes.push(b.icono+' '+b.nombre);}
   if(fStockCat){n++;partes.push('🏷️ '+fStockCat);}
+  if(fStockProv){n++;partes.push('🏪 '+fStockProv);}
   const sortEl=document.getElementById('stock-sort');
   if(sortEl&&sortEl.value){n++;partes.push('↕️ '+sortEl.selectedOptions[0]?.text);}
   const badge=document.getElementById('stk-filtros-badge');
@@ -3374,12 +3397,13 @@ function actualizarFiltrosStock(){
   }
 }
 function limpiarFiltrosStock(){
-  fStockBodega='';fStockCat='';
+  fStockBodega='';fStockCat='';fStockProv='';
   document.querySelectorAll('#stock-bod-chips .chip').forEach(x=>x.classList.remove('on'));
   const primera=document.querySelector('#stock-bod-chips .chip');if(primera)primera.classList.add('on');
   document.querySelectorAll('#stock-chips .chip').forEach(x=>x.classList.remove('on'));
   const primeraC=document.querySelector('#stock-chips .chip');if(primeraC)primeraC.classList.add('on');
   const catSel=document.getElementById('stk-cat-sel');if(catSel)catSel.value='';
+  const provSel=document.getElementById('stk-prov-sel');if(provSel)provSel.value='';
   const sortEl=document.getElementById('stock-sort');if(sortEl)sortEl.value='';
   actualizarFiltrosStock();
   renderStockCatChips();
@@ -3404,6 +3428,8 @@ function _renderStockNow(){
   });
   // Filtro categoría SOLO si no hay texto de búsqueda activo
   if(fStockCat&&!q)pp=pp.filter(p=>p.categoria===fStockCat);
+  // Filtro proveedor SOLO si no hay texto de búsqueda activo
+  if(fStockProv&&!q)pp=pp.filter(p=>(p.proveedor||'')=== fStockProv);
 
   // Búsqueda de texto — busca en nombre, código y proveedor
   if(q)pp=pp.filter(p=>
@@ -6709,7 +6735,7 @@ startCfgListener();
 
 Object.assign(window,{
   selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,toggleMas,closeMas,navSem,navMes,setRepTab,selProvDona,cerrarDetalleProv,setAreaTab,toggleMode,
-  fStockBod,fStockCat2,fStockCatSel,toggleStockFiltros,limpiarFiltrosStock,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
+  fStockBod,fStockCat2,fStockCatSel,fStockProvSel,toggleStockFiltros,limpiarFiltrosStock,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
   toggleProdFiltros,fProdCatSel,limpiarFiltrosProds,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,limpiarBuscar,vaciarCarrito,
