@@ -6601,13 +6601,20 @@ function renderCfgBodegasArea(){
             ${bodOpts}
           </select>
         </div>
+        <div>
+          <div style="font-size:9px;color:var(--txm);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">4ª prioridad (si 3ª sin stock)</div>
+          <select class="fi" id="cfg-bpa-${k}-3" style="font-size:14px;padding:8px 12px">
+            <option value="">— Bodega del producto —</option>
+            ${bodOpts}
+          </select>
+        </div>
       </div>
     </div>`;
   }).join('');
   areas.forEach(k=>{
     const raw=reglas[k];
     const lista=Array.isArray(raw)?raw:(raw?[raw]:[]);
-    [0,1,2].forEach(i=>{
+    [0,1,2,3].forEach(i=>{
       const sel=document.getElementById(`cfg-bpa-${k}-${i}`);
       if(sel&&lista[i])sel.value=lista[i];
     });
@@ -6621,7 +6628,8 @@ async function guardarBodegasArea(){
     const v0=document.getElementById(`cfg-bpa-${k}-0`)?.value||'';
     const v1=document.getElementById(`cfg-bpa-${k}-1`)?.value||'';
     const v2=document.getElementById(`cfg-bpa-${k}-2`)?.value||'';
-    const lista=[v0,v1,v2].filter(Boolean);
+    const v3=document.getElementById(`cfg-bpa-${k}-3`)?.value||'';
+    const lista=[v0,v1,v2,v3].filter(Boolean);
     if(lista.length)reglas[k]=lista;
   });
   try{
