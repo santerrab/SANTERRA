@@ -3120,6 +3120,7 @@ function startL(){
     renderStockCatChips();
     if(pgOn('pg-stock'))_renderStockNow();
     if(pgOn('pg-prods'))renderProds();
+    if(pgOn('pg-inv')&&invActivo)renderConteo();
   },err=>{sdot('er');toast('Error: '+err.message,'err');});
   uS=onSnapshot(query(collection(db,'solicitudes'),orderBy('creadoEn','desc'),limit(500)),s=>{
     const nueva=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -6268,7 +6269,7 @@ function renderInvChips(){
     bodegas.map(b=>`<button class="chip ${invFiltroBodega===b.id?'on':''}" onclick="fInv('','${b.id}',this)">${b.icono} ${b.nombre}</button>`).join('');
 }
 function fInv(cat,bod,btn){invFiltroCategoria=cat;invFiltroBodega=bod;document.querySelectorAll('#inv-chips .chip').forEach(x=>x.classList.remove('on'));if(btn)btn.classList.add('on');renderConteo();}
-function nuevoInventario(){if(invActivo&&!confirm('Hay un conteo en progreso. ¿Iniciar uno nuevo?'))return;invActivo={fechaInicio:new Date(),nombre:'Inventario '+new Date().toLocaleDateString('es-CL')};conteoLocal={};document.getElementById('inv-act-fecha').textContent=fDate({toDate:()=>invActivo.fechaInicio});document.getElementById('inv-activo').style.display='block';document.getElementById('inv-historial').style.display='none';renderInvChips();renderConteo();}
+function nuevoInventario(){if(invActivo&&!confirm('Hay un conteo en progreso. ¿Iniciar uno nuevo?'))return;invActivo={fechaInicio:new Date(),nombre:'Inventario '+new Date().toLocaleDateString('es-CL')};conteoLocal={};invFiltroCategoria='';invFiltroBodega='';document.getElementById('inv-act-fecha').textContent=fDate({toDate:()=>invActivo.fechaInicio});document.getElementById('inv-activo').style.display='block';document.getElementById('inv-historial').style.display='none';renderInvChips();renderConteo();}
 function cancelarInventario(){if(!confirm('¿Cancelar el conteo?'))return;invActivo=null;conteoLocal={};document.getElementById('inv-activo').style.display='none';document.getElementById('inv-historial').style.display='block';}
 function marcarTodosPendientes(){if(!confirm('¿Limpiar todo el conteo?'))return;conteoLocal={};renderConteo();}
 function renderConteo(){
