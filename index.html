@@ -6272,13 +6272,14 @@ function fInv(cat,bod,btn){invFiltroCategoria=cat;invFiltroBodega=bod;document.q
 function nuevoInventario(){if(invActivo&&!confirm('Hay un conteo en progreso. ¿Iniciar uno nuevo?'))return;invActivo={fechaInicio:new Date(),nombre:'Inventario '+new Date().toLocaleDateString('es-CL')};conteoLocal={};invFiltroCategoria='';invFiltroBodega='';document.getElementById('inv-act-fecha').textContent=fDate({toDate:()=>invActivo.fechaInicio});document.getElementById('inv-activo').style.display='block';document.getElementById('inv-historial').style.display='none';renderInvChips();renderConteo();}
 function cancelarInventario(){if(!confirm('¿Cancelar el conteo?'))return;invActivo=null;conteoLocal={};document.getElementById('inv-activo').style.display='none';document.getElementById('inv-historial').style.display='block';}
 function marcarTodosPendientes(){if(!confirm('¿Limpiar todo el conteo?'))return;conteoLocal={};renderConteo();}
+function _norm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function renderConteo(){
   if(!invActivo)return;
-  const q=(document.getElementById('inv-buscar')?.value||'').toLowerCase();
+  const q=_norm(document.getElementById('inv-buscar')?.value||'');
   let pp=[...prods];
   if(invFiltroBodega)pp=pp.filter(p=>(p.stockPorBodega?.[invFiltroBodega]||0)>0||(p.bodega||'seca')===invFiltroBodega);
   if(invFiltroCategoria)pp=pp.filter(p=>p.categoria===invFiltroCategoria);
-  if(q)pp=pp.filter(p=>p.nombre.toLowerCase().includes(q));
+  if(q)pp=pp.filter(p=>_norm(p.nombre).includes(q));
   // ── Conteo por PRODUCTO+BODEGA: conteoLocal[pid] = {bodId: valorKg, ...} ──
   // Una "línea" de conteo = una combinación producto×bodega donde el producto tiene stock real.
   const lineasTotales=[];
