@@ -6306,6 +6306,7 @@ function renderConteo(){
   // siempre — evita el caso confuso de ver "Buffet" dentro de una tarjeta agrupada bajo "Seca".
   const renderProd=(p,bodegaFiltro=null)=>{
     const isDualInv=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
+    const isKg=['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
     const spb=p.stockPorBodega||{};
     let bodIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
     if(!bodIds.length)bodIds=[p.bodega||'seca'];
@@ -6328,7 +6329,7 @@ function renderConteo(){
         <span class="inv-bod-tag">${bod?.icono||'📦'} ${bod?.nombre||bodId}</span>
         <div class="inv-input-wrap">
           <span class="inv-stock-lbl">Sistema: <strong>${stkDisplay}</strong></span>
-          <input class="inv-input ${yaContado?'ok':''}" type="number" min="0" step="${isDualInv?'1':isKg(p)?'0.1':'1'}"
+          <input class="inv-input ${yaContado?'ok':''}" type="number" min="0" step="${isDualInv?'1':isKg?'0.1':'1'}"
             placeholder="0" value="${yaContado?valDisplay:''}"
             oninput="setConteo('${p.id}','${bodId}',this.value,this,${isDualInv?p.pesoPorUnidad:0})"
             onblur="renderConteo()">
