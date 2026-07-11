@@ -2370,6 +2370,21 @@ function stockEnBodega(p,bodId){
   if(!p.stockPorBodega)return bodId===p.bodega?(p.stock||0):0;
   return p.stockPorBodega[bodId]||0;
 }
+// ── Fuente única de verdad: ¿en qué bodegas está asignado este producto? ──
+// Devuelve TODAS las bodegas donde el producto tiene una entrada en stockPorBodega,
+// tenga stock actual >0 o no. Esto es intencional: un producto asignado a una
+// bodega con stock=0 en el sistema puede seguir teniendo unidades físicas ahí
+// (el sistema y la realidad se desincronizan con el tiempo), y tanto Almacén
+// como Inventario necesitan poder mostrar/corregir esa bodega, no ocultarla.
+// Usar esta función en cualquier lugar que necesite listar "bodegas del producto"
+// para evitar que la lógica se duplique y se desincronice entre módulos.
+function bodegasDeProducto(p){
+  const spb=p.stockPorBodega;
+  if(spb&&Object.keys(spb).length)return Object.keys(spb);
+  return [p.bodega||'seca'];
+}
+// ¿Pertenece este producto a la bodega bodId? (asignado, con o sin stock actual)
+function productoEnBodega(p,bodId){return bodegasDeProducto(p).includes(bodId);}
 // Días de stock restantes al ritmo de consumo de los últimos `ventana` días (null = sin datos suficientes)
 function diasRestantes(p,movs,ventana=14){
   const hoy=new Date();const desde=new Date(hoy);desde.setDate(hoy.getDate()-ventana);
@@ -3319,7 +3334,7 @@ function renderBodegaChipsAll(){
   renderStockCatChips();
 }
 function renderStockCatChips(){
-  const prodsFilt=fStockBodega?prods.filter(p=>(p.stockPorBodega?p.stockPorBodega[fStockBodega]>0:p.bodega===fStockBodega)):prods;
+  const prodsFilt=fStockBodega?prods.filter(p=>productoEnBodega(p,fStockBodega)):prods;
   const cs=[...new Set(prodsFilt.map(p=>p.categoria).filter(Boolean))].sort();
   // Chips ocultos para compatibilidad interna
   const el=document.getElementById('stock-chips');if(el){
@@ -3423,10 +3438,7 @@ function _renderStockNow(){
   let pp=[...prods];
 
   // Filtro bodega SOLO si no hay texto de búsqueda activo
-  if(fStockBodega&&!q)pp=pp.filter(p=>{
-    if(p.stockPorBodega)return(p.stockPorBodega[fStockBodega]||0)>0||p.bodega===fStockBodega;
-    return p.bodega===fStockBodega;
-  });
+  if(fStockBodega&&!q)pp=pp.filter(p=>productoEnBodega(p,fStockBodega));
   // Filtro categoría SOLO si no hay texto de búsqueda activo
   if(fStockCat&&!q)pp=pp.filter(p=>p.categoria===fStockCat);
   // Filtro proveedor SOLO si no hay texto de búsqueda activo
@@ -3461,9 +3473,10 @@ function _renderStockNow(){
     const cls=st===0?'bg-r-s':(m!=null&&st<=m)?'bg-y-s':'bg-g-s';
     const puedeAjustar=role==='encargado';
     const isDual=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
+    const bodsAsignadas=bodegasDeProducto(p);
     const bodTags=bodegas.map(b=>{
+      if(!bodsAsignadas.includes(b.id))return'';
       const s=stockEnBodega(p,b.id);
-      if(!s&&p.bodega!==b.id)return'';
       const sc=s===0?'no-stock':(m!=null&&s<=m)?'low-stock':'has-stock';
       // Si puede ajustar: el tag es clickeable y abre el ajuste con ESA bodega exacta ya
       // seleccionada — clave cuando el producto está repartido en varias bodegas, para no
@@ -4887,7 +4900,7 @@ function renderProds(){
     const bodId=p.bodega||'seca';
     const bod=bodMap.get(bodId)||BODEGAS_DEFAULT.find(b=>b.id===bodId)||{id:bodId,nombre:bodId,icono:'\u{1F4E6}',orden:99};
     const st=stockTotal(p);
-    const spbTags=Object.entries(p.stockPorBodega||{}).filter(([,v])=>v>0).map(([k,v])=>{const b=getBodegaById(k);return`<span class="stock-bod-tag has-stock">${b.icono} ${b.nombre}: ${clpn(v)} ${p.unidadMedida||''}</span>`;}).join('');
+    const spbTags=bodegasDeProducto(p).map(k=>{const v=(p.stockPorBodega||{})[k]||0;const b=getBodegaById(k);return`<span class="stock-bod-tag ${v>0?'has-stock':'no-stock'}">${b.icono} ${b.nombre}: ${clpn(v)} ${p.unidadMedida||''}</span>`;}).join('');
     return`<div class="prod-card">
       <div class="prod-hdr">
         <div><div class="prod-nom">${p.nombre}${p.codigoProducto?` <span style="font-size:10px;color:var(--txm)">\u00B7 ${p.codigoProducto}</span>`:''}</div><div class="prod-cat">${p.categoria||'\u2014'}${p.subcategoria?' \u203A '+p.subcategoria:''}</div></div>
@@ -6284,8 +6297,7 @@ function renderConteo(){
   // Una "línea" de conteo = una combinación producto×bodega donde el producto tiene stock real.
   const lineasTotales=[];
   prods.forEach(p=>{
-    const spb=p.stockPorBodega||{[p.bodega||'seca']:p.stock||0};
-    Object.keys(spb).forEach(bodId=>{if((spb[bodId]||0)>0||bodId===(p.bodega||'seca'))lineasTotales.push(pid_bod(p.id,bodId));});
+    bodegasDeProducto(p).forEach(bodId=>{lineasTotales.push(pid_bod(p.id,bodId));});
   });
   const contado=k=>conteoLocal[k]!==undefined;
   const contadasN=lineasTotales.filter(contado).length;
@@ -6308,8 +6320,7 @@ function renderConteo(){
     const isDualInv=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
     const isKg=['kg','g','lt','ml'].includes((p.unidadMedida||'').toLowerCase());
     const spb=p.stockPorBodega||{};
-    let bodIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
-    if(!bodIds.length)bodIds=[p.bodega||'seca'];
+    let bodIds=bodegasDeProducto(p);
     // Filtro de bodega de la barra de chips (selección manual del usuario)
     if(invFiltroBodega)bodIds=bodIds.filter(b=>b===invFiltroBodega);
     // Filtro de sección (agrupación visual): solo la bodega de esta sección
@@ -6340,8 +6351,7 @@ function renderConteo(){
     }).join('');
     // El badge "Completo/Parcial/Pendiente" siempre refleja el estado real de TODAS las bodegas
     // donde el producto tiene stock — independiente de cuántas filas se muestren en esta tarjeta.
-    const bodIdsReales=Object.keys(spb).filter(b=>(spb[b]||0)>0);
-    const bodIdsParaEstado=bodIdsReales.length?bodIdsReales:[p.bodega||'seca'];
+    const bodIdsParaEstado=bodegasDeProducto(p);
     const todasContadas=bodIdsParaEstado.every(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
     const algunaContada=bodIdsParaEstado.some(b=>conteoLocal[pid_bod(p.id,b)]!==undefined);
     return`<div class="inv-row ${todasContadas?'contado':algunaContada?'parcial':'pendiente'}">
@@ -6360,8 +6370,7 @@ function renderConteo(){
     const grupos={};bodegas.forEach(b=>grupos[b.id]=[]);
     pp.forEach(p=>{
       const spb=p.stockPorBodega||{};
-      let bIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
-      if(!bIds.length)bIds=[p.bodega||'seca'];
+      const bIds=bodegasDeProducto(p);
       bIds.forEach(b=>{if(!grupos[b])grupos[b]=[];grupos[b].push(p);});
     });
     lista.innerHTML=bodegas.map((b,bi)=>{
@@ -6413,8 +6422,7 @@ function actualizarContadores(){
   // Total de líneas posibles (producto×bodega con stock) para calcular pendientes
   let totalLineas=0;
   prods.forEach(p=>{
-    const spb=p.stockPorBodega||{[p.bodega||'seca']:p.stock||0};
-    const bodIds=Object.keys(spb).filter(b=>(spb[b]||0)>0);
+    const bodIds=bodegasDeProducto(p);
     totalLineas+=bodIds.length||1;
   });
   const ec=document.getElementById('inv-cnt-c'),ep=document.getElementById('inv-cnt-p'),ev=document.getElementById('inv-cnt-v');
