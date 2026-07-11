@@ -1,4 +1,4 @@
-// Service Worker SANTERRA — v4 — FCM Push Notifications
+// Service Worker SANTERRA — v5 — FCM Push Notifications + fix clone() race
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
@@ -15,7 +15,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // ── CACHE ─────────────────────────────────────────────────────────────────────
-const CACHE = 'santerra-v4';
+const CACHE = 'santerra-v5';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -39,7 +39,11 @@ self.addEventListener('fetch', e => {
       url.pathname === '' || url.pathname.endsWith('manifest.json')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-cache' })
-        .then(r => { if (r.ok) caches.open(CACHE).then(c => c.put(e.request, r.clone())); return r; })
+        .then(r => {
+          const copy = r.clone(); // clonar YA, antes de que el navegador empiece a leer el cuerpo de r
+          if (r.ok) caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+          return r;
+        })
         .catch(() => caches.match('./index.html'))
     ); return;
   }
