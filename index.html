@@ -6576,11 +6576,15 @@ function leerCSV(input){
   };reader.readAsText(file);
 }
 function aplicarCSV(){
-  // El CSV no distingue bodega — se asigna explícitamente a la bodega principal del
-  // producto (p.bodega). Si el producto tiene stock en otras bodegas, esas quedan
-  // intactas y deberán contarse aparte manualmente (evita adivinar/repartir).
-  csvData.filter(r=>r.match).forEach(r=>{conteoLocal[pid_bod(r.prod.id,r.prod.bodega||'seca')]=r.cant;});
-  toast('✓ '+csvData.filter(r=>r.match).length+' importados a su bodega principal');
+  // Si hay una bodega seleccionada en los chips de filtro al momento de importar, el CSV
+  // se asigna a ESA bodega (coherente con el flujo de "recorrer bodega por bodega").
+  // Si no hay ningún chip activo (filtro "Todos"), se asigna a la bodega principal del
+  // producto (p.bodega) como antes. En ambos casos, las demás bodegas del producto quedan
+  // intactas y deben contarse aparte — nunca se adivina ni se reparte.
+  const bodDestino=invFiltroBodega||null;
+  csvData.filter(r=>r.match).forEach(r=>{conteoLocal[pid_bod(r.prod.id,bodDestino||r.prod.bodega||'seca')]=r.cant;});
+  const nombreBod=bodDestino?(bodegas.find(b=>b.id===bodDestino)?.nombre||bodDestino):'su bodega principal';
+  toast('✓ '+csvData.filter(r=>r.match).length+' importados a '+nombreBod);
   closeM('mo-inv-csv');renderConteo();
 }
 
@@ -6745,9 +6749,9 @@ startCfgListener();
 })();
 
 Object.assign(window,{
-  selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,toggleMas,closeMas,navSem,navMes,setRepTab,selProvDona,cerrarDetalleProv,setAreaTab,toggleMode,
+  selRole,pi,pb2,cPin,logout,logoutCambiarPerfil,logoutCompleto,goTo,openM,closeM,toggleMas,closeMas,navSem,navMes,setRepTab,selProvDona,cerrarDetalleProv,setAreaTab,toggleMode,renderReporte,
   fStockBod,fStockCat2,fStockCatSel,fStockProvSel,toggleStockFiltros,limpiarFiltrosStock,fDesp,fSols,fMis,fProds,fProdBodega,onProdBuscar,fInv,fDiff,fDetalle,
-  toggleProdFiltros,fProdCatSel,limpiarFiltrosProds,
+  toggleProdFiltros,fProdCatSel,limpiarFiltrosProds,renderProds,
   renderStock,renderNotifStatus,diagnosticoFCM,
   pBuscar,addCart,chgC,setCantC,rmC,enviarPedido,selSubArea,limpiarBuscar,vaciarCarrito,
   fnPrecioBlur,fnSubtotalBlur,
