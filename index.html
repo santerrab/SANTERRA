@@ -22,37 +22,55 @@
 <style>
 /* ── TOKENS ──────────────────────────────────────────────────── */
 :root{
-  --bg:#080a0f;--sf:#0f1218;--sf2:#161a22;--sf3:#0a0c11;
-  --bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.05);--bd3:rgba(255,255,255,.025);
-  --accent:#ff3b5c;--accd:rgba(255,59,92,.1);--accb:rgba(255,59,92,.28);--accentd:rgba(255,59,92,.1);--accentb:rgba(255,59,92,.28);
-  --blue:#4f8ef7;--blued:rgba(79,142,247,.1);--blueb:rgba(79,142,247,.28);
-  --green:#00c98d;--greend:rgba(0,201,141,.1);--greenb:rgba(0,201,141,.28);
-  --yellow:#ffb800;--yellowd:rgba(255,184,0,.1);--yellowb:rgba(255,184,0,.28);
-  --red:#ff4444;--redd:rgba(255,68,68,.1);--redb:rgba(255,68,68,.28);
-  --purple:#a78bfa;--purpled:rgba(167,139,250,.1);--purpleb:rgba(167,139,250,.28);
-  --orange:#ff7849;--oranged:rgba(255,120,73,.1);--orangeb:rgba(255,120,73,.28);
+  --bg:#07080d;--sf:rgba(255,255,255,.055);--sf2:rgba(255,255,255,.038);--sf3:rgba(255,255,255,.022);
+  --bd:rgba(255,255,255,.16);--bd2:rgba(255,255,255,.10);--bd3:rgba(255,255,255,.055);
+  --accent:#ff3b5c;--accd:rgba(255,59,92,.14);--accb:rgba(255,59,92,.32);--accentd:rgba(255,59,92,.14);--accentb:rgba(255,59,92,.32);
+  --blue:#4f8ef7;--blued:rgba(79,142,247,.14);--blueb:rgba(79,142,247,.32);
+  --green:#00c98d;--greend:rgba(0,201,141,.14);--greenb:rgba(0,201,141,.32);
+  --yellow:#ffb800;--yellowd:rgba(255,184,0,.14);--yellowb:rgba(255,184,0,.32);
+  --red:#ff4444;--redd:rgba(255,68,68,.14);--redb:rgba(255,68,68,.32);
+  --purple:#a78bfa;--purpled:rgba(167,139,250,.14);--purpleb:rgba(167,139,250,.32);
+  --orange:#ff7849;--oranged:rgba(255,120,73,.14);--orangeb:rgba(255,120,73,.32);
   --tx:#eef2ff;--txm:#7b8499;--txd:#363c4e;
   --r:16px;
+  /* ── GLASSMORFISMO: tokens de vidrio esmerilado ─────────────────── */
+  --glass-blur:blur(20px) saturate(150%);
+  --glass-blur-sm:blur(14px) saturate(140%);
+  --glass-blur-lg:blur(30px) saturate(160%);
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
   --sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;min-height:100vh;min-height:100dvh}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+body{font-family:'DM Sans',sans-serif;color:var(--tx);overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch;
+  background:
+    radial-gradient(circle at 8% 6%,rgba(255,59,92,.16),transparent 40%),
+    radial-gradient(circle at 94% 16%,rgba(79,142,247,.13),transparent 42%),
+    radial-gradient(circle at 15% 88%,rgba(167,139,250,.11),transparent 45%),
+    radial-gradient(circle at 90% 92%,rgba(0,201,141,.08),transparent 42%),
+    var(--bg);
+}
+body.light{background:
+    radial-gradient(circle at 8% 6%,rgba(255,59,92,.09),transparent 40%),
+    radial-gradient(circle at 94% 16%,rgba(79,142,247,.08),transparent 42%),
+    radial-gradient(circle at 15% 88%,rgba(167,139,250,.07),transparent 45%),
+    radial-gradient(circle at 90% 92%,rgba(0,201,141,.05),transparent 42%),
+    var(--bg);
+}
 body.login-active{overflow:hidden}
 
 /* ── MODO DIURNO ─────────────────────────────────────────────── */
 body.light{
-  --bg:#f0f2f7;--sf:#ffffff;--sf2:#e8ebf2;--sf3:#dde1ea;
-  --bd:rgba(0,0,0,.09);--bd2:rgba(0,0,0,.06);--bd3:rgba(0,0,0,.03);
+  --bg:#eef0f7;--sf:rgba(255,255,255,.6);--sf2:rgba(255,255,255,.42);--sf3:rgba(255,255,255,.3);
+  --bd:rgba(255,255,255,.7);--bd2:rgba(0,0,0,.07);--bd3:rgba(0,0,0,.04);
   --tx:#0f1420;--txm:#4a5268;--txd:#a0a8bc;
-  --accd:rgba(255,59,92,.07);--accb:rgba(255,59,92,.18);--accentd:rgba(255,59,92,.07);--accentb:rgba(255,59,92,.18);
-  --blued:rgba(79,142,247,.07);--blueb:rgba(79,142,247,.18);
-  --greend:rgba(0,201,141,.07);--greenb:rgba(0,201,141,.18);
-  --yellowd:rgba(255,184,0,.07);--yellowb:rgba(255,184,0,.18);
-  --redd:rgba(255,68,68,.07);--redb:rgba(255,68,68,.18);
-  --purpled:rgba(167,139,250,.07);--purpleb:rgba(167,139,250,.18);
-  --oranged:rgba(255,120,73,.07);--orangeb:rgba(255,120,73,.18);
+  --accd:rgba(255,59,92,.1);--accb:rgba(255,59,92,.24);--accentd:rgba(255,59,92,.1);--accentb:rgba(255,59,92,.24);
+  --blued:rgba(79,142,247,.1);--blueb:rgba(79,142,247,.24);
+  --greend:rgba(0,201,141,.1);--greenb:rgba(0,201,141,.24);
+  --yellowd:rgba(255,184,0,.1);--yellowb:rgba(255,184,0,.24);
+  --redd:rgba(255,68,68,.1);--redb:rgba(255,68,68,.24);
+  --purpled:rgba(167,139,250,.1);--purpleb:rgba(167,139,250,.24);
+  --oranged:rgba(255,120,73,.1);--orangeb:rgba(255,120,73,.24);
 }
 body.light .hdr{box-shadow:0 1px 0 var(--bd),0 4px 20px rgba(0,0,0,.06)}
 body.light .modal{box-shadow:0 -8px 40px rgba(0,0,0,.12)}
@@ -61,8 +79,8 @@ body.light .nav{box-shadow:0 -1px 0 var(--bd),0 -4px 20px rgba(0,0,0,.06)}
 
 /* ── HEADER ─────────────────────────────────────────────────── */
 .hdr{
-  background:rgba(8,10,15,.92);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  background:rgba(10,12,18,.58);
+  backdrop-filter:var(--glass-blur-lg);-webkit-backdrop-filter:var(--glass-blur-lg);
   transform:translateZ(0);-webkit-transform:translateZ(0);
   border-bottom:1px solid var(--bd);
   padding:0 max(18px,var(--sr)) 12px max(18px,var(--sl));
@@ -71,7 +89,7 @@ body.light .nav{box-shadow:0 -1px 0 var(--bd),0 -4px 20px rgba(0,0,0,.06)}
   display:flex;align-items:center;justify-content:space-between;
   min-height:calc(58px + var(--st));
 }
-body.light .hdr{background:rgba(255,255,255,.92)}
+body.light .hdr{background:rgba(255,255,255,.62)}
 .hdr-l{display:flex;align-items:center;gap:12px}
 .hdr-tt{font-family:'Inter',sans-serif;font-size:17px;font-weight:900;
   background:linear-gradient(135deg,var(--accent),#ff8c69);
@@ -95,8 +113,8 @@ body.light .hdr{background:rgba(255,255,255,.92)}
 /* ── NAV INFERIOR ────────────────────────────────────────────── */
 .nav{
   position:fixed;bottom:0;left:0;right:0;
-  background:rgba(8,10,15,.88);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  background:rgba(10,12,18,.52);
+  backdrop-filter:var(--glass-blur-lg);-webkit-backdrop-filter:var(--glass-blur-lg);
   transform:translateZ(0);-webkit-transform:translateZ(0);
   border-top:1px solid var(--bd);
   display:flex;justify-content:space-evenly;padding-bottom:var(--sb);z-index:200;
@@ -107,7 +125,7 @@ body.light .hdr{background:rgba(255,255,255,.92)}
   box-shadow:0 -1px 0 var(--bd);
 }
 .nav::-webkit-scrollbar{display:none}
-body.light .nav{background:rgba(255,255,255,.92)}
+body.light .nav{background:rgba(255,255,255,.58)}
 .nb{
   flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:10px 6px 8px;background:none;border:none;
@@ -1281,6 +1299,46 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 @media(min-width:600px){
   .prod-precios{grid-template-columns:repeat(3,1fr)}
   .sg{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GLASSMORFISMO — capa aditiva de vidrio esmerilado
+   No se modifica ninguna regla anterior: esto solo agrega backdrop-filter
+   (y en el caso de .ovl, un leve ajuste de opacidad/saturación) a las
+   superficies que ya usan var(--sf)/var(--sf2)/var(--sf3) como fondo.
+   Los colores, bordes y fondos siguen viniendo 100% de los tokens de
+   :root editados arriba — ninguna clase, id ni estructura HTML cambia,
+   por lo que no afecta selectores usados desde el JS.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Overlays de modal/pin: un poco menos opacos para que el blur de fondo respire */
+.ovl{background:rgba(4,5,9,.78);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%)}
+.pin-ovl{background:rgba(4,5,9,.7)}
+
+/* Superficies grandes: hoja completa, se nota más el vidrio */
+.modal,.pin-sheet,.mas-panel,.sidebar{
+  backdrop-filter:var(--glass-blur-lg);-webkit-backdrop-filter:var(--glass-blur-lg);
+}
+
+/* Cards, listas, inputs y paneles — el grueso de la interfaz */
+.st,.li,.rcard,.dsc,.solc,.merma-card,.prod-card,.area-card,.trend-card,
+.rep-header,.rep-barras-card,.rep-dona-card,.rep-prov-detalle,.fn-item-card,
+.hist-precio-card,.inv-hist-card,.verif-item,.ci,.cat-edit-form,
+.fi,.sinput,.stk-select,.pedir-input,.pedir-nota,.inv-input,
+.fn-bod-select,.fn-qty-input,.fn-precio-input,
+.bg-ghost,.asesor-card,.asesor-ia-output,.asesor-ia-pedido,
+.dual-info-box,.fn-dual-box,.prev-box,.inv-row,.fact-cabecera,
+.asesor-tabs,.area-tabs,.rep-tabs,.rep-rango-custom,
+#prov-dropdown,#pp-prov-dd,#ajs-prod-sel,#inv-diff-lista,#inv-det-lista,
+#csv-preview-lista,#conv-preview{
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+}
+
+/* Controles pequeños y repetidos (chips, botones ghost, teclado PIN):
+   blur más liviano para no penalizar el rendimiento en listas largas */
+.chip,.pchip,.stk-filtros-btn,.btn-rech,.pk,.rep-nav button,.mode-toggle,
+.asesor-tab.on,.area-tab.on,.sri{
+  backdrop-filter:var(--glass-blur-sm);-webkit-backdrop-filter:var(--glass-blur-sm);
 }
 
 </style>
