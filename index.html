@@ -3285,7 +3285,8 @@ function _renderDashNow(){
     document.getElementById('dash-stats-enc').style.display='';
     const vt=prods.reduce((a,p)=>a+stockTotal(p)*(p.precioTotal||0),0);
     const vn=prods.reduce((a,p)=>a+stockTotal(p)*(p.precioNeto||0),0);
-    const pp=sols.filter(s=>s.estado==='pendiente').length;
+    // 'visto' = ya se abrió la solicitud, pero sigue sin despachar → sigue siendo pendiente
+    const pp=sols.filter(s=>s.estado==='pendiente'||s.estado==='visto').length;
     const movHoy=movs.filter(m=>{if(m.tipo!=='salida')return false;const d=m.creadoEn?.toDate?m.creadoEn.toDate():null;return d&&d>=hoy&&d<manana;});
     const valHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>{const p=prods.find(x=>x.id===it.productoId);return b+(it.cantidadDespachada||it.cantidad||0)*((it.precioUnitStock!=null?it.precioUnitStock:p?.precioTotal)||0);},a),0);
     const unHoy=movHoy.reduce((a,m)=>(m.items||[]).reduce((b,it)=>b+(it.cantidadDespachada||it.cantidad||0),a),0);
@@ -3343,7 +3344,9 @@ function _renderDashNow(){
     renderGastoProveedor();
   }else if(role==='bodeguero'){
     document.getElementById('dash-stats-bod').style.display='';
-    document.getElementById('d-pp2').textContent=sols.filter(s=>s.estado==='pendiente').length;
+    // 'visto' = el bodeguero ya abrió la solicitud, pero sigue sin despachar.
+    // Debe seguir contando como pendiente hasta que su estado sea 'despachada'.
+    document.getElementById('d-pp2').textContent=sols.filter(s=>s.estado==='pendiente'||s.estado==='visto').length;
     const alBod=document.getElementById('dash-al-bod');alBod.innerHTML='';
     renderHorarioBanner('dash-al-bod');
     // ── Alertas agrupadas por bodega (bodeguero) ────────────────────────────
@@ -3377,7 +3380,8 @@ function _renderDashNow(){
     renderNotifStatus();
   }else{
     document.getElementById('dash-stats-coc').style.display='';
-    const mP=sols.filter(s=>s.creadoPor===role&&s.estado==='pendiente').length;
+    // 'visto' = el bodeguero ya la abrió, pero el área solicitante todavía no recibió nada
+    const mP=sols.filter(s=>s.creadoPor===role&&(s.estado==='pendiente'||s.estado==='visto')).length;
     const mH=sols.filter(s=>{if(s.creadoPor!==role||s.estado!=='despachada')return false;const d=s.despachadoEn?.toDate?s.despachadoEn.toDate():null;return d&&d>=hoy;}).length;
     document.getElementById('d-mis-pend').textContent=mP;document.getElementById('d-mis-hoy').textContent=mH;
     const coc=document.getElementById('dash-sols-coc');
@@ -4129,7 +4133,9 @@ const esAreaRole=r=>['c1','c2','c3','c4'].includes(r);
 function fSols(e,btn){fSE=e;document.querySelectorAll('#pg-sols .chip').forEach(c=>c.classList.remove('on'));btn.classList.add('on');renderSolsPage();}
 function renderSolsPage(){
   const lista=document.getElementById('sols-lista');
-  let ss=fSE?sols.filter(s=>s.estado===fSE):[...sols];
+  // La pestaña "Pendientes" debe incluir 'visto': una solicitud que el bodeguero
+  // ya abrió pero todavía no despachó sigue pendiente, no debe desaparecer de acá.
+  let ss=!fSE?[...sols]:fSE==='pendiente'?sols.filter(s=>s.estado==='pendiente'||s.estado==='visto'):sols.filter(s=>s.estado===fSE);
   // Ordenar: pendientes/visto primero, luego por fecha desc
   ss.sort((a,b)=>{
     const order={pendiente:0,visto:0,despachada:1,rechazada:2};
