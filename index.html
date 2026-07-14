@@ -1762,6 +1762,9 @@ body.light input[type="time"]::-webkit-calendar-picker-indicator{
   <!-- KPIs principales -->
   <div class="sg rep-kpis" id="rep-stats" style="margin-bottom:12px"></div>
 
+  <!-- Gasto por proveedor — siempre del mes en curso, independiente del período elegido arriba -->
+  <div class="trend-card" id="rep-gasto-prov-mes" style="margin-bottom:12px"></div>
+
   <!-- Gráfico dona: distribución por proveedor -->
   <div class="rep-dona-card" id="rep-dona-wrap">
     <div class="rep-dona-titulo">
@@ -3410,8 +3413,8 @@ function renderTendencia(movs,prods){
     ${baja.length?`<div style="margin-top:10px;border-top:1px solid var(--bd2);padding-top:10px"><div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:8px">📉 Baja de consumo</div>${baja.map(v=>`<div class="trend-item"><div class="trend-nom">${v.nombre}</div><div class="trend-nums"><span style="font-size:11px;color:var(--txm)">${clp(v.curr)}</span><span class="trend-badge trend-dn">${v.pct}%</span></div></div>`).join('')}</div>`:''}
   </div>`;
 }
-function renderGastoProveedor(){
-  const el=document.getElementById('dash-gasto-prov');if(!el)return;
+function renderGastoProveedor(elId){
+  const el=document.getElementById(elId||'dash-gasto-prov');if(!el)return;
   const{inicio,fin}=getMes(0);
   const facMes=facts.filter(f=>{const d=f.creadoEn?.toDate?f.creadoEn.toDate():null;return d&&d>=inicio&&d<=fin;});
   if(!facMes.length){el.innerHTML='';return;}
@@ -6201,6 +6204,9 @@ function renderReporte(){
       <div class="sv" style="color:var(--purple);font-size:18px">${clp(totS)}</div>
       <div class="su">${movSem.length} despacho${movSem.length===1?'':'s'}</div>
     </div>`;
+
+  // ── GASTO POR PROVEEDOR (este mes, fijo) ─────────────────────────────────
+  renderGastoProveedor('rep-gasto-prov-mes');
 
   // ── DONA DE PROVEEDORES ─────────────────────────────────────────────────────
   const porProv={};
