@@ -2328,7 +2328,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore,collection,doc,addDoc,updateDoc,deleteDoc,setDoc,
-  onSnapshot,query,orderBy,limit,serverTimestamp,getDoc,getDocs,writeBatch
+  onSnapshot,query,orderBy,limit,serverTimestamp,getDoc,getDocs,writeBatch,runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -3996,23 +3996,20 @@ async function despachar(solId){
   const btnDesp=document.querySelector(`#dsc-${solId} .btn-desp`);
   if(btnDesp){btnDesp.disabled=true;btnDesp.textContent='Despachando...';}
   const sol=sols.find(x=>x.id===solId);if(!sol){_despachando.delete(solId);renderDesp();return;}
-  const items=[];const noTiqueados=[];
+  // Candidatos tiqueados por el usuario (aún sin descontar stock — eso se hace
+  // adentro de la transacción, con el dato fresco de Firestore en ese instante)
+  const candidatos=[];const noTiqueados=[];
   for(const it of(sol.items||[])){
     const est=despEst[solId]?.[it.productoId];
     if(!est||est.tipo==='p'){noTiqueados.push(it.nombreProducto);continue;}
     if(est.tipo==='ss'||est.cant===0)continue;
     const p=prods.find(x=>x.id===it.productoId);
     const bodId=est.bodega||p?.bodega||'seca';
-    const stockDispo=p?stockEnBodega(p,bodId):0;
-    // Dual: la solicitud guardó cantidad en piezas → convertir a kg para descontar stock
     const isDualItem=!!(p?.esDual&&p?.unidadPedido&&p?.pesoPorUnidad>0);
     const cantEnKg=isDualItem?(est.cant*(p.pesoPorUnidad||1)):est.cant;
-    const cantFinal=Math.min(cantEnKg,stockDispo);
-    if(cantFinal>0)items.push({...it,cantidadDespachada:cantFinal,
-      cantidadPiezas:isDualItem?est.cant:null,unidadPedido:isDualItem?p.unidadPedido:null,
-      bodegaOrigen:bodId,precioUnitStock:p?.precioTotal||0,precioUnitNeto:p?.precioNeto||0});
+    candidatos.push({it,p,bodId,isDualItem,cantEnKg,est});
   }
-  if(!items.length){
+  if(!candidatos.length){
     // Sin esto, si todos los productos quedan marcados ✗ "sin stock" el botón se
     // queda congelado en "Despachando..." y la solicitud no se puede volver a tocar.
     _despachando.delete(solId);
@@ -4020,37 +4017,59 @@ async function despachar(solId){
     toast('No hay productos con stock disponible para despachar','err');
     return;
   }
+  let items=[];
   try{
-    const batch=writeBatch(db);
-    // Leer todos los documentos de producto en paralelo antes de armar el batch (antes era secuencial)
-    const snaps=await Promise.all(items.map(it=>getDoc(doc(db,'productos',it.productoId))));
-    snaps.forEach((s,idx)=>{
-      const it=items[idx];
-      if(s.exists()){
+    // ── TRANSACCIÓN ATÓMICA ──────────────────────────────────────────────
+    // Stock + solicitud + movimiento se confirman juntos o no se confirma nada.
+    // Si otro despacho/ajuste/transferencia toca el mismo producto en paralelo,
+    // Firestore detecta el conflicto de lectura y reintenta esta función sola
+    // (no hace falta ningún lock manual).
+    await runTransaction(db,async(tx)=>{
+      const refs=candidatos.map(c=>doc(db,'productos',c.it.productoId));
+      // Regla de Firestore: TODAS las lecturas antes que cualquier escritura.
+      const snaps=await Promise.all(refs.map(r=>tx.get(r)));
+      items=[];
+      snaps.forEach((s,idx)=>{
+        const c=candidatos[idx];
+        if(!s.exists())return;
         const data=s.data();
-        // Actualizar stockPorBodega
         const spb={...data.stockPorBodega};
-        if(!spb[it.bodegaOrigen]&&data.bodega===it.bodegaOrigen)spb[it.bodegaOrigen]=data.stock||0;
-        spb[it.bodegaOrigen]=Math.max(0,(spb[it.bodegaOrigen]||0)-it.cantidadDespachada);
+        if(!spb[c.bodId]&&data.bodega===c.bodId)spb[c.bodId]=data.stock||0;
+        const stockDispo=spb[c.bodId]||0;
+        const cantFinal=Math.min(c.cantEnKg,stockDispo);
+        if(cantFinal<=0)return;
+        spb[c.bodId]=Math.max(0,stockDispo-cantFinal);
         const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-        batch.update(doc(db,'productos',it.productoId),{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
-      }
+        tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+        items.push({...c.it,cantidadDespachada:cantFinal,
+          cantidadPiezas:c.isDualItem?c.est.cant:null,unidadPedido:c.isDualItem?c.p.unidadPedido:null,
+          bodegaOrigen:c.bodId,precioUnitStock:c.p?.precioTotal||0,precioUnitNeto:c.p?.precioNeto||0});
+      });
+      if(!items.length)throw new Error('SIN_STOCK');
+      const incompleto=noTiqueados.length>0||items.some(it=>it.cantidadDespachada<it.cantidad);
+      tx.update(doc(db,'solicitudes',solId),{
+        estado:'despachada',despachoPor:role,areaDestino:sol.creadoPor,
+        itemsDespacho:items,itemsNoTiqueados:noTiqueados,incompleto,
+        despachadoEn:serverTimestamp()
+      });
+      const movRef=doc(collection(db,'movimientos'));
+      tx.set(movRef,{tipo:'salida',solicitudId:solId,area:sol.creadoPor,nombreArea:sol.nombreSolicitante,items,realizadoPor:role,creadoEn:serverTimestamp()});
     });
-    batch.update(doc(db,'solicitudes',solId),{
-      estado:'despachada',despachoPor:role,areaDestino:sol.creadoPor,
-      itemsDespacho:items,itemsNoTiqueados:noTiqueados,
-      incompleto:noTiqueados.length>0||items.some(it=>it.cantidadDespachada<it.cantidad),
-      despachadoEn:serverTimestamp()
-    });
-    await batch.commit();
-    await addDoc(collection(db,'movimientos'),{tipo:'salida',solicitudId:solId,area:sol.creadoPor,nombreArea:sol.nombreSolicitante,items,realizadoPor:role,creadoEn:serverTimestamp()});
+    const incompleto=noTiqueados.length>0||items.some(it=>it.cantidadDespachada<it.cantidad);
     // Actualizar estado local inmediatamente sin esperar snapshot
     const idx=sols.findIndex(x=>x.id===solId);
-    if(idx>=0)sols[idx]={...sols[idx],estado:'despachada',itemsDespacho:items,itemsNoTiqueados:noTiqueados,incompleto:noTiqueados.length>0||items.some(it=>it.cantidadDespachada<it.cantidad)};
+    if(idx>=0)sols[idx]={...sols[idx],estado:'despachada',itemsDespacho:items,itemsNoTiqueados:noTiqueados,incompleto};
     delete despEst[solId];
     renderDesp();renderSolsPage();renderDash();
     toast(noTiqueados.length?`✓ Despachado (${noTiqueados.length} sin tiquear)`:'✓ Despacho registrado');
-  }catch(e){toast('Error: '+e.message,'err');}
+  }catch(e){
+    if(e.message==='SIN_STOCK'){
+      renderDesp();
+      toast('No hay productos con stock disponible para despachar','err');
+    }else{
+      toast('Error: '+e.message,'err');
+    }
+  }
   finally{_despachando.delete(solId);}
 }
 function abrirRechazo(id){rechazandoId=id;document.getElementById('f-motivo').value='';delete despEst[id];openM('mo-rechazo');}
@@ -4748,28 +4767,25 @@ async function guardarFactura(){
       return{...it,precioNetoUnitDesc:Math.round(netoUnitDesc*100)/100,precioUnitStockDesc:cDesc.total};
     });
     const itemsParaGuardar=items.map(({_netoUnitExacto,_subtotalReal,...resto})=>resto);
-    const ref=await addDoc(collection(db,'facturas'),{
-      numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
-      fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
-      items:itemsParaGuardar,totalNeto:r.totalNeto,totalIVA:r.iva,totalAdicional:r.adicional,totalImpuestos:r.iva+r.adicional,totalFactura:r.total,
-      totalBruto:tot,descuentoPct:descPct||null,descuentoMonto:descMonto||null,
-      ingresadoPor:role,creadoEn:serverTimestamp()
-    });
-    // Actualizar stock por bodega
-    // Fase 1: leer todos los productos en paralelo (antes eran lecturas secuenciales)
-    const docs=await Promise.all(itemsConDescuento.map(it=>getDoc(doc(db,'productos',it.productoId))));
-    const batch=writeBatch(db);
-    const historialPendiente=[];
-    itemsConDescuento.forEach((it,idx)=>{
-      const s=docs[idx];
-      if(s.exists()){
+    const facturaRef=doc(collection(db,'facturas'));
+    const movRef=doc(collection(db,'movimientos'));
+    // ── TRANSACCIÓN ATÓMICA ── factura + stock + historial de precios + movimiento
+    // se confirman todos juntos. El stock se lee fresco de Firestore en el momento
+    // del commit, así que dos recepciones simultáneas del mismo producto no se pisan.
+    await runTransaction(db,async(tx)=>{
+      const refs=itemsConDescuento.map(it=>doc(db,'productos',it.productoId));
+      // Regla de Firestore: TODAS las lecturas antes que cualquier escritura.
+      const snaps=await Promise.all(refs.map(r=>tx.get(r)));
+      const historialPendiente=[];
+      snaps.forEach((s,idx)=>{
+        const it=itemsConDescuento[idx];
+        if(!s.exists())return;
         const data=s.data();
         const spb={...(data.stockPorBodega||{})};
         // Migrar stock legacy si es necesario
         if(!data.stockPorBodega&&(data.stock||0)>0){spb[data.bodega||'seca']=(data.stock||0);}
         spb[it.bodegaDestino]=(spb[it.bodegaDestino]||0)+it.cantidadStock;
         const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-        const productRef=doc(db,'productos',it.productoId);
         // ── Dual: calcular peso promedio ponderado si se informaron piezas ──
         const dualUpdate={};
         if(it.piezasRecibidas>0&&data.esDual){
@@ -4784,7 +4800,7 @@ async function guardarFactura(){
           // piezasStock es derivado, no autoritativo — solo para referencia en dashboard
           dualUpdate.piezasStock=totalPiezas;
         }
-        batch.update(productRef,{stockPorBodega:spb,stock:newTotal,
+        tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,
           precioNeto:it.precioNetoUnitDesc,
           precioTotal:it.precioUnitStockDesc,
           totalImpuestos:it.precioUnitStockDesc-it.precioNetoUnitDesc,
@@ -4797,14 +4813,22 @@ async function guardarFactura(){
           tipoImpuesto:it.tipoImpuesto,
           cantidadStock:it.cantidadStock,cantidadBultos:it.cantidadBultos,unidadMedida:it.unidadMedida,
           piezasRecibidas:it.piezasRecibidas||null,pesoPorUnidadCalculado:dualUpdate.pesoPorUnidad||null,
-          proveedor:prov,facturaId:ref.id,creadoEn:serverTimestamp()
+          proveedor:prov,facturaId:facturaRef.id,creadoEn:serverTimestamp()
         });
-      }
+      });
+      tx.set(facturaRef,{
+        numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
+        fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
+        items:itemsParaGuardar,totalNeto:r.totalNeto,totalIVA:r.iva,totalAdicional:r.adicional,totalImpuestos:r.iva+r.adicional,totalFactura:r.total,
+        totalBruto:tot,descuentoPct:descPct||null,descuentoMonto:descMonto||null,
+        ingresadoPor:role,creadoEn:serverTimestamp()
+      });
+      historialPendiente.forEach(h=>{
+        const hRef=doc(collection(db,'historialPrecios'));
+        tx.set(hRef,h);
+      });
+      tx.set(movRef,{tipo:'ingreso',facturaId:facturaRef.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp()});
     });
-    await batch.commit();
-    // Fase 2: escribir el historial de precios en paralelo (antes era secuencial)
-    await Promise.all(historialPendiente.map(h=>addDoc(collection(db,'historialPrecios'),h)));
-    await addDoc(collection(db,'movimientos'),{tipo:'ingreso',facturaId:ref.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp()});
     toast('✓ '+fnItems.length+' productos ingresados');closeM('mo-fact');fnItems=[];
   }catch(e){toast('Error: '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='✓ Ingresar al stock';}
@@ -5251,30 +5275,48 @@ async function confirmarTransferencia(){
   const desde=document.getElementById('tr-desde').value;
   const hacia=document.getElementById('tr-hacia').value;
   if(desde===hacia){toast('Elige bodegas diferentes','err');return;}
-  const p=prods.find(x=>x.id===trProdId);if(!p)return;
-  const stockOrigen=stockEnBodega(p,desde);
-  if(cant>stockOrigen){toast(`Stock insuficiente. Disponible: ${clpn(stockOrigen)} ${p.unidad||p.unidadMedida||''}`,'err');return;}
+  const pCache=prods.find(x=>x.id===trProdId);if(!pCache)return;
+  const src=(bodegas&&bodegas.length)?bodegas:BODEGAS_DEFAULT;
+  const nb=src.find(b=>b.id===desde)?.nombre||desde;
+  const nh=src.find(b=>b.id===hacia)?.nombre||hacia;
   const btn=document.querySelector('#mo-transfer .btn.bg-orange');
   if(btn){btn.disabled=true;btn.textContent='Transfiriendo...';}
   try{
-    const spb={...(p.stockPorBodega||{})};
-    if(!p.stockPorBodega&&(p.stock||0)>0) spb[p.bodega||'seca']=p.stock||0;
-    spb[desde]=Math.max(0,(spb[desde]||0)-cant);
-    spb[hacia]=(spb[hacia]||0)+cant;
-    const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-    const src=(bodegas&&bodegas.length)?bodegas:BODEGAS_DEFAULT;
-    const nb=src.find(b=>b.id===desde)?.nombre||desde;
-    const nh=src.find(b=>b.id===hacia)?.nombre||hacia;
-    await updateDoc(doc(db,'productos',trProdId),{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
-    await addDoc(collection(db,'movimientos'),{
-      tipo:'transferencia',productoId:trProdId,nombreProducto:p.nombre,
-      cantidad:cant,bodegaOrigen:desde,bodegaDestino:hacia,
-      bodegaOrigenNombre:nb,bodegaDestinoNombre:nh,
-      realizadoPor:role,creadoEn:serverTimestamp()
+    const prodRef=doc(db,'productos',trProdId);
+    // ── TRANSACCIÓN ATÓMICA ── stock + movimiento se confirman juntos.
+    // El stock disponible se valida con el dato fresco de Firestore (no el
+    // caché local), así que dos transferencias simultáneas del mismo
+    // producto no pueden dejarlo en negativo.
+    await runTransaction(db,async(tx)=>{
+      const snap=await tx.get(prodRef);
+      if(!snap.exists())throw new Error('El producto ya no existe');
+      const data=snap.data();
+      const spb={...(data.stockPorBodega||{})};
+      if(!data.stockPorBodega&&(data.stock||0)>0)spb[data.bodega||'seca']=data.stock||0;
+      const stockOrigen=spb[desde]||0;
+      if(cant>stockOrigen)throw new Error('STOCK_INSUF:'+stockOrigen);
+      spb[desde]=Math.max(0,stockOrigen-cant);
+      spb[hacia]=(spb[hacia]||0)+cant;
+      const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+      tx.update(prodRef,{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+      const movRef=doc(collection(db,'movimientos'));
+      tx.set(movRef,{
+        tipo:'transferencia',productoId:trProdId,nombreProducto:data.nombre,
+        cantidad:cant,bodegaOrigen:desde,bodegaDestino:hacia,
+        bodegaOrigenNombre:nb,bodegaDestinoNombre:nh,
+        realizadoPor:role,creadoEn:serverTimestamp()
+      });
     });
-    toast(`✓ ${clpn(cant)} ${p.unidad||p.unidadMedida||''} transferidos a ${nh}`);
+    toast(`✓ ${clpn(cant)} ${pCache.unidad||pCache.unidadMedida||''} transferidos a ${nh}`);
     closeM('mo-transfer');trProdId=null;
-  }catch(e){toast('Error: '+e.message,'err');}
+  }catch(e){
+    if((e.message||'').startsWith('STOCK_INSUF:')){
+      const disp=e.message.split(':')[1];
+      toast(`Stock insuficiente. Disponible: ${clpn(parseFloat(disp))} ${pCache.unidad||pCache.unidadMedida||''}`,'err');
+    }else{
+      toast('Error: '+e.message,'err');
+    }
+  }
   finally{if(btn){btn.disabled=false;btn.textContent='🔄 Confirmar transferencia';}}
 }
 
@@ -5315,31 +5357,44 @@ function ajsInput(){
 }
 async function confirmarAjusteStock(){
   if(!ajsProdId){toast('Selecciona un producto','err');return;}
-  const p=prods.find(x=>x.id===ajsProdId);if(!p)return;
+  const pCache=prods.find(x=>x.id===ajsProdId);if(!pCache)return;
   const bodId=document.getElementById('ajs-bodega').value;
   const raw=document.getElementById('ajs-real').value;
   if(raw===''||isNaN(parseFloat(raw))){toast('Ingresa el stock real contado','err');return;}
   const nuevoValor=Math.max(0,parseFloat(raw));
   const motivo=document.getElementById('ajs-motivo').value;
   const obs=document.getElementById('ajs-obs').value.trim();
-  const stockAnterior=stockEnBodega(p,bodId);
-  const diff=nuevoValor-stockAnterior;
-  if(diff===0){toast('No hay diferencia que ajustar','err');return;}
   try{
-    const spb={...(p.stockPorBodega||{})};
-    if(!p.stockPorBodega&&(p.stock||0)>0)spb[p.bodega||'seca']=p.stock||0;
-    spb[bodId]=nuevoValor;
-    const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-    await updateDoc(doc(db,'productos',ajsProdId),{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
-    await addDoc(collection(db,'ajustesStock'),{
-      productoId:ajsProdId,nombreProducto:p.nombre,unidadMedida:p.unidadMedida||'',
-      bodega:bodId,stockAnterior,stockNuevo:nuevoValor,diferencia:diff,motivo,observacion:obs,
-      realizadoPor:role,creadoEn:serverTimestamp()
+    const prodRef=doc(db,'productos',ajsProdId);
+    let diff=0,stockAnterior=0;
+    // ── TRANSACCIÓN ATÓMICA ── stock + ajustesStock + movimiento juntos.
+    await runTransaction(db,async(tx)=>{
+      const snap=await tx.get(prodRef);
+      if(!snap.exists())throw new Error('El producto ya no existe');
+      const data=snap.data();
+      const spb={...(data.stockPorBodega||{})};
+      if(!data.stockPorBodega&&(data.stock||0)>0)spb[data.bodega||'seca']=data.stock||0;
+      stockAnterior=spb[bodId]||0;
+      diff=nuevoValor-stockAnterior;
+      if(diff===0)throw new Error('SIN_DIFERENCIA');
+      spb[bodId]=nuevoValor;
+      const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+      tx.update(prodRef,{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+      const ajRef=doc(collection(db,'ajustesStock'));
+      tx.set(ajRef,{
+        productoId:ajsProdId,nombreProducto:data.nombre,unidadMedida:data.unidadMedida||'',
+        bodega:bodId,stockAnterior,stockNuevo:nuevoValor,diferencia:diff,motivo,observacion:obs,
+        realizadoPor:role,creadoEn:serverTimestamp()
+      });
+      const movRef=doc(collection(db,'movimientos'));
+      tx.set(movRef,{tipo:'ajuste',productoId:ajsProdId,nombreProducto:data.nombre,cantidad:Math.abs(diff),diferencia:diff,bodega:bodId,motivo,realizadoPor:role,creadoEn:serverTimestamp()});
     });
-    await addDoc(collection(db,'movimientos'),{tipo:'ajuste',productoId:ajsProdId,nombreProducto:p.nombre,cantidad:Math.abs(diff),diferencia:diff,bodega:bodId,motivo,realizadoPor:role,creadoEn:serverTimestamp()});
-    toast(`✓ Stock ajustado: ${diff>0?'+':''}${clpn(diff)} ${p.unidadMedida||''}`);
+    toast(`✓ Stock ajustado: ${diff>0?'+':''}${clpn(diff)} ${pCache.unidadMedida||''}`);
     closeM('mo-ajuste-stock');ajsProdId=null;
-  }catch(e){toast('Error: '+e.message,'err');}
+  }catch(e){
+    if(e.message==='SIN_DIFERENCIA'){toast('No hay diferencia que ajustar','err');}
+    else{toast('Error: '+e.message,'err');}
+  }
 }
 
 // ── ASESOR IA ─────────────────────────────────────────────────────────────────
@@ -6513,55 +6568,74 @@ async function confirmarAjuste(){
   if(!invActivo)return;
   const btn=document.querySelector('#mo-inv-diff .bg-acc');if(btn){btn.disabled=true;btn.textContent='Aplicando...';}
   try{
-    const items=[];const batch=writeBatch(db);
-    // Agrupar las claves "pid||bodId" contadas por producto, para escribir un solo
-    // batch.update por producto con TODAS sus bodegas corregidas a la vez.
     const porProducto={};
     Object.keys(conteoLocal).forEach(key=>{
       const[pid,bodId]=key.split('||');
       if(!porProducto[pid])porProducto[pid]={};
       porProducto[pid][bodId]=conteoLocal[key];
     });
-    for(const pid of Object.keys(porProducto)){
-      const p=prods.find(x=>x.id===pid);if(!p)continue;
-      const r=doc(db,'productos',pid);
-      const sistemaAntes=stockTotal(p);
-      // Partimos del stockPorBodega actual y SOLO sobreescribimos las bodegas que
-      // efectivamente se contaron — el resto de bodegas quedan exactamente igual
-      // que estaban (cero adivinanza, cero reparto proporcional, cero decimales fantasma).
-      const spb={...(p.stockPorBodega||{})};
-      Object.keys(porProducto[pid]).forEach(bodId=>{spb[bodId]=porProducto[pid][bodId];});
-      const fisicoTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-      batch.update(r,{stockPorBodega:spb,stock:fisicoTotal,actualizadoEn:serverTimestamp()});
-      const diferencia=fisicoTotal-sistemaAntes;
-      // Detalle por bodega contada, para trazabilidad completa en el historial
-      const detalleBodegas=Object.keys(porProducto[pid]).map(bodId=>{
-        const bod=bodegas.find(b=>b.id===bodId);
-        const antesB=(p.stockPorBodega||{})[bodId]||0;
-        const fisicoB=porProducto[pid][bodId];
-        return{bodegaId:bodId,bodegaNombre:bod?.nombre||bodId,stockAnterior:antesB,stockFisico:fisicoB,diferencia:fisicoB-antesB};
-      });
-      items.push({productoId:pid,nombreProducto:p.nombre,stockAnterior:sistemaAntes,stockFisico:fisicoTotal,diferencia,unidadMedida:p.unidadMedida||'',bodegasContadas:detalleBodegas});
-      // Si alguna bodega contada quedó con menos stock del que el sistema esperaba,
-      // se registra como merma valorizada — una línea por cada bodega con faltante,
-      // para que la pérdida quede asociada a la bodega correcta y no a una "principal" arbitraria.
-      detalleBodegas.forEach(db_=>{
-        if(db_.diferencia<0){
-          const mref=doc(collection(db,'mermas'));
-          batch.set(mref,{
-            productoId:pid,nombreProducto:p.nombre,cantidad:Math.abs(db_.diferencia),unidadMedida:p.unidadMedida||'',
-            bodega:db_.bodegaId,motivo:'Diferencia de inventario',
-            observacion:'Detectado al finalizar: '+(invActivo.nombre||'inventario físico'),
-            valorMerma:Math.abs(db_.diferencia)*(p.precioTotal||0),
-            origen:'inventario',realizadoPor:role,creadoEn:serverTimestamp()
+    const pids=Object.keys(porProducto);
+    if(!pids.length)throw new Error('Contea al menos un producto');
+    // Firestore permite máx. 500 documentos (lecturas+escrituras) por transacción.
+    // Cada producto contado usa 1 lectura + 1 escritura + hasta 1 merma, así que
+    // se agrupa de a 150 productos por transacción — muy por debajo del límite
+    // incluso en inventarios grandes, y muy por encima de lo que tiene SANTERRA hoy,
+    // por lo que en la práctica todo el inventario entra en una sola transacción.
+    const CHUNK=150;
+    const chunks=[];
+    for(let i=0;i<pids.length;i+=CHUNK)chunks.push(pids.slice(i,i+CHUNK));
+    const items=[];
+    for(const chunkPids of chunks){
+      // ── TRANSACCIÓN ATÓMICA por lote ── stock + merma se confirman juntos,
+      // con el stock fresco de Firestore (no el caché local) como base.
+      await runTransaction(db,async(tx)=>{
+        const refs=chunkPids.map(pid=>doc(db,'productos',pid));
+        const snaps=await Promise.all(refs.map(r=>tx.get(r)));
+        snaps.forEach((snap,idx)=>{
+          const pid=chunkPids[idx];
+          if(!snap.exists())return;
+          const data=snap.data();
+          const spbActual={...(data.stockPorBodega||{})};
+          const sistemaAntes=Object.values(spbActual).reduce((a,v)=>a+(v||0),0)||data.stock||0;
+          const spb={...spbActual};
+          Object.keys(porProducto[pid]).forEach(bodId=>{spb[bodId]=porProducto[pid][bodId];});
+          const fisicoTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+          tx.update(refs[idx],{stockPorBodega:spb,stock:fisicoTotal,actualizadoEn:serverTimestamp()});
+          const diferencia=fisicoTotal-sistemaAntes;
+          const detalleBodegas=Object.keys(porProducto[pid]).map(bodId=>{
+            const bod=bodegas.find(b=>b.id===bodId);
+            const antesB=spbActual[bodId]||0;
+            const fisicoB=porProducto[pid][bodId];
+            return{bodegaId:bodId,bodegaNombre:bod?.nombre||bodId,stockAnterior:antesB,stockFisico:fisicoB,diferencia:fisicoB-antesB};
           });
-        }
+          items.push({productoId:pid,nombreProducto:data.nombre,stockAnterior:sistemaAntes,stockFisico:fisicoTotal,diferencia,unidadMedida:data.unidadMedida||'',bodegasContadas:detalleBodegas,_precioTotal:data.precioTotal||0});
+          // Si alguna bodega contada quedó con menos stock del que el sistema esperaba,
+          // se registra como merma valorizada — una línea por cada bodega con faltante.
+          detalleBodegas.forEach(dB=>{
+            if(dB.diferencia<0){
+              const mref=doc(collection(db,'mermas'));
+              tx.set(mref,{
+                productoId:pid,nombreProducto:data.nombre,cantidad:Math.abs(dB.diferencia),unidadMedida:data.unidadMedida||'',
+                bodega:dB.bodegaId,motivo:'Diferencia de inventario',
+                observacion:'Detectado al finalizar: '+(invActivo.nombre||'inventario físico'),
+                valorMerma:Math.abs(dB.diferencia)*(data.precioTotal||0),
+                origen:'inventario',realizadoPor:role,creadoEn:serverTimestamp()
+              });
+            }
+          });
+        });
       });
     }
-    await batch.commit();
-    const valFisico=items.reduce((a,it)=>a+it.stockFisico*(prods.find(p=>p.id===it.productoId)?.precioTotal||0),0);
-    await addDoc(collection(db,'inventarios'),{nombre:invActivo.nombre,fechaInicio:invActivo.fechaInicio,fechaFin:new Date(),items,totalProductosContados:items.length,valorFisico:valFisico,realizadoPor:role,creadoEn:serverTimestamp()});
-    await addDoc(collection(db,'movimientos'),{tipo:'ajuste_inventario',items,realizadoPor:role,creadoEn:serverTimestamp()});
+    const valFisico=items.reduce((a,it)=>a+it.stockFisico*(it._precioTotal||0),0);
+    const itemsParaGuardar=items.map(({_precioTotal,...resto})=>resto);
+    // Resumen del inventario + movimiento: se confirman juntos, siempre después
+    // de que TODO el stock ya quedó aplicado con éxito.
+    await runTransaction(db,async(tx)=>{
+      const invRef=doc(collection(db,'inventarios'));
+      tx.set(invRef,{nombre:invActivo.nombre,fechaInicio:invActivo.fechaInicio,fechaFin:new Date(),items:itemsParaGuardar,totalProductosContados:itemsParaGuardar.length,valorFisico:valFisico,realizadoPor:role,creadoEn:serverTimestamp()});
+      const movRef=doc(collection(db,'movimientos'));
+      tx.set(movRef,{tipo:'ajuste_inventario',items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp()});
+    });
     toast('✓ Stock actualizado con el conteo físico');
     closeM('mo-inv-diff');invActivo=null;conteoLocal={};
     document.getElementById('inv-activo').style.display='none';document.getElementById('inv-historial').style.display='block';
