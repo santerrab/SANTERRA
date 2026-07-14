@@ -1304,41 +1304,33 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
 /* ══════════════════════════════════════════════════════════════════════════
    GLASSMORFISMO — capa aditiva de vidrio esmerilado
    No se modifica ninguna regla anterior: esto solo agrega backdrop-filter
-   (y en el caso de .ovl, un leve ajuste de opacidad/saturación) a las
+   (y en el caso de .ovl/.pin-ovl, un leve ajuste de opacidad) a las
    superficies que ya usan var(--sf)/var(--sf2)/var(--sf3) como fondo.
    Los colores, bordes y fondos siguen viniendo 100% de los tokens de
    :root editados arriba — ninguna clase, id ni estructura HTML cambia,
    por lo que no afecta selectores usados desde el JS.
-   ══════════════════════════════════════════════════════════════════════════ */
 
-/* Overlays de modal/pin: un poco menos opacos para que el blur de fondo respire */
+   IMPORTANTE — por qué el blur NO se aplica a todas las cards:
+   backdrop-filter solo tiene efecto visual real quiere decir "desenfocar
+   lo que hay detrás" cuando el elemento se SUPERPONE a otro contenido
+   (un modal sobre la página, el header sobre el scroll). Las cards en
+   flujo normal (.li, .st, .prod-card, .fi, .chip, etc.) no se superponen
+   a nada — su "fondo" es simplemente el wallpaper estático de la página.
+   Ponerles blur ahí no cambia el resultado visual (ya son translúcidas
+   gracias a los tokens de :root) pero sí obliga al navegador a crear una
+   capa de composición GPU por cada card. En listas de 50-200 productos
+   o facturas eso genera lag notorio en gama media (Xiaomi/Redmi incl.),
+   así que esas cards se quedan solo con translucidez + borde de vidrio,
+   sin blur individual. El efecto "vidrio esmerilado" se mantiene: se ve
+   en el header, el nav, los modales y el panel "Más", que es donde de
+   verdad hay algo debajo para desenfocar. */
+
 .ovl{background:rgba(4,5,9,.78);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%)}
 .pin-ovl{background:rgba(4,5,9,.7)}
 
-/* Superficies grandes: hoja completa, se nota más el vidrio */
+/* Únicas superficies que se superponen a otro contenido → blur real */
 .modal,.pin-sheet,.mas-panel,.sidebar{
   backdrop-filter:var(--glass-blur-lg);-webkit-backdrop-filter:var(--glass-blur-lg);
-}
-
-/* Cards, listas, inputs y paneles — el grueso de la interfaz */
-.st,.li,.rcard,.dsc,.solc,.merma-card,.prod-card,.area-card,.trend-card,
-.rep-header,.rep-barras-card,.rep-dona-card,.rep-prov-detalle,.fn-item-card,
-.hist-precio-card,.inv-hist-card,.verif-item,.ci,.cat-edit-form,
-.fi,.sinput,.stk-select,.pedir-input,.pedir-nota,.inv-input,
-.fn-bod-select,.fn-qty-input,.fn-precio-input,
-.bg-ghost,.asesor-card,.asesor-ia-output,.asesor-ia-pedido,
-.dual-info-box,.fn-dual-box,.prev-box,.inv-row,.fact-cabecera,
-.asesor-tabs,.area-tabs,.rep-tabs,.rep-rango-custom,
-#prov-dropdown,#pp-prov-dd,#ajs-prod-sel,#inv-diff-lista,#inv-det-lista,
-#csv-preview-lista,#conv-preview{
-  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-}
-
-/* Controles pequeños y repetidos (chips, botones ghost, teclado PIN):
-   blur más liviano para no penalizar el rendimiento en listas largas */
-.chip,.pchip,.stk-filtros-btn,.btn-rech,.pk,.rep-nav button,.mode-toggle,
-.asesor-tab.on,.area-tab.on,.sri{
-  backdrop-filter:var(--glass-blur-sm);-webkit-backdrop-filter:var(--glass-blur-sm);
 }
 
 </style>
