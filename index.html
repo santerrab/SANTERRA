@@ -1333,6 +1333,51 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.5}
   backdrop-filter:var(--glass-blur-lg);-webkit-backdrop-filter:var(--glass-blur-lg);
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   FIX — menús desplegables (<select>) con letras invisibles
+   ══════════════════════════════════════════════════════════════════════════
+   Causa: el popup de opciones de un <select> lo dibuja el sistema operativo/
+   navegador, NO la página — no es parte del lienzo donde se compone tu fondo
+   con halos de color. Cuando ese popup usa un fondo rgba() con poca opacidad
+   (como los tokens --sf/--sf2 del tema vidrio), termina viéndose casi blanco
+   en vez de vidrio, y como el texto usa var(--tx) (casi blanco), el resultado
+   es texto invisible sobre fondo casi blanco.
+   Fix en dos partes:
+   1) color-scheme le dice al navegador en qué paleta dibujar sus controles
+      nativos (selects, calendarios de <input type="date/time">, scrollbars).
+   2) Las opciones del select reciben un fondo SÓLIDO propio (sin alpha) —
+      nunca deben heredar --sf/--sf2 porque ahora son translúcidos. El
+      <select> cerrado (lo que se ve en pantalla) sigue 100% de vidrio, esto
+      solo toca el popup de opciones, que técnicamente nunca fue "vidrio".
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{color-scheme:dark}
+body.light{color-scheme:light}
+
+select,select.fi,.stk-select,.fn-bod-select{color:var(--tx)}
+
+select option,select optgroup{
+  background-color:#12141c;
+  color:#eef2ff;
+}
+body.light select option,body.light select optgroup{
+  background-color:#ffffff;
+  color:#0f1420;
+}
+
+/* Ícono de calendario/reloj en <input type="date"/"time"> — por defecto lo
+   dibuja el navegador en negro/oscuro, casi invisible sobre el fondo oscuro
+   del input. color-scheme:dark ya debería corregirlo solo, pero se agrega
+   este filter como respaldo para navegadores que no lo respeten del todo. */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator{
+  filter:invert(.85);
+  cursor:pointer;
+}
+body.light input[type="date"]::-webkit-calendar-picker-indicator,
+body.light input[type="time"]::-webkit-calendar-picker-indicator{
+  filter:none;
+}
+
 </style>
 </head>
 <body class="login-active">
