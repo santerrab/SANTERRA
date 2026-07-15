@@ -3923,11 +3923,14 @@ function renderDesp(){
             ${p?.despachoAprox?`
             <div style="font-size:8px;color:var(--txm);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Porción despachada</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:180px;justify-content:flex-end">
-              ${PORCIONES_APROX.map(por=>{
-                const val=mlAUnidadAprox(por.ml,it.unidadMedida);
+            ${(()=>{
+              const maxDisp=p?(p.sinStock?Infinity:stockEnBodega(p,est.bodega||p?.bodega||'seca')):Infinity;
+              return PORCIONES_APROX.map(por=>{
+                const val=Math.min(mlAUnidadAprox(por.ml,it.unidadMedida),maxDisp);
                 const activa=Math.abs((est.cant||0)-val)<0.001;
                 return`<button onclick="setD('${sol.id}','${it.productoId}',${val})" style="padding:6px 8px;border-radius:8px;border:1.5px solid ${activa?'var(--purple)':'var(--bd2)'};background:${activa?'var(--purpled)':'var(--sf2)'};color:${activa?'var(--purple)':'var(--txm)'};font-size:9.5px;font-weight:700;cursor:pointer;white-space:nowrap">${por.label}</button>`;
-              }).join('')}
+              }).join('');
+            })()}
             </div>
             <div style="font-size:9px;color:var(--txd);margin-top:4px;font-weight:600">≈ ${clpn(est.cant||0)} ${it.unidadMedida||''}</div>
             `:`
