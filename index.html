@@ -43,19 +43,30 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;min-height:100vh;min-height:100dvh}
 body{font-family:'DM Sans',sans-serif;color:var(--tx);overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch;
+  background:var(--bg);
+}
+/* Halos de color del fondo — en position:fixed anclado al VIEWPORT, no al
+   documento. .pages-wrap no tiene una altura acotada en el layout móvil,
+   así que en la práctica es toda la ventana la que hace scroll; si estos
+   halos vivieran en el background normal del body (que crece con el
+   contenido), en una lista larga quedarían estirados y se perderían apenas
+   bajás un poco. Fijos al viewport, se ven idénticos sin importar cuánto
+   se haya scrolleado ni cuán larga sea la pantalla. z-index:-1 los deja
+   siempre detrás de cualquier contenido real. */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:
     radial-gradient(circle at 8% 6%,rgba(255,59,92,.16),transparent 40%),
     radial-gradient(circle at 94% 16%,rgba(79,142,247,.13),transparent 42%),
     radial-gradient(circle at 15% 88%,rgba(167,139,250,.11),transparent 45%),
-    radial-gradient(circle at 90% 92%,rgba(0,201,141,.08),transparent 42%),
-    var(--bg);
+    radial-gradient(circle at 90% 92%,rgba(0,201,141,.08),transparent 42%);
 }
-body.light{background:
+body.light::before{
+  background:
     radial-gradient(circle at 8% 6%,rgba(255,59,92,.09),transparent 40%),
     radial-gradient(circle at 94% 16%,rgba(79,142,247,.08),transparent 42%),
     radial-gradient(circle at 15% 88%,rgba(167,139,250,.07),transparent 45%),
-    radial-gradient(circle at 90% 92%,rgba(0,201,141,.05),transparent 42%),
-    var(--bg);
+    radial-gradient(circle at 90% 92%,rgba(0,201,141,.05),transparent 42%);
 }
 body.login-active{overflow:hidden}
 
@@ -219,13 +230,13 @@ body.light .nav{background:rgba(255,255,255,.58)}
   letter-spacing:-.1px;
 }
 .btn+.btn{margin-top:9px}.btn:disabled{opacity:.45;pointer-events:none}
-.bg-acc{background:linear-gradient(135deg,var(--accent),#ff6b3d);color:#fff;box-shadow:0 4px 16px rgba(255,59,92,.3)}
+.bg-acc{background:linear-gradient(135deg,rgba(255,59,92,.92),rgba(255,107,61,.92));color:#fff;box-shadow:0 4px 16px rgba(255,59,92,.3),inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}
 .bg-acc:active{opacity:.85;transform:scale(.98);box-shadow:none}
-.bg-blue{background:var(--blue);color:#fff;box-shadow:0 4px 16px rgba(79,142,247,.25)}.bg-blue:active{transform:scale(.98)}
-.bg-green{background:var(--green);color:#001a12;box-shadow:0 4px 16px rgba(0,201,141,.25)}.bg-green:active{transform:scale(.98)}
-.bg-red{background:var(--red);color:#fff}.bg-red:active{transform:scale(.98)}
+.bg-blue{background:rgba(79,142,247,.9);color:#fff;box-shadow:0 4px 16px rgba(79,142,247,.25),inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}.bg-blue:active{transform:scale(.98)}
+.bg-green{background:rgba(0,201,141,.9);color:#001a12;box-shadow:0 4px 16px rgba(0,201,141,.25),inset 0 1px 0 rgba(255,255,255,.32);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}.bg-green:active{transform:scale(.98)}
+.bg-red{background:rgba(255,68,68,.9);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}.bg-red:active{transform:scale(.98)}
 .bg-ghost{background:var(--sf2);color:var(--txm);border:1.5px solid var(--bd2)}.bg-ghost:active{transform:scale(.98)}
-.bg-orange{background:var(--orange);color:#fff}.bg-orange:active{transform:scale(.98)}
+.bg-orange{background:rgba(255,120,73,.9);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}.bg-orange:active{transform:scale(.98)}
 
 /* ── MODALES ─────────────────────────────────────────────────── */
 .ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;align-items:flex-end;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
@@ -1115,10 +1126,11 @@ input[type=number]{-moz-appearance:textfield}
 }
 .btn-rech:active{transform:scale(.96);opacity:.8;background:var(--redd)}
 .btn-desp{
-  background:var(--green);border:none;border-radius:13px;
+  background:rgba(0,201,141,.9);border:none;border-radius:13px;
   color:#001a12;font-family:'Inter',sans-serif;font-weight:800;
   cursor:pointer;transition:opacity .15s,transform .15s,background .15s,box-shadow .15s;
-  box-shadow:0 4px 16px rgba(0,201,141,.25);
+  box-shadow:0 4px 16px rgba(0,201,141,.25),inset 0 1px 0 rgba(255,255,255,.32);
+  backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);
 }
 .btn-desp:active{transform:scale(.98);opacity:.9}
 .btn-desp:disabled{opacity:.45;box-shadow:none;cursor:default;pointer-events:none}
