@@ -4173,12 +4173,16 @@ async function despachar(solId){
           const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
           tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
         }
-        items.push({...c.it,cantidadDespachada:cantFinal,
+        items.push({...c.it,cantidadDespachada:cantFinal,despachoAprox:!!data.despachoAprox,
           cantidadPiezas:c.isDualItem?c.est.cant:null,unidadPedido:c.isDualItem?c.p.unidadPedido:null,
           bodegaOrigen:c.bodId,precioUnitStock:c.p?.precioTotal||0,precioUnitNeto:c.p?.precioNeto||0});
       });
       if(!items.length)throw new Error('SIN_STOCK');
-      const incompleto=noTiqueados.length>0||items.some(it=>it.cantidadDespachada<it.cantidad);
+      // Un producto "a ojo" (despachoAprox) se despacha por porción estimada, no por
+      // cantidad exacta — comparar su cantidad despachada contra la solicitada daría
+      // "incompleto" casi siempre, aunque el bodeguero haya cumplido perfectamente
+      // según cómo se despacha ese producto. Se excluye de este chequeo a propósito.
+      const incompleto=noTiqueados.length>0||items.some(it=>!it.despachoAprox&&it.cantidadDespachada<it.cantidad);
       tx.update(doc(db,'solicitudes',solId),{
         estado:'despachada',despachoPor:role,areaDestino:sol.creadoPor,
         itemsDespacho:items,itemsNoTiqueados:noTiqueados,incompleto,
@@ -4187,7 +4191,7 @@ async function despachar(solId){
       const movRef=doc(collection(db,'movimientos'));
       tx.set(movRef,{tipo:'salida',solicitudId:solId,area:sol.creadoPor,nombreArea:sol.nombreSolicitante,items,realizadoPor:role,creadoEn:serverTimestamp()});
     });
-    const incompleto=noTiqueados.length>0||items.some(it=>it.cantidadDespachada<it.cantidad);
+    const incompleto=noTiqueados.length>0||items.some(it=>!it.despachoAprox&&it.cantidadDespachada<it.cantidad);
     // Actualizar estado local inmediatamente sin esperar snapshot
     const idx=sols.findIndex(x=>x.id===solId);
     if(idx>=0)sols[idx]={...sols[idx],estado:'despachada',itemsDespacho:items,itemsNoTiqueados:noTiqueados,incompleto};
@@ -4268,9 +4272,13 @@ function abrirVerif(solId){
   const itemsConEstado=items.map(it=>{
     const d=despacho.find(x=>x.productoId===it.productoId);
     const despachado=d?d.cantidadDespachada:0;
-    const ok=despachado>=it.cantidad;
-    const parcial=despachado>0&&despachado<it.cantidad;
-    return{...it,despachado,ok,parcial,falta:despachado===0,
+    const esAprox=!!d?.despachoAprox;
+    // "A ojo": una porción estimada ES el cumplimiento correcto de este tipo de
+    // producto — comparar contra la cantidad exacta que se tipeó al pedirlo
+    // generaría una falsa alarma de "incompleto" casi siempre.
+    const ok=esAprox?despachado>0:despachado>=it.cantidad;
+    const parcial=!esAprox&&despachado>0&&despachado<it.cantidad;
+    return{...it,despachado,ok,parcial,despachoAprox:esAprox,falta:despachado===0,
       estado:ok?'ok':parcial?'parcial':'falta'};
   });
 
@@ -4309,7 +4317,8 @@ function abrirVerif(solId){
   document.getElementById('verif-lista').innerHTML=sorted.map(it=>{
     const ic=it.ok?'✓':it.parcial?'≈':'✕';
     const clr=it.ok?'var(--green)':it.parcial?'var(--yellow)':'var(--red)';
-    const lbl=it.ok?'Llegó completo'
+    const lbl=it.despachoAprox&&it.ok?'Llegó (porción estimada)'
+      :it.ok?'Llegó completo'
       :it.parcial?`Llegó ${clpn(it.despachado)} de ${clpn(it.cantidad)} ${it.unidadMedida||''}`
       :'No llegó';
     return`<div class="verif-item ${it.estado}">
