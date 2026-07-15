@@ -2103,6 +2103,17 @@ body.light input[type="time"]::-webkit-calendar-picker-indicator{
         <div id="dual-preview-box" style="display:none;margin-top:8px"></div>
       </div>
     </div>
+    <!-- ── SIN CONTROL DE STOCK (FRUTAS/VERDURAS) ────────────────────── -->
+    <div class="dual-info-box">
+      <div class="dual-info-box-hdr">🥕 Sin control de stock <span style="color:var(--txm);font-weight:500;text-transform:none;letter-spacing:0">(opcional)</span></div>
+      <button type="button" class="dual-toggle" onclick="toggleSinStock()">
+        <div class="dual-switch" id="sinstock-switch"></div>
+        <div>
+          <div class="dual-toggle-lbl">Se puede pedir y despachar aunque no haya inventario cargado</div>
+          <div class="dual-toggle-sub">Ej: Frutas, verduras — no se pesa ni se cuenta cada despacho. No aparece en alertas de stock bajo ni en el conteo de inventario físico.</div>
+        </div>
+      </button>
+    </div>
     <!-- ── DESPACHO APROXIMADO ("A OJO") ─────────────────────────────── -->
     <div class="dual-info-box">
       <div class="dual-info-box-hdr">🥄 Despacho "a ojo" <span style="color:var(--txm);font-weight:500;text-transform:none;letter-spacing:0">(opcional)</span></div>
@@ -2515,6 +2526,10 @@ function bodegasDeProducto(p){
 function productoEnBodega(p,bodId){return bodegasDeProducto(p).includes(bodId);}
 // Días de stock restantes al ritmo de consumo de los últimos `ventana` días (null = sin datos suficientes)
 function diasRestantes(p,movs,ventana=14){
+  // Sin control de stock (frutas/verduras): no hay inventario que se "agote",
+  // así que no tiene sentido estimar días restantes — evita que aparezcan a
+  // diario en la alerta de "próximos a agotarse" solo por tener stock=0 fijo.
+  if(p.sinStock)return null;
   const hoy=new Date();const desde=new Date(hoy);desde.setDate(hoy.getDate()-ventana);
   let consumo=0;
   movs.forEach(m=>{
@@ -3330,7 +3345,7 @@ function _renderDashNow(){
     document.getElementById('d-hoy').textContent=clp(valHoy);document.getElementById('d-hoy-u').textContent=unHoy>0?unHoy+' uds.':'Sin despachos hoy';
     document.getElementById('d-sem').textContent=clp(valSem);document.getElementById('d-sem-u').textContent=movSem.length+' despachos esta semana';
     const diasMap={};prods.forEach(p=>{diasMap[p.id]=diasRestantes(p,movs);});
-    const low=prods.filter(p=>p.stockMinimo!=null&&stockTotal(p)<=p.stockMinimo);
+    const low=prods.filter(p=>!p.sinStock&&p.stockMinimo!=null&&stockTotal(p)<=p.stockMinimo);
     const lowIds=new Set(low.map(p=>p.id));
     const REPO_DIAS_ALERTA=3;
     const reposicion=prods.filter(p=>!lowIds.has(p.id)&&diasMap[p.id]!==null&&diasMap[p.id]<=REPO_DIAS_ALERTA).sort((a,b)=>diasMap[a.id]-diasMap[b.id]);
@@ -3383,7 +3398,7 @@ function _renderDashNow(){
     const alBod=document.getElementById('dash-al-bod');alBod.innerHTML='';
     renderHorarioBanner('dash-al-bod');
     // ── Alertas agrupadas por bodega (bodeguero) ────────────────────────────
-    const low=prods.filter(p=>p.stockMinimo!=null&&stockTotal(p)<=p.stockMinimo);
+    const low=prods.filter(p=>!p.sinStock&&p.stockMinimo!=null&&stockTotal(p)<=p.stockMinimo);
     if(low.length){
       const diasMapBod={};prods.forEach(p=>{diasMapBod[p.id]=diasRestantes(p,movs);});
       // Agrupar por bodega
@@ -3602,11 +3617,11 @@ function _renderStockNow(){
   // Función compartida de card
   function prodCard(p){
     const st=stockTotal(p),m=p.stockMinimo??null;
-    const cls=st===0?'bg-r-s':(m!=null&&st<=m)?'bg-y-s':'bg-g-s';
+    const cls=p.sinStock?'bg-b-s':st===0?'bg-r-s':(m!=null&&st<=m)?'bg-y-s':'bg-g-s';
     const puedeAjustar=role==='encargado';
     const isDual=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
     const bodsAsignadas=bodegasDeProducto(p);
-    const bodTags=bodegas.map(b=>{
+    const bodTags=p.sinStock?'':bodegas.map(b=>{
       if(!bodsAsignadas.includes(b.id))return'';
       const s=stockEnBodega(p,b.id);
       const sc=s===0?'no-stock':(m!=null&&s<=m)?'low-stock':'has-stock';
@@ -3619,13 +3634,13 @@ function _renderStockNow(){
     }).filter(Boolean).join('');
     return`<div class="prod-card">
       <div class="prod-hdr"><div><div class="prod-nom">${p.nombre}</div><div class="prod-cat">${p.subcategoria||p.categoria||'—'}${p.proveedor?' · '+p.proveedor:''}</div></div>
-        <span style="display:inline-flex;align-items:center;gap:6px">${puedeAjustar?`<button class="dbtn dbtn-verde" onclick="abrirAjusteStock('${p.id}')" title="Ajustar stock">⚖️</button>`:''}<span class="badge ${cls}">${st===0?'Sin stock':isDual?(Math.floor(st/(p.pesoPorUnidad||1))+' '+(p.unidadPedido||'piezas')+' ('+clpn(st)+' kg)'):(clpn(st)+' '+(p.unidadMedida||''))}</span></span>
+        <span style="display:inline-flex;align-items:center;gap:6px">${puedeAjustar?`<button class="dbtn dbtn-verde" onclick="abrirAjusteStock('${p.id}')" title="Ajustar stock">⚖️</button>`:''}<span class="badge ${cls}">${p.sinStock?'🥕 Sin control':st===0?'Sin stock':isDual?(Math.floor(st/(p.pesoPorUnidad||1))+' '+(p.unidadPedido||'piezas')+' ('+clpn(st)+' kg)'):(clpn(st)+' '+(p.unidadMedida||''))}</span></span>
       </div>
       ${bodTags?`<div class="stock-bodegas">${bodTags}</div>`:''}
       <div class="prod-precios">
         <div class="prod-precio-item"><div class="prod-precio-lbl">Precio neto</div><div class="prod-precio-val" style="color:var(--txm)">${clp(pt(p)?pn(p):0)}</div></div>
         <div class="prod-precio-item"><div class="prod-precio-lbl">Con impuesto</div><div class="prod-precio-val">${clp(pt(p))}</div></div>
-        <div class="prod-precio-item"><div class="prod-precio-lbl">Valor almacén</div><div class="prod-precio-val" style="color:var(--green)">${clp(st*pt(p))}</div></div>
+        <div class="prod-precio-item"><div class="prod-precio-lbl">Valor almacén</div><div class="prod-precio-val" style="color:var(--green)">${p.sinStock?'—':clp(st*pt(p))}</div></div>
       </div>
     </div>`;
   }
@@ -3674,11 +3689,11 @@ function pBuscar(q){
     const s=stockTotal(p),mn=p.stockMinimo??null,inC=carrito.find(c=>c.pid===p.id);
     const isDualP=!!(p.esDual&&p.unidadPedido&&p.pesoPorUnidad>0);
     const piezasDisp=isDualP?Math.floor(s/p.pesoPorUnidad):0;
-    const stockLabel=isDualP
+    const stockLabel=p.sinStock?'🥕 Disponible a pedido':isDualP
       ?(s===0?'⚠️ Sin stock':`${piezasDisp} ${p.unidadPedido}${piezasDisp!==1?'s':''} disponibles`)
       :(s===0?'⚠️ Sin stock':'Stock: '+clpn(s)+' '+(p.unidadMedida||''));
     return`<div class="sri" onclick="addCart('${p.id}')">
-      <div class="sri-info"><div class="sri-nom">${p.nombre}${isDualP?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}</div><div class="sri-det" style="color:${s===0?'var(--red)':(mn!=null&&s<=mn)?'var(--yellow)':'var(--txm)'}">${stockLabel}</div></div>
+      <div class="sri-info"><div class="sri-nom">${p.nombre}${isDualP?`<span class="dual-stock-badge">🔀 ${p.unidadPedido}</span>`:''}</div><div class="sri-det" style="color:${p.sinStock?'var(--blue)':s===0?'var(--red)':(mn!=null&&s<=mn)?'var(--yellow)':'var(--txm)'}">${stockLabel}</div></div>
       <button class="sri-btn${inC?' added':''}">${inC?'✓':'＋'}</button>
     </div>`;
   }).join('');
@@ -3852,11 +3867,11 @@ function renderDesp(){
       const piezasTot=isDualIt?Math.floor(stockTot/p.pesoPorUnidad):0;
       // Para comparación de stock bajo: convertir piezas pedidas a kg si es dual
       const cantEnKgIt=isDualIt?(it.cantidad*(p?.pesoPorUnidad||1)):it.cantidad;
-      const sinStock=stockTot===0;const bajStock=stockTot>0&&stockTot<cantEnKgIt;
+      const sinStock=!p?.sinStock&&stockTot===0;const bajStock=!p?.sinStock&&stockTot>0&&stockTot<cantEnKgIt;
       const chkClr=est.tipo==='ok'?'background:var(--green);border-color:var(--green);color:#001a12;box-shadow:0 0 14px rgba(0,201,141,.4)':est.tipo==='ss'?'background:var(--redd);border-color:var(--redb);color:var(--red)':est.tipo==='parcial'?'background:var(--yellowd);border-color:var(--yellowb);color:var(--yellow)':'background:var(--sf2);border-color:var(--bd2);color:var(--txd)';
       const chkIcon=est.tipo==='ok'?'✓':est.tipo==='ss'?'✗':est.tipo==='parcial'?'✓':'○';
-      const badgeClr=sinStock?'bg-r-s':bajStock?'bg-y-s':'bg-g-s';
-      const badgeTxt=sinStock?'Sin stock':isDualIt?(bajStock?`Stock bajo: ~${piezasTot} ${p.unidadPedido}s`:`~${piezasTot} ${p.unidadPedido}s en stock`):(bajStock?'Stock bajo: '+clpn(stockTot)+' '+it.unidadMedida:'Stock: '+clpn(stockTot)+' '+it.unidadMedida);
+      const badgeClr=p?.sinStock?'bg-b-s':sinStock?'bg-r-s':bajStock?'bg-y-s':'bg-g-s';
+      const badgeTxt=p?.sinStock?'🥕 Sin control de stock':sinStock?'Sin stock':isDualIt?(bajStock?`Stock bajo: ~${piezasTot} ${p.unidadPedido}s`:`~${piezasTot} ${p.unidadPedido}s en stock`):(bajStock?'Stock bajo: '+clpn(stockTot)+' '+it.unidadMedida:'Stock: '+clpn(stockTot)+' '+it.unidadMedida);
       return`<div style="padding:10px 0;border-bottom:1px solid var(--bd3)">
         <!-- Fila 1: check + nombre + badge -->
         <div style="display:flex;align-items:flex-start;gap:10px">
@@ -3868,7 +3883,7 @@ function renderDesp(){
           <div style="flex:1;min-width:0;padding-top:1px">
             <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;line-height:1.2;margin-bottom:4px">${it.nombreProducto}</div>
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-              <span class="badge ${badgeClr}" style="font-size:8px;padding:3px 7px">${sinStock?'⚠️ ':bajStock?'⚠️ ':''}${badgeTxt}</span>
+              <span class="badge ${badgeClr}" style="font-size:8px;padding:3px 7px">${p?.sinStock?'':sinStock?'⚠️ ':bajStock?'⚠️ ':''}${badgeTxt}</span>
               <span style="font-size:10.5px;color:var(--txm);font-weight:600">Pedido: ${isDualIt?`${it.cantidad} ${p.unidadPedido||it.unidadMedida||''}`:(`${clpn(it.cantidad)} ${it.unidadMedida||''}`)} </span>${isDualIt?`<span class="dual-stock-badge">🔀 dual</span>`:''}
             </div>
           </div>
@@ -3884,11 +3899,11 @@ function renderDesp(){
                 const stk=p?stockEnBodega(p,b.id):0;
                 const sel=(est.bodega||p?.bodega||'seca')===b.id;
                 const suficiente=stk>=it.cantidad;
-                const stkLabel=isDualIt
+                const stkLabel=p?.sinStock?'Sin control':isDualIt
                   ?(stk===0?'Sin stock ✕':(`~${Math.floor(stk/p.pesoPorUnidad)} ${p.unidadPedido}s${Math.floor(stk/p.pesoPorUnidad)>=it.cantidad?' ✓':' ⚠'}`))
                   :(stk===0?'Sin stock ✕':(`${clpn(stk)} ${it.unidadMedida||''}`+(stk>=cantEnKgIt?' ✓':' ⚠')));
                 const label=`${b.icono} ${b.nombre} — ${stkLabel}`;
-                return`<option value="${b.id}" ${sel?'selected':''} ${stk===0?'disabled':''}>${label}</option>`;
+                return`<option value="${b.id}" ${sel?'selected':''} ${(!p?.sinStock&&stk===0)?'disabled':''}>${label}</option>`;
               }).join('')}
             </select>
           </div>
@@ -3961,7 +3976,7 @@ function renderDesp(){
         </div>
         ${sol.nota?`<div style="font-size:11px;color:var(--txm);background:var(--sf2);border-radius:10px;padding:7px 11px;border-left:3px solid var(--bd);line-height:1.4">📝 ${sol.nota}</div>`:''}
         ${(()=>{
-          const tieneStock=(sol.items||[]).some(it=>{const p=prods.find(x=>x.id===it.productoId);return p&&stockTotal(p)>0;});
+          const tieneStock=(sol.items||[]).some(it=>{const p=prods.find(x=>x.id===it.productoId);return p&&(p.sinStock||stockTotal(p)>0);});
           return nItems>1&&tieneStock?`<button onclick="aceptarTodo('${sol.id}')" style="margin-top:10px;width:100%;padding:10px;border-radius:11px;border:1.5px solid var(--greenb);background:var(--greend);color:var(--green);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:800;cursor:pointer">✓✓ Aceptar pedido completo</button>`:'';
         })()}
       </div>
@@ -4026,7 +4041,7 @@ function togD(sid,pid,cantSol){
   const p=prods.find(x=>x.id===pid);
   const sol=sols.find(x=>x.id===sid);
   const bodId=e.bodega||getBodegaParaArea(sol?.creadoPor,p)||'seca';
-  const stockDispo=p?Math.min(stockEnBodega(p,bodId),cantSol):cantSol;
+  const stockDispo=p?(p.sinStock?cantSol:Math.min(stockEnBodega(p,bodId),cantSol)):cantSol;
   // Al volver a pendiente restaurar la cantidad pedida original, no el stock disponible que quedó de un estado anterior
   const cantNueva=c==='ss'?0:c==='p'?cantSol:stockDispo;
   despEst[sid][pid]={tipo:c,cant:cantNueva,bodega:bodId};
@@ -4042,7 +4057,7 @@ function aceptarTodo(sid){
   (sol.items||[]).forEach(it=>{
     const p=prods.find(x=>x.id===it.productoId);
     const bodId=despEst[sid][it.productoId]?.bodega||getBodegaParaArea(sol?.creadoPor,p)||'seca';
-    const stockDispo=p?Math.min(stockEnBodega(p,bodId),it.cantidad):it.cantidad;
+    const stockDispo=p?(p.sinStock?it.cantidad:Math.min(stockEnBodega(p,bodId),it.cantidad)):it.cantidad;
     despEst[sid][it.productoId]={tipo:stockDispo>0?'ok':'ss',cant:stockDispo,bodega:bodId};
   });
   renderDesp();
@@ -4051,7 +4066,7 @@ function setD(sid,pid,v){
   if(!despEst[sid])despEst[sid]={};
   const p=prods.find(x=>x.id===pid);
   const bodId=despEst[sid][pid]?.bodega||p?.bodega||'seca';
-  const maxStock=p?stockEnBodega(p,bodId):Infinity;
+  const maxStock=p?(p.sinStock?Infinity:stockEnBodega(p,bodId)):Infinity;
   const c=Math.min(parseFloat(v)||0,maxStock);
   despEst[sid][pid]={...despEst[sid][pid],tipo:c===0?'ss':'parcial',cant:c};
   // Refrescar barra de progreso y botón Despachar sin re-renderizar (evita interrumpir el tipeo)
@@ -4069,12 +4084,12 @@ function setD(sid,pid,v){
   const cntEl=document.querySelector(`#dsc-${sid} .prog-count`);
   if(cntEl){cntEl.textContent=`${tiqueados}/${nItems} ${allDone?'✓ Listo':'pendientes'}`;cntEl.style.color=allDone?'var(--green)':'var(--tx)';}
 }
-function setBodegaD(sid,pid,bodId){if(!despEst[sid])despEst[sid]={};const p=prods.find(x=>x.id===pid);const maxStock=p?stockEnBodega(p,bodId):Infinity;const cantActual=despEst[sid][pid]?.cant||0;despEst[sid][pid]={...despEst[sid][pid],bodega:bodId,cant:Math.min(cantActual,maxStock)};renderDesp();}
+function setBodegaD(sid,pid,bodId){if(!despEst[sid])despEst[sid]={};const p=prods.find(x=>x.id===pid);const maxStock=p?(p.sinStock?Infinity:stockEnBodega(p,bodId)):Infinity;const cantActual=despEst[sid][pid]?.cant||0;despEst[sid][pid]={...despEst[sid][pid],bodega:bodId,cant:Math.min(cantActual,maxStock)};renderDesp();}
 function stepCant(sid,pid,delta){
   if(!despEst[sid])despEst[sid]={};
   const p=prods.find(x=>x.id===pid);
   const bodId=despEst[sid][pid]?.bodega||p?.bodega||'seca';
-  const maxStock=p?stockEnBodega(p,bodId):Infinity;
+  const maxStock=p?(p.sinStock?Infinity:stockEnBodega(p,bodId)):Infinity;
   const actual=despEst[sid][pid]?.cant||0;
   const isKg=['kg','g','lt','ml'].includes((p?.unidadMedida||'').toLowerCase());
   const nueva=Math.max(0,Math.min(parseFloat((actual+delta).toFixed(isKg?1:0)),maxStock));
@@ -4127,14 +4142,22 @@ async function despachar(solId){
         const c=candidatos[idx];
         if(!s.exists())return;
         const data=s.data();
-        const spb={...data.stockPorBodega};
-        if(!spb[c.bodId]&&data.bodega===c.bodId)spb[c.bodId]=data.stock||0;
-        const stockDispo=spb[c.bodId]||0;
-        const cantFinal=Math.min(c.cantEnKg,stockDispo);
-        if(cantFinal<=0)return;
-        spb[c.bodId]=Math.max(0,stockDispo-cantFinal);
-        const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-        tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+        let cantFinal;
+        if(data.sinStock){
+          // Producto sin control de stock (fruta/verdura): se despacha lo tiqueado
+          // tal cual. No se lee ni se escribe stockPorBodega — no hay inventario
+          // real que descontar, así que no puede quedar negativo ni bloquear el despacho.
+          cantFinal=c.cantEnKg;
+        }else{
+          const spb={...data.stockPorBodega};
+          if(!spb[c.bodId]&&data.bodega===c.bodId)spb[c.bodId]=data.stock||0;
+          const stockDispo=spb[c.bodId]||0;
+          cantFinal=Math.min(c.cantEnKg,stockDispo);
+          if(cantFinal<=0)return;
+          spb[c.bodId]=Math.max(0,stockDispo-cantFinal);
+          const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+          tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+        }
         items.push({...c.it,cantidadDespachada:cantFinal,
           cantidadPiezas:c.isDualItem?c.est.cant:null,unidadPedido:c.isDualItem?c.p.unidadPedido:null,
           bodegaOrigen:c.bodId,precioUnitStock:c.p?.precioTotal||0,precioUnitNeto:c.p?.precioNeto||0});
@@ -5113,6 +5136,8 @@ function abrirProd(id=null){
   if(df){df.classList.toggle('on',isDual);}
   const swA=document.getElementById('aprox-switch');
   if(swA)swA.classList.toggle('on',!!p?.despachoAprox);
+  const swS=document.getElementById('sinstock-switch');
+  if(swS)swS.classList.toggle('on',!!p?.sinStock);
   document.getElementById('pp-unidad-pedido').value=p?.unidadPedido||'';
   document.getElementById('pp-peso-pieza').value=p?.pesoPorUnidad||'';
   actualizarDualPreview();
@@ -5199,6 +5224,7 @@ async function guardarProd(){
     unidadCompra:ucompra||null,factorConversion:ucompra&&conv>1?conv:1,
     esDual:!!(document.getElementById('dual-switch')?.classList.contains('on')),
     despachoAprox:!!(document.getElementById('aprox-switch')?.classList.contains('on')),
+    sinStock:!!(document.getElementById('sinstock-switch')?.classList.contains('on')),
     unidadPedido:document.getElementById('pp-unidad-pedido')?.value.trim().toLowerCase()||null,
     pesoPorUnidad:parseFloat(document.getElementById('pp-peso-pieza')?.value)||null,
     bodega,actualizadoEn:serverTimestamp()
@@ -5216,6 +5242,11 @@ async function guardarProd(){
   finally{btn.disabled=false;btn.textContent='Guardar producto';}
 }
 async function elimProd(id,n){if(!confirm('¿Eliminar "'+n+'"?'))return;await deleteDoc(doc(db,'productos',id));toast('Eliminado');}
+function toggleSinStock(){
+  const sw=document.getElementById('sinstock-switch');
+  if(!sw)return;
+  sw.classList.toggle('on');
+}
 function toggleAprox(){
   const sw=document.getElementById('aprox-switch');
   if(!sw)return;
@@ -6501,14 +6532,15 @@ function _norm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-
 function renderConteo(){
   if(!invActivo)return;
   const q=_norm(document.getElementById('inv-buscar')?.value||'');
-  let pp=[...prods];
+  let pp=[...prods].filter(p=>!p.sinStock);
   if(invFiltroBodega)pp=pp.filter(p=>(p.stockPorBodega?.[invFiltroBodega]||0)>0||(p.bodega||'seca')===invFiltroBodega);
   if(invFiltroCategoria)pp=pp.filter(p=>p.categoria===invFiltroCategoria);
   if(q)pp=pp.filter(p=>_norm(p.nombre).includes(q));
   // ── Conteo por PRODUCTO+BODEGA: conteoLocal[pid] = {bodId: valorKg, ...} ──
   // Una "línea" de conteo = una combinación producto×bodega donde el producto tiene stock real.
+  // Los productos sinStock (frutas/verduras sin control) quedan fuera: no hay nada que pesar/contar.
   const lineasTotales=[];
-  prods.forEach(p=>{
+  prods.filter(p=>!p.sinStock).forEach(p=>{
     bodegasDeProducto(p).forEach(bodId=>{lineasTotales.push(pid_bod(p.id,bodId));});
   });
   const contado=k=>conteoLocal[k]!==undefined;
