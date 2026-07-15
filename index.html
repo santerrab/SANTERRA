@@ -2103,6 +2103,17 @@ body.light input[type="time"]::-webkit-calendar-picker-indicator{
         <div id="dual-preview-box" style="display:none;margin-top:8px"></div>
       </div>
     </div>
+    <!-- ── DESPACHO APROXIMADO ("A OJO") ─────────────────────────────── -->
+    <div class="dual-info-box">
+      <div class="dual-info-box-hdr">🥄 Despacho "a ojo" <span style="color:var(--txm);font-weight:500;text-transform:none;letter-spacing:0">(opcional)</span></div>
+      <button type="button" class="dual-toggle" onclick="toggleAprox()">
+        <div class="dual-switch" id="aprox-switch"></div>
+        <div>
+          <div class="dual-toggle-lbl">Se despacha por porción estimada, no por cantidad exacta</div>
+          <div class="dual-toggle-sub">Ej: Detergente, cloro — "2 dedos del bidón" en vez de litros exactos. El bodeguero verá botones de porción en vez de tener que escribir un número.</div>
+        </div>
+      </button>
+    </div>
     <div class="fg"><label class="fl">Nombre del producto *</label><input class="fi" type="text" id="pp-nombre" placeholder="Ej: Camarón 1kg"></div>
     <div class="fr" style="margin-bottom:11px">
       <div class="fg" style="margin-bottom:0"><label class="fl">Categoría *</label><select class="fi" id="pp-cat" onchange="renderSubs()"><option value="">Seleccionar...</option></select></div>
@@ -2453,6 +2464,25 @@ const BODEGAS_DEFAULT=[
   {id:'refrigeracion',nombre:'Cámara de Refrigeración',icono:'❄️',orden:1},
   {id:'congelacion',nombre:'Cámara de Congelación',icono:'🧊',orden:2},
 ];
+// ── DESPACHO "A OJO" — porciones estimadas, fijas y genéricas para todo producto
+// marcado con despachoAprox (ej: detergentes que se sirven "2 dedos del bidón").
+// El valor está en mL/g; mlAUnidadAprox() lo convierte a la unidad del producto.
+const PORCIONES_APROX=[
+  {label:'Chorrito',ml:50},
+  {label:'2 dedos',ml:200},
+  {label:'Un cuarto',ml:1250},
+  {label:'La mitad',ml:2500},
+  {label:'Envase completo',ml:5000},
+];
+function mlAUnidadAprox(ml,unidadMedida){
+  const u=(unidadMedida||'').toLowerCase();
+  // lt/kg: la porción está en mL/g → se expresa en litros/kilos (asume densidad ≈1, válido para líquidos de limpieza)
+  if(u==='lt'||u==='l'||u==='kg')return Math.round((ml/1000)*100)/100;
+  // ml/g: la unidad de despacho ya es la misma escala que la porción
+  if(u==='ml'||u==='g')return ml;
+  // Cualquier otra unidad: se deja en litros como valor razonable por defecto
+  return Math.round((ml/1000)*100)/100;
+}
 // Colores cíclicos para bodegas
 const BOD_CLRS=['bod-clr-0','bod-clr-1','bod-clr-2','bod-clr-3','bod-clr-4','bod-clr-5'];
 function getBodegaClr(i){return BOD_CLRS[i%BOD_CLRS.length];}
@@ -3863,6 +3893,17 @@ function renderDesp(){
             </select>
           </div>
           <div style="text-align:center">
+            ${p?.despachoAprox?`
+            <div style="font-size:8px;color:var(--txm);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Porción despachada</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:180px;justify-content:flex-end">
+              ${PORCIONES_APROX.map(por=>{
+                const val=mlAUnidadAprox(por.ml,it.unidadMedida);
+                const activa=Math.abs((est.cant||0)-val)<0.001;
+                return`<button onclick="setD('${sol.id}','${it.productoId}',${val})" style="padding:6px 8px;border-radius:8px;border:1.5px solid ${activa?'var(--purple)':'var(--bd2)'};background:${activa?'var(--purpled)':'var(--sf2)'};color:${activa?'var(--purple)':'var(--txm)'};font-size:9.5px;font-weight:700;cursor:pointer;white-space:nowrap">${por.label}</button>`;
+              }).join('')}
+            </div>
+            <div style="font-size:9px;color:var(--txd);margin-top:4px;font-weight:600">≈ ${clpn(est.cant||0)} ${it.unidadMedida||''}</div>
+            `:`
             <div style="font-size:8px;color:var(--txm);text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:4px">Cantidad</div>
             <div style="display:flex;align-items:center;gap:0">
               <button onclick="stepCant('${sol.id}','${it.productoId}',${isDualIt?-1:isKg?-0.1:-1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-right:none;border-radius:9px 0 0 9px;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">−</button>
@@ -3872,6 +3913,7 @@ function renderDesp(){
               <button onclick="stepCant('${sol.id}','${it.productoId}',${isDualIt?1:isKg?0.1:1})" style="width:30px;height:36px;border:1.5px solid var(--bd2);border-left:none;border-radius:0 9px 9px 0;background:var(--sf2);color:var(--txm);font-size:16px;cursor:pointer;font-weight:700">+</button>
             </div>
             <div style="font-size:9px;color:var(--txd);margin-top:2px;font-weight:600">${isDualIt?(p.unidadPedido||it.unidadMedida||''):(it.unidadMedida||'')} ${isDualIt?`<span style="color:var(--purple)">(${clpn((est.cant||0)*(p.pesoPorUnidad||1))} kg)</span>`:''}</div>
+            `}
           </div>
         </div>`}
       </div>`;
@@ -5069,6 +5111,8 @@ function abrirProd(id=null){
   const df=document.getElementById('dual-fields');
   if(sw){sw.classList.toggle('on',isDual);}
   if(df){df.classList.toggle('on',isDual);}
+  const swA=document.getElementById('aprox-switch');
+  if(swA)swA.classList.toggle('on',!!p?.despachoAprox);
   document.getElementById('pp-unidad-pedido').value=p?.unidadPedido||'';
   document.getElementById('pp-peso-pieza').value=p?.pesoPorUnidad||'';
   actualizarDualPreview();
@@ -5154,6 +5198,7 @@ async function guardarProd(){
     precioNeto:Math.round(netoUnit*100)/100,tipoImpuesto:tipo,precioTotal:c.total,totalImpuestos:Math.round(c.imp),
     unidadCompra:ucompra||null,factorConversion:ucompra&&conv>1?conv:1,
     esDual:!!(document.getElementById('dual-switch')?.classList.contains('on')),
+    despachoAprox:!!(document.getElementById('aprox-switch')?.classList.contains('on')),
     unidadPedido:document.getElementById('pp-unidad-pedido')?.value.trim().toLowerCase()||null,
     pesoPorUnidad:parseFloat(document.getElementById('pp-peso-pieza')?.value)||null,
     bodega,actualizadoEn:serverTimestamp()
@@ -5171,6 +5216,11 @@ async function guardarProd(){
   finally{btn.disabled=false;btn.textContent='Guardar producto';}
 }
 async function elimProd(id,n){if(!confirm('¿Eliminar "'+n+'"?'))return;await deleteDoc(doc(db,'productos',id));toast('Eliminado');}
+function toggleAprox(){
+  const sw=document.getElementById('aprox-switch');
+  if(!sw)return;
+  sw.classList.toggle('on');
+}
 function toggleDual(){
   const sw=document.getElementById('dual-switch');
   const df=document.getElementById('dual-fields');
