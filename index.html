@@ -2008,7 +2008,7 @@ body.light input[type="time"]::-webkit-calendar-picker-indicator{
   <div class="modal">
     <div class="mh"></div>
     <div class="fact-modal-hdr">
-      <div class="mt" style="margin:0">📄 Nueva Factura</div>
+      <div class="mt" style="margin:0" id="fn-modal-titulo">📄 Nueva Factura</div>
       <div class="fact-total-pill" id="fn-total-pill">$0</div>
     </div>
 
@@ -2402,6 +2402,7 @@ body.light input[type="time"]::-webkit-calendar-picker-indicator{
     <div class="mt-sub" id="fv-sub">—</div>
     <div id="fv-totales" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
     <div id="fv-items" style="margin-bottom:14px"></div>
+    <div id="fv-acciones" style="display:none;gap:8px;margin-bottom:10px"></div>
     <button class="btn bg-ghost" onclick="closeM('mo-fact-view')">Cerrar</button>
   </div>
 </div>
@@ -2410,7 +2411,7 @@ body.light input[type="time"]::-webkit-calendar-picker-indicator{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore,collection,doc,addDoc,updateDoc,deleteDoc,setDoc,
-  onSnapshot,query,orderBy,limit,serverTimestamp,getDoc,getDocs,writeBatch,runTransaction
+  onSnapshot,query,where,orderBy,limit,serverTimestamp,getDoc,getDocs,writeBatch,runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -2470,7 +2471,7 @@ let role=null,pbuf='',pinTarget=null;
 let prods=[],cats=[],sols=[],facts=[],movs=[],invDocs=[],bodegas=[];
 let uP=null,uS=null,uF=null,uC=null,uM=null,uI=null,uBod=null,uCfg=null;
 let editProdId=null,rechazandoId=null,editCatId=null;
-let carrito=[],fnItems=[],despEst={},semOffset=0;
+let carrito=[],fnItems=[],editFacturaId=null,despEst={},semOffset=0;
 let invActivo=null,conteoLocal={},csvData=[];
 let alarmaActiva=false,solsPrevCount=null,audioCtx=null,wakeLock=null;
 let diffFiltro='diff',detalleFiltro='diff',detalleInv=null;
@@ -4397,7 +4398,7 @@ function renderFact(){
   if(!facts.length){lista.innerHTML='<div class="empty"><div class="ei">📄</div><div class="et">Sin facturas</div></div>';return;}
   lista.innerHTML=facts.map(f=>`
     <div class="li" onclick="verFact('${f.id}')" style="cursor:pointer"><div style="flex:1;min-width:0">
-      <div class="lt">📄 ${f.proveedor||'—'}${f.numeroFactura?' · #'+f.numeroFactura:''}</div>
+      <div class="lt">📄 ${f.proveedor||'—'}${f.numeroFactura?' · #'+f.numeroFactura:''}${f.editadoEn?' <span style="color:var(--blue);font-weight:700;font-size:10px">✏️ editada</span>':''}</div>
       <div class="ls">${fDateOnly(f.creadoEn)} · ${(f.items||[]).length} productos${f.descuentoPct?` · Desc. ${f.descuentoPct}%`:''}</div>
       <div style="font-size:11px;margin-top:4px;color:var(--txm)">${(f.items||[]).slice(0,3).map(i=>i.nombreProducto).join(', ')}${(f.items||[]).length>3?' +'+(f.items.length-3)+' más':''}</div>
     </div><span class="badge bg-g-s">${clp(f.totalFactura||0)}</span></div>`).join('');
@@ -4410,7 +4411,16 @@ function verFact(fid){
   const totalIVA=f.totalIVA||f.totalImpuestos||0;
   const totalAdic=f.totalAdicional||0;
   document.getElementById('fv-titulo').textContent=`📄 ${f.proveedor||'—'}${f.numeroFactura?' — N° '+f.numeroFactura:''}`;
-  document.getElementById('fv-sub').textContent=`${fDateOnly(f.creadoEn)} · ${(f.items||[]).length} productos · Ingresado por ${f.ingresadoPor||'—'}`;
+  document.getElementById('fv-sub').textContent=`${fDateOnly(f.creadoEn)} · ${(f.items||[]).length} productos · Ingresado por ${f.ingresadoPor||'—'}${f.editadoEn?' · ✏️ Editada '+fDateOnly(f.editadoEn)+(f.editadoPor?' por '+f.editadoPor:''):''}`;
+  const acc=document.getElementById('fv-acciones');
+  if(role==='encargado'){
+    acc.style.display='flex';
+    acc.innerHTML=`
+      <button class="btn bg-blue" style="flex:1;margin-top:0" onclick="abrirEditarFactura('${fid}')">✏️ Editar</button>
+      <button class="btn bg-red" style="flex:1;margin-top:0" onclick="eliminarFactura('${fid}')">🗑️ Eliminar</button>`;
+  }else{
+    acc.style.display='none';acc.innerHTML='';
+  }
   document.getElementById('fv-totales').innerHTML=`
     ${totalNeto?`<div class="sg-i"><div class="sg-v">${clp(totalNeto)}</div><div class="sg-l">Neto</div></div>`:''}
     ${totalIVA?`<div class="sg-i"><div class="sg-v" style="color:var(--yellow)">${clp(totalIVA)}</div><div class="sg-l">Impuestos</div></div>`:''}
@@ -4431,6 +4441,88 @@ function verFact(fid){
     </div>`).join('')}`;
   openM('mo-fact-view');
 }
+function abrirEditarFactura(fid){
+  const f=facts.find(x=>x.id===fid);
+  if(!f){toast('Factura no encontrada','err');return;}
+  editFacturaId=fid;
+  // Reconstruir fnItems (la forma que usa el formulario) a partir de los items YA
+  // guardados en la factura (que tienen una forma distinta, pensada para reportes).
+  fnItems=(f.items||[]).map(it=>{
+    const p=prods.find(x=>x.id===it.productoId);
+    return{
+      pid:it.productoId,nombre:it.nombreProducto,
+      cantidad:it.cantidadBultos||1,
+      precio:it.precioPorBulto||0,
+      unidad:it.unidadMedida||p?.unidadMedida||'unidad',
+      unidadCompra:it.unidadCompra||null,
+      factorConversion:it.factorConversion||1,
+      tieneBulto:!!(it.unidadCompra&&(it.factorConversion||1)>1),
+      bodega:it.bodegaDestino||p?.bodega||'seca',
+      esDual:!!(p?.esDual&&p?.unidadPedido&&(it.unidadMedida||'').toLowerCase()==='kg'),
+      unidadPedido:p?.unidadPedido||null,
+      pesoPorUnidad:p?.pesoPorUnidad||null,
+      piezasRecibidas:it.piezasRecibidas||null
+    };
+  });
+  document.getElementById('fn-buscar').value='';document.getElementById('fn-res').style.display='none';
+  document.getElementById('fn-num').value=f.numeroFactura||'';
+  document.getElementById('fn-prov').value=f.proveedor||'';
+  document.getElementById('fn-fecha').value=f.fechaFactura||new Date().toISOString().split('T')[0];
+  document.getElementById('fn-obs').value=f.observacion||'';
+  document.getElementById('prov-dropdown').style.display='none';
+  const dp=document.getElementById('fn-desc-pct');if(dp)dp.value=f.descuentoPct||'';
+  const dm=document.getElementById('fn-desc-monto');if(dm)dm.value=f.descuentoMonto?fmtMilesDec(f.descuentoMonto):'';
+  const dprev=document.getElementById('fn-desc-preview');if(dprev)dprev.style.display='none';
+  document.getElementById('btn-gfact').disabled=false;document.getElementById('btn-gfact').textContent='✓ Guardar cambios';
+  const tt=document.getElementById('fn-modal-titulo');if(tt)tt.textContent='✏️ Editar Factura';
+  renderFnItems();
+  closeM('mo-fact-view');
+  openM('mo-fact');
+}
+
+async function eliminarFactura(fid){
+  const f=facts.find(x=>x.id===fid);
+  if(!f){toast('Factura no encontrada','err');return;}
+  if(!confirm(`¿Eliminar para siempre la factura de ${f.proveedor||'—'}${f.numeroFactura?' (N° '+f.numeroFactura+')':''}?\n\nSe revertirá el stock que ingresó, hasta el límite de lo que todavía quede disponible — si ya se despachó parte, esa parte no se puede recuperar y quedará avisado.\n\nEsta acción no se puede deshacer.`))return;
+  try{
+    const items=f.items||[];
+    // Firestore no permite queries (where) dentro de una transacción: se buscan
+    // primero los documentos asociados, y recién después se borran todos juntos.
+    const[movSnap,histSnap]=await Promise.all([
+      getDocs(query(collection(db,'movimientos'),where('facturaId','==',fid))),
+      getDocs(query(collection(db,'historialPrecios'),where('facturaId','==',fid)))
+    ]);
+    let avisos=[];
+    // ── TRANSACCIÓN ATÓMICA ── stock revertido + factura + movimiento + historial
+    // se borran/actualizan todos juntos o no se toca nada.
+    await runTransaction(db,async(tx)=>{
+      avisos=[];
+      const refs=items.map(it=>doc(db,'productos',it.productoId));
+      const snaps=await Promise.all(refs.map(r=>tx.get(r)));
+      snaps.forEach((s,idx)=>{
+        const it=items[idx];
+        if(!s.exists())return;
+        const data=s.data();
+        const spb={...(data.stockPorBodega||{})};
+        const bodId=it.bodegaDestino||data.bodega||'seca';
+        const disponible=spb[bodId]||0;
+        const aRevertir=Math.min(it.cantidadStock||0,disponible);
+        if(aRevertir<(it.cantidadStock||0)){
+          avisos.push(`${it.nombreProducto}: solo se pudo revertir ${clpn(aRevertir)} de ${clpn(it.cantidadStock)} ${it.unidadMedida||''} (ya se había despachado parte)`);
+        }
+        spb[bodId]=Math.max(0,disponible-aRevertir);
+        const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+        tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,actualizadoEn:serverTimestamp()});
+      });
+      movSnap.docs.forEach(d=>tx.delete(d.ref));
+      histSnap.docs.forEach(d=>tx.delete(d.ref));
+      tx.delete(doc(db,'facturas',fid));
+    });
+    closeM('mo-fact-view');
+    toast(avisos.length?`✓ Factura eliminada (${avisos.length} producto(s) con reversión parcial — ya se había despachado)`:'✓ Factura eliminada y stock revertido');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
 function renderNotifStatus(){
   const card=document.getElementById('notif-status-card');
   if(!card||role!=='bodeguero')return;
@@ -4522,6 +4614,8 @@ document.addEventListener('click',e=>{
 });
 
 function abrirFact(){
+  editFacturaId=null;
+  const tt=document.getElementById('fn-modal-titulo');if(tt)tt.textContent='📄 Nueva Factura';
   fnItems=[];renderFnItems();
   document.getElementById('fn-buscar').value='';document.getElementById('fn-res').style.display='none';
   document.getElementById('fn-fecha').value=new Date().toISOString().split('T')[0];
@@ -4921,69 +5015,115 @@ async function guardarFactura(){
       return{...it,precioNetoUnitDesc:Math.round(netoUnitDesc*100)/100,precioUnitStockDesc:cDesc.total};
     });
     const itemsParaGuardar=items.map(({_netoUnitExacto,_subtotalReal,...resto})=>resto);
-    const facturaRef=doc(collection(db,'facturas'));
+    const esEdicion=!!editFacturaId;
+    const facturaRef=esEdicion?doc(db,'facturas',editFacturaId):doc(collection(db,'facturas'));
     const movRef=doc(collection(db,'movimientos'));
+
+    // ── Si es edición: traer la factura original y lo que hay que limpiar.
+    // Fuera de la transacción porque Firestore no permite queries (where) adentro
+    // de una transacción — solo lecturas de documentos puntuales.
+    let itemsOriginales=[],creadoEnOriginal=null,ingresadoPorOriginal=role,movsViejos=[],histViejos=[];
+    if(esEdicion){
+      const facOrigSnap=await getDoc(facturaRef);
+      if(!facOrigSnap.exists())throw new Error('La factura original ya no existe (¿la borraron en otro dispositivo?)');
+      const fo=facOrigSnap.data();
+      itemsOriginales=fo.items||[];creadoEnOriginal=fo.creadoEn||null;ingresadoPorOriginal=fo.ingresadoPor||role;
+      const[movSnap,histSnap]=await Promise.all([
+        getDocs(query(collection(db,'movimientos'),where('facturaId','==',editFacturaId))),
+        getDocs(query(collection(db,'historialPrecios'),where('facturaId','==',editFacturaId)))
+      ]);
+      movsViejos=movSnap.docs;histViejos=histSnap.docs;
+    }
+
+    let avisos=[];
     // ── TRANSACCIÓN ATÓMICA ── factura + stock + historial de precios + movimiento
     // se confirman todos juntos. El stock se lee fresco de Firestore en el momento
     // del commit, así que dos recepciones simultáneas del mismo producto no se pisan.
     await runTransaction(db,async(tx)=>{
-      const refs=itemsConDescuento.map(it=>doc(db,'productos',it.productoId));
+      avisos=[];
+      // Unión de productos a tocar: los nuevos + los que tenía la factura original
+      // (si se editó y algún producto se sacó de la factura, igual hay que revertirlo).
+      const idsNuevos=itemsConDescuento.map(it=>it.productoId);
+      const idsViejos=itemsOriginales.map(it=>it.productoId);
+      const idsUnion=[...new Set([...idsNuevos,...idsViejos])];
+      const refs=idsUnion.map(pid=>doc(db,'productos',pid));
       // Regla de Firestore: TODAS las lecturas antes que cualquier escritura.
       const snaps=await Promise.all(refs.map(r=>tx.get(r)));
       const historialPendiente=[];
       snaps.forEach((s,idx)=>{
-        const it=itemsConDescuento[idx];
+        const pid=idsUnion[idx];
         if(!s.exists())return;
         const data=s.data();
         const spb={...(data.stockPorBodega||{})};
         // Migrar stock legacy si es necesario
         if(!data.stockPorBodega&&(data.stock||0)>0){spb[data.bodega||'seca']=(data.stock||0);}
-        spb[it.bodegaDestino]=(spb[it.bodegaDestino]||0)+it.cantidadStock;
-        const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
-        // ── Dual: calcular peso promedio ponderado si se informaron piezas ──
-        const dualUpdate={};
-        if(it.piezasRecibidas>0&&data.esDual){
-          const kgPrevios=data.stock||0;          // kg antes de esta factura
-          const kgNuevos=it.cantidadStock;         // kg que entran ahora
-          const piezasPrevias=data.pesoPorUnidad>0?Math.round(kgPrevios/data.pesoPorUnidad):0;
-          const piezasNuevas=it.piezasRecibidas;
-          const totalKg=kgPrevios+kgNuevos;
-          const totalPiezas=piezasPrevias+piezasNuevas;
-          const nuevoPeso=totalPiezas>0?Math.round((totalKg/totalPiezas)*1000)/1000:kgNuevos/piezasNuevas;
-          dualUpdate.pesoPorUnidad=nuevoPeso;
-          // piezasStock es derivado, no autoritativo — solo para referencia en dashboard
-          dualUpdate.piezasStock=totalPiezas;
+
+        // 1) Revertir lo que la factura ORIGINAL había aportado a este producto (si es edición)
+        const itViejo=itemsOriginales.find(x=>x.productoId===pid);
+        if(itViejo){
+          const bodViejo=itViejo.bodegaDestino||data.bodega||'seca';
+          const disponible=spb[bodViejo]||0;
+          const aRevertir=Math.min(itViejo.cantidadStock||0,disponible);
+          if(aRevertir<(itViejo.cantidadStock||0)){
+            avisos.push(`${itViejo.nombreProducto}: solo se pudo revertir ${clpn(aRevertir)} de ${clpn(itViejo.cantidadStock)} ${itViejo.unidadMedida||''} (ya se había despachado parte)`);
+          }
+          spb[bodViejo]=Math.max(0,disponible-aRevertir);
         }
-        tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,
-          precioNeto:it.precioNetoUnitDesc,
-          precioTotal:it.precioUnitStockDesc,
-          totalImpuestos:it.precioUnitStockDesc-it.precioNetoUnitDesc,
-          ...dualUpdate,
-          actualizadoEn:serverTimestamp()});
-        // Historial de precios (con el descuento del proveedor ya aplicado)
-        historialPendiente.push({
-          productoId:it.productoId,nombreProducto:it.nombreProducto,
-          precio:it.precioUnitStockDesc,precioNeto:it.precioNetoUnitDesc,
-          tipoImpuesto:it.tipoImpuesto,
-          cantidadStock:it.cantidadStock,cantidadBultos:it.cantidadBultos,unidadMedida:it.unidadMedida,
-          piezasRecibidas:it.piezasRecibidas||null,pesoPorUnidadCalculado:dualUpdate.pesoPorUnidad||null,
-          proveedor:prov,facturaId:facturaRef.id,creadoEn:serverTimestamp()
-        });
+
+        // 2) Aplicar la cantidad NUEVA (si este producto sigue en la factura editada)
+        const itNuevo=itemsConDescuento.find(x=>x.productoId===pid);
+        const dualUpdate={};let precioUpdate={};
+        if(itNuevo){
+          spb[itNuevo.bodegaDestino]=(spb[itNuevo.bodegaDestino]||0)+itNuevo.cantidadStock;
+          if(itNuevo.piezasRecibidas>0&&data.esDual){
+            const kgPrevios=Object.values(spb).reduce((a,v)=>a+(v||0),0)-itNuevo.cantidadStock;
+            const kgNuevos=itNuevo.cantidadStock;
+            const piezasPrevias=data.pesoPorUnidad>0?Math.round(kgPrevios/data.pesoPorUnidad):0;
+            const piezasNuevas=itNuevo.piezasRecibidas;
+            const totalKg=kgPrevios+kgNuevos;
+            const totalPiezas=piezasPrevias+piezasNuevas;
+            dualUpdate.pesoPorUnidad=totalPiezas>0?Math.round((totalKg/totalPiezas)*1000)/1000:kgNuevos/piezasNuevas;
+            dualUpdate.piezasStock=totalPiezas;
+          }
+          precioUpdate={precioNeto:itNuevo.precioNetoUnitDesc,precioTotal:itNuevo.precioUnitStockDesc,totalImpuestos:itNuevo.precioUnitStockDesc-itNuevo.precioNetoUnitDesc};
+          historialPendiente.push({
+            productoId:itNuevo.productoId,nombreProducto:itNuevo.nombreProducto,
+            precio:itNuevo.precioUnitStockDesc,precioNeto:itNuevo.precioNetoUnitDesc,
+            tipoImpuesto:itNuevo.tipoImpuesto,
+            cantidadStock:itNuevo.cantidadStock,cantidadBultos:itNuevo.cantidadBultos,unidadMedida:itNuevo.unidadMedida,
+            piezasRecibidas:itNuevo.piezasRecibidas||null,pesoPorUnidadCalculado:dualUpdate.pesoPorUnidad||null,
+            proveedor:prov,facturaId:facturaRef.id,creadoEn:serverTimestamp()
+          });
+        }
+
+        const newTotal=Object.values(spb).reduce((a,v)=>a+(v||0),0);
+        tx.update(refs[idx],{stockPorBodega:spb,stock:newTotal,...precioUpdate,...dualUpdate,actualizadoEn:serverTimestamp()});
       });
+
+      // Si es edición: limpiar el movimiento y el historial de precios viejos de
+      // esta factura — se reemplazan por los nuevos, generados abajo.
+      if(esEdicion){
+        movsViejos.forEach(d=>tx.delete(d.ref));
+        histViejos.forEach(d=>tx.delete(d.ref));
+      }
+
       tx.set(facturaRef,{
         numeroFactura:document.getElementById('fn-num').value.trim(),proveedor:prov,
         fechaFactura:document.getElementById('fn-fecha').value,observacion:document.getElementById('fn-obs').value.trim(),
         items:itemsParaGuardar,totalNeto:r.totalNeto,totalIVA:r.iva,totalAdicional:r.adicional,totalImpuestos:r.iva+r.adicional,totalFactura:r.total,
         totalBruto:tot,descuentoPct:descPct||null,descuentoMonto:descMonto||null,
-        ingresadoPor:role,creadoEn:serverTimestamp()
+        ingresadoPor:ingresadoPorOriginal,
+        creadoEn:esEdicion?(creadoEnOriginal||serverTimestamp()):serverTimestamp(),
+        ...(esEdicion?{editadoPor:role,editadoEn:serverTimestamp()}:{})
       });
       historialPendiente.forEach(h=>{
         const hRef=doc(collection(db,'historialPrecios'));
         tx.set(hRef,h);
       });
-      tx.set(movRef,{tipo:'ingreso',facturaId:facturaRef.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp()});
+      tx.set(movRef,{tipo:'ingreso',facturaId:facturaRef.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp(),...(esEdicion?{editado:true}:{})});
     });
-    toast('✓ '+fnItems.length+' productos ingresados');closeM('mo-fact');fnItems=[];
+    toast(avisos.length?`✓ Factura ${esEdicion?'editada':'guardada'} (${avisos.length} producto(s) con reversión parcial)`:`✓ ${fnItems.length} productos ${esEdicion?'actualizados':'ingresados'}`);
+    closeM('mo-fact');fnItems=[];editFacturaId=null;
   }catch(e){toast('Error: '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='✓ Ingresar al stock';}
 }
@@ -7062,7 +7202,7 @@ Object.assign(window,{
   guardarPins,guardarNombres,abrirCfg,guardarBodegasArea,limpiarDatosPrueba,guardarHorario,
   nuevoInventario,cancelarInventario,finalizarInventario,confirmarAjuste,
   renderConteo,setConteo,actualizarContadores,marcarTodosPendientes,verDetalleInv,leerCSV,aplicarCSV,
-  exportarPDF,verFact,
+  exportarPDF,verFact,abrirEditarFactura,eliminarFactura,
   abrirAjusteStock,ajsBodegaChange,ajsInput,confirmarAjusteStock,
   toggleDual,actualizarDualPreview,fnPiezas,toggleAprox,toggleSinStock,
   renderAsesor,aNavSem,aTab,buildVelocidadChart,runAsesorIA,
