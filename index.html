@@ -2506,6 +2506,16 @@ function mlAUnidadAprox(ml,unidadMedida){
   // Cualquier otra unidad: se deja en litros como valor razonable por defecto
   return Math.round((ml/1000)*100)/100;
 }
+// Porción mínima segura ("Chorrito") capada al stock real disponible — se usa como
+// default al aceptar un producto "a ojo" (check ✓ o "Aceptar todo"). NUNCA se usa la
+// cantidad "solicitada" para estos productos: el área nunca vio los botones de porción
+// al pedirlo, así que ese número no representa una porción real y podía terminar
+// vaciando el envase entero (min(stock, cantidad_solicitada) = stock completo si la
+// cantidad pedida era igual o mayor al stock disponible).
+function porcionMinimaAprox(p,bodId){
+  const maxDisp=p.sinStock?Infinity:stockEnBodega(p,bodId);
+  return Math.min(mlAUnidadAprox(PORCIONES_APROX[0].ml,p.unidadMedida),maxDisp);
+}
 // Colores cíclicos para bodegas
 const BOD_CLRS=['bod-clr-0','bod-clr-1','bod-clr-2','bod-clr-3','bod-clr-4','bod-clr-5'];
 function getBodegaClr(i){return BOD_CLRS[i%BOD_CLRS.length];}
@@ -4058,7 +4068,7 @@ function togD(sid,pid,cantSol){
   const bodId=e.bodega||getBodegaParaArea(sol?.creadoPor,p)||'seca';
   const stockDispo=p?(p.sinStock?cantSol:Math.min(stockEnBodega(p,bodId),cantSol)):cantSol;
   // Al volver a pendiente restaurar la cantidad pedida original, no el stock disponible que quedó de un estado anterior
-  const cantNueva=c==='ss'?0:c==='p'?cantSol:stockDispo;
+  const cantNueva=c==='ss'?0:c==='p'?cantSol:(p?.despachoAprox?porcionMinimaAprox(p,bodId):stockDispo);
   despEst[sid][pid]={tipo:c,cant:cantNueva,bodega:bodId};
   renderDesp();
 }
@@ -4072,7 +4082,7 @@ function aceptarTodo(sid){
   (sol.items||[]).forEach(it=>{
     const p=prods.find(x=>x.id===it.productoId);
     const bodId=despEst[sid][it.productoId]?.bodega||getBodegaParaArea(sol?.creadoPor,p)||'seca';
-    const stockDispo=p?(p.sinStock?it.cantidad:Math.min(stockEnBodega(p,bodId),it.cantidad)):it.cantidad;
+    const stockDispo=p?.despachoAprox?porcionMinimaAprox(p,bodId):(p?(p.sinStock?it.cantidad:Math.min(stockEnBodega(p,bodId),it.cantidad)):it.cantidad);
     despEst[sid][it.productoId]={tipo:stockDispo>0?'ok':'ss',cant:stockDispo,bodega:bodId};
   });
   renderDesp();
@@ -4252,11 +4262,12 @@ function solCard(s){
     <div class="sol-tags">
       ${(s.items||[]).map(it=>{
         const d=s.itemsDespacho?.find(x=>x.productoId===it.productoId);
-        const ok=d&&d.cantidadDespachada>=it.cantidad;
-        const parcial=d&&d.cantidadDespachada>0&&d.cantidadDespachada<it.cantidad;
+        const esAprox=!!d?.despachoAprox;
+        const ok=d&&(esAprox||d.cantidadDespachada>=it.cantidad);
+        const parcial=d&&!esAprox&&d.cantidadDespachada>0&&d.cantidadDespachada<it.cantidad;
         const ic=ok?'✓ ':parcial?'~ ':'';
         const clr=ok?'var(--green)':parcial?'var(--yellow)':'';
-        return`<span class="sol-tag" style="${clr?'border-color:'+clr+';color:'+clr:''}">${ic}${it.nombreProducto}: <strong>${d?clpn(d.cantidadDespachada)+'/'+clpn(it.cantidad):clpn(it.cantidad)}</strong> ${it.unidadMedida||''}</span>`;
+        return`<span class="sol-tag" style="${clr?'border-color:'+clr+';color:'+clr:''}">${ic}${it.nombreProducto}: <strong>${d?clpn(d.cantidadDespachada)+(esAprox?'':'/'+clpn(it.cantidad)):clpn(it.cantidad)}</strong> ${it.unidadMedida||''}</span>`;
       }).join('')}
     </div>
     ${s.estado==='rechazada'&&s.motivoRechazo?`<div style="font-size:12px;color:var(--red);background:var(--redd);border-radius:8px;padding:8px 10px;margin-top:6px">❌ Motivo: ${s.motivoRechazo}</div>`:''}
