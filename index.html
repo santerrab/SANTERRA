@@ -4501,7 +4501,10 @@ async function eliminarFactura(fid){
       const snaps=await Promise.all(refs.map(r=>tx.get(r)));
       snaps.forEach((s,idx)=>{
         const it=items[idx];
-        if(!s.exists())return;
+        if(!s.exists()){
+          avisos.push(`${it.nombreProducto||it.productoId}: el producto ya no existe en el catálogo, no se pudo revertir su stock`);
+          return;
+        }
         const data=s.data();
         const spb={...(data.stockPorBodega||{})};
         const bodId=it.bodegaDestino||data.bodega||'seca';
@@ -4519,7 +4522,8 @@ async function eliminarFactura(fid){
       tx.delete(doc(db,'facturas',fid));
     });
     closeM('mo-fact-view');
-    toast(avisos.length?`✓ Factura eliminada (${avisos.length} producto(s) con reversión parcial — ya se había despachado)`:'✓ Factura eliminada y stock revertido');
+    toast(avisos.length?`✓ Factura eliminada (${avisos.length} aviso(s) — revisa la consola)`:'✓ Factura eliminada y stock revertido');
+    if(avisos.length)console.warn('Avisos al eliminar factura:',avisos);
   }catch(e){toast('Error: '+e.message,'err');}
 }
 
@@ -5052,7 +5056,11 @@ async function guardarFactura(){
       const historialPendiente=[];
       snaps.forEach((s,idx)=>{
         const pid=idsUnion[idx];
-        if(!s.exists())return;
+        if(!s.exists()){
+          const nombreRef=itemsConDescuento.find(x=>x.productoId===pid)?.nombreProducto||itemsOriginales.find(x=>x.productoId===pid)?.nombreProducto||pid;
+          avisos.push(`${nombreRef}: el producto ya no existe en el catálogo, no se pudo ajustar su stock`);
+          return;
+        }
         const data=s.data();
         const spb={...(data.stockPorBodega||{})};
         // Migrar stock legacy si es necesario
@@ -5122,7 +5130,8 @@ async function guardarFactura(){
       });
       tx.set(movRef,{tipo:'ingreso',facturaId:facturaRef.id,proveedor:prov,items:itemsParaGuardar,realizadoPor:role,creadoEn:serverTimestamp(),...(esEdicion?{editado:true}:{})});
     });
-    toast(avisos.length?`✓ Factura ${esEdicion?'editada':'guardada'} (${avisos.length} producto(s) con reversión parcial)`:`✓ ${fnItems.length} productos ${esEdicion?'actualizados':'ingresados'}`);
+    toast(avisos.length?`✓ Factura ${esEdicion?'editada':'guardada'} (${avisos.length} aviso(s) — revisa la consola)`:`✓ ${fnItems.length} productos ${esEdicion?'actualizados':'ingresados'}`);
+    if(avisos.length)console.warn(`Avisos al ${esEdicion?'editar':'guardar'} factura:`,avisos);
     closeM('mo-fact');fnItems=[];editFacturaId=null;
   }catch(e){toast('Error: '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='✓ Ingresar al stock';}
